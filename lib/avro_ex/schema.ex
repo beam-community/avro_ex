@@ -35,8 +35,7 @@ defmodule AvroEx.Schema do
     with {:ok, schema} <- Poison.decode(json_schema),
          {:ok, schema} <- cast(schema),
          {:ok, schema} <- namespace(schema),
-         {:ok, context} <- expand(schema, context),
-         {:ok, schema} <- validate(schema, context) do
+         {:ok, context} <- expand(schema, context) do
       {:ok, %__MODULE__{schema: schema, context: context}}
     end
   end
@@ -77,8 +76,6 @@ defmodule AvroEx.Schema do
   def expand(schema, context) do
     {:ok, Context.add_schema(context, schema)}
   end
-
-  def validate(schema, _context), do: {:ok, schema}
 
   def encodable?(%Schema{schema: schema, context: context}, data) do
     encodable?(schema, context, data)
