@@ -8,6 +8,8 @@ defmodule AvroEx.Mixfile do
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      aliases: aliases(),
+     package: package(),
+     description: "A pure-elixir avro encoding/decoding library",
      deps: deps()]
   end
 
@@ -24,5 +26,12 @@ defmodule AvroEx.Mixfile do
     [{:poison, "~> 3.1.0"},
      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false},
      {:ecto, "~> 2.1.0"}]
+  end
+
+  defp package do
+    [licenses: ["MIT"],
+     maintainers: ["cjpoll@gmail.com"],
+     links: %{"Github" => "http://github.com/cjpoll/avro_ex"}
+    ]
   end
 end
