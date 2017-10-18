@@ -20,6 +20,8 @@ defmodule AvroEx do
   """
   alias AvroEx.Schema
 
+  @type encoded_avro :: binary
+
   @doc """
   Checks to see if the given data is encodable using the given schema. Great in
   unit tests.
@@ -54,6 +56,10 @@ defmodule AvroEx do
   Given a %Schema{} and some data, takes the data and encodes it according to the schema.
   Checks that the data is encodable before beginning encoding.
   """
+  @spec encode(Avro.Schema.t, term)
+  :: {:ok, encoded_avro}
+  | {:error, :unmatching_schema}
+  | {:error, AvroEx.Encode.reason, term}
   def encode(schema, data) do
     AvroEx.Encode.encode(schema, data)
   end
@@ -61,6 +67,9 @@ defmodule AvroEx do
   @doc """
   Given an encoded message and its accompanying schema, decodes the message.
   """
+  @spec decode(AvroEx.Schema.t, encoded_avro)
+  :: {:ok, term}
+  | {:error, AvroEx.Decode.reason}
   def decode(schema, message) do
     AvroEx.Decode.decode(schema, message)
   end

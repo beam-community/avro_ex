@@ -15,7 +15,7 @@ defmodule AvroEx.Encode do
         val -> {:ok, val}
       end
     else
-      {:error, "data does not match schema"}
+      {:error, :unmatching_schema}
     end
   end
 

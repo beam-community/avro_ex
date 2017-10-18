@@ -4,6 +4,8 @@ defmodule AvroEx.Decode do
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
   alias AvroEx.Schema.Record.Field
 
+  @type reason :: term
+
   def decode(%Schema{schema: schema, context: context}, avro_message) when is_binary(avro_message) do
     {value, ""} = do_decode(schema, context, avro_message)
     {:ok, value}
