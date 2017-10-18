@@ -1,7 +1,30 @@
 defmodule AvroEx do
+  @moduledoc """
+  The main interface for the library. Supports parsing schemas, encoding data,
+  and decoding data.
+
+  For encoding and decoding, the following type chart should be referenced:
+
+  | Avro Types | Elixir Types |
+  |------------|:------------:|
+  | boolean | boolean |
+  | integer | integer |
+  | long | integer |
+  | float | decimal |
+  | double | decimal |
+  | bytes | binary |
+  | string | String.t |
+  | null | nil |
+  | Record | map |
+  | Enum | String (corresponding to the enum's symbol list) |
+  """
   alias AvroEx.Schema
 
-  @type avro :: binary
+  @doc """
+  Checks to see if the given data is encodable using the given schema. Great in
+  unit tests.
+  """
+  defdelegate encodable?(schema, data), to: AvroEx.Schema
 
   @spec parse_schema(Avro.Schema.json_schema)
   :: {:ok, Schema.t}
@@ -15,6 +38,11 @@ defmodule AvroEx do
     Schema.parse(json_schema)
   end
 
+  @spec parse_schema!(Avro.Schema.json_schema) :: Schema.t | no_return
+  @doc """
+  Same as `AvroEx.parse_schema/1`, but raises an exception on failure instead of
+  returning an error tuple.
+  """
   def parse_schema!(json_schema) do
     case parse_schema(json_schema) do
       {:ok, schema} -> schema
