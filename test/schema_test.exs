@@ -53,7 +53,8 @@ defmodule AvroEx.Schema.Test do
   import __MODULE__.Macros
 
   alias AvroEx.Schema
-  alias AvroEx.Schema.{Array, Context, Map, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Primitive, Record, Union}
+  alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Record.Field
 
@@ -111,11 +112,13 @@ defmodule AvroEx.Schema.Test do
   """
 
   describe "parse record" do
+    @tag :current
     test "works" do
       child_record =
         %Record{
           name: "ChildRecord",
-          aliases: ["InnerRecord"]
+          aliases: ["InnerRecord"],
+          qualified_names: ["me.cjpoll.avro_ex.ChildRecord", "me.cjpoll.avro_ex.InnerRecord"]
         }
 
       parent =
@@ -124,6 +127,7 @@ defmodule AvroEx.Schema.Test do
           doc: "A record for testing",
           name: "MyRecord",
           namespace: "me.cjpoll.avro_ex",
+          qualified_names: ["me.cjpoll.avro_ex.MyRecord", "me.cjpoll.avro_ex.OldRecord", "me.cjpoll.avro_ex.SomeRecord"],
           fields: [
             %Field{
               type: %Primitive{
@@ -143,21 +147,21 @@ defmodule AvroEx.Schema.Test do
           ]
         }
 
-    context =
-      %Context{
-        names: %{
-          "me.cjpoll.avro_ex.OldRecord" => parent,
-          "me.cjpoll.avro_ex.SomeRecord" => parent,
-          "me.cjpoll.avro_ex.MyRecord" => parent,
-          "ChildRecord" => child_record,
-          "InnerRecord" => child_record
+      context =
+        %Context{
+          names: %{
+            "me.cjpoll.avro_ex.OldRecord" => parent,
+            "me.cjpoll.avro_ex.SomeRecord" => parent,
+            "me.cjpoll.avro_ex.MyRecord" => parent,
+            "me.cjpoll.avro_ex.ChildRecord" => child_record,
+            "me.cjpoll.avro_ex.InnerRecord" => child_record
+          }
         }
-      }
 
-      assert {:ok, %@test_module{
-        schema: parent,
-        context: context
-      }} == @test_module.parse(@json)
+      {:ok, %@test_module{} = schema} = @test_module.parse(@json)
+
+      assert parent == schema.schema
+      assert context == schema.context
     end
   end
 
@@ -171,11 +175,16 @@ defmodule AvroEx.Schema.Test do
       }} = @test_module.parse(~S(["null", "int"]))
     end
 
+    @tag :current
     test "record in union" do
       child_record =
         %Record{
           name: "ChildRecord",
-          aliases: ["InnerRecord"]
+          aliases: ["InnerRecord"],
+          qualified_names: [
+            "me.cjpoll.avro_ex.ChildRecord",
+            "me.cjpoll.avro_ex.InnerRecord"
+          ]
         }
 
       parent =
@@ -184,6 +193,11 @@ defmodule AvroEx.Schema.Test do
           doc: "A record for testing",
           name: "MyRecord",
           namespace: "me.cjpoll.avro_ex",
+          qualified_names: [
+            "me.cjpoll.avro_ex.MyRecord",
+            "me.cjpoll.avro_ex.OldRecord",
+            "me.cjpoll.avro_ex.SomeRecord",
+          ],
           fields: [
             %Field{
               type: %Primitive{
@@ -203,24 +217,24 @@ defmodule AvroEx.Schema.Test do
           ]
         }
 
-    context =
-      %Context{
-        names: %{
-          "me.cjpoll.avro_ex.OldRecord" => parent,
-          "me.cjpoll.avro_ex.SomeRecord" => parent,
-          "me.cjpoll.avro_ex.MyRecord" => parent,
-          "ChildRecord" => child_record,
-          "InnerRecord" => child_record
+      context =
+        %Context{
+          names: %{
+            "me.cjpoll.avro_ex.OldRecord" => parent,
+            "me.cjpoll.avro_ex.SomeRecord" => parent,
+            "me.cjpoll.avro_ex.MyRecord" => parent,
+            "me.cjpoll.avro_ex.ChildRecord" => child_record,
+            "me.cjpoll.avro_ex.InnerRecord" => child_record
+          }
         }
-      }
 
-      assert {:ok, %AvroEx.Schema{
-        context: ^context,
-        schema: %Union{possibilities: [
-          %Primitive{type: nil},
-          ^parent
-        ]}
-      }} = @test_module.parse(~s(["null", #{@json}]))
+      {:ok, %AvroEx.Schema{} = schema} = @test_module.parse(~s(["null", #{@json}]))
+
+      assert ^context = schema.context
+      assert %Union{possibilities: [
+        %Primitive{type: nil},
+        ^parent
+      ]} = schema.schema
     end
 
     test "union in record" do
@@ -249,20 +263,20 @@ defmodule AvroEx.Schema.Test do
   describe "parse map" do
     test "doesn't blow up" do
       assert {:ok, %@test_module{
-        schema: %Map{}
+        schema: %AvroMap{}
       }} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
     end
 
     test "matches the given type" do
       assert {:ok, %@test_module{
-        schema: %Map{
+        schema: %AvroMap{
           values: %Primitive{type: :integer}}}} =
         AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
     end
 
     test "works with a union" do
       assert {:ok, %@test_module{
-        schema: %Map{
+        schema: %AvroMap{
           values: %Union{
             possibilities: [
               %Primitive{type: nil},
@@ -428,6 +442,7 @@ defmodule AvroEx.Schema.Test do
       {:ok, %{schema: schema}}
     end
 
+    @tag :current
     test "works with a named type", %{schema: schema} do
       assert @test_module.encodable?(schema, %{"value" => 1, "next" => %{"value" => 2, "next" => nil}})
     end

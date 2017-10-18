@@ -1,8 +1,13 @@
 defmodule AvroEx.Schema.Record.Test do
   use ExUnit.Case
+
   import AvroEx.Error
+
+  alias AvroEx.Schema
   alias AvroEx.Schema.Primitive
   alias AvroEx.Schema.Record.Field
+
+  @moduletag :current
 
   @test_module AvroEx.Schema.Record
 
@@ -11,7 +16,7 @@ defmodule AvroEx.Schema.Record.Test do
     "name" => "MyRecord",
     "namespace" => "me.cjpoll.avro_ex",
     "doc" => "An example Record for testing",
-    "aliases" => ["TestRecord"],
+    "aliases" => ["TestRecord", "qrs.tuv.QualifiedAlias"],
     "fields" => [
       %{
         "name" => "FullName",
@@ -72,7 +77,9 @@ defmodule AvroEx.Schema.Record.Test do
     end
 
     test "Allows alternate names (aliases) for the record" do
-      {:ok, %@test_module{aliases: ["TestRecord"]}} = @test_module.cast(@valid_record)
+      {:ok, %@test_module{} = record} = @test_module.cast(@valid_record)
+      assert "TestRecord" in record.aliases
+      assert "qrs.tuv.QualifiedAlias" in record.aliases
     end
 
     test "Does not require aliases" do
@@ -84,27 +91,194 @@ defmodule AvroEx.Schema.Record.Test do
 
   describe "fully qualified name" do
     setup do
-      both = %@test_module{namespace: "me.cjpoll.avro_ex", name: "SomeRecord", aliases: ["MyRecord"]}
-      no_namespace = %@test_module{both | namespace: nil}
+      both = %{@valid_record | "name" => "SomeRecord", "namespace" => "me.cjpoll.avro_ex"}
+      no_namespace = %{both | "namespace" => nil}
+      prov_nprov = %{no_namespace | "namespace" => "abc.def", "fields" => [
+        %{
+          "name" => "field1",
+          "type" => %{
+            "type" => "record",
+            "name" => "InnerRecord",
+            "fields" => [%{"name" => "name", "type" => "string"}],
+            "aliases" => ["xyz.QualifiedAlias"]
+          }
+        }
+      ]}
+      prov_prov = %{both | "namespace" => "abc.def", "fields" => [
+        %{
+          "name" => "field1",
+          "type" => %{
+            "type" => "record",
+            "namespace" => "def.abc",
+            "name" => "InnerRecord",
+            "fields" => [%{"name" => "name", "type" => "string"}],
+            "aliases" => ["xyz.QualifiedAlias"]
+          }
+        }
+      ]}
+      nprov_nprov = %{no_namespace | "fields" => [
+        %{
+          "name" => "field1",
+          "type" => %{
+            "type" => "record",
+            "name" => "InnerRecord",
+            "fields" => [%{"name" => "name", "type" => "string"}],
+            "aliases" => ["xyz.QualifiedAlias"]
+          }
+        }
+      ]}
+      nprov_prov = %{no_namespace | "fields" => [
+        %{
+          "name" => "field1",
+          "type" => %{
+            "type" => "record",
+            "namespace" => "def.abc",
+            "name" => "InnerRecord",
+            "fields" => [%{"name" => "name", "type" => "string"}],
+            "aliases" => ["xyz.QualifiedAlias"]
+          }
+        }
+      ]}
 
       state = %{
-        both: both,
-        no_namespace: no_namespace
+        both: both |> Poison.encode!,
+        no_namespace: no_namespace |> Poison.encode!,
+        prov_nprov: prov_nprov |> Poison.encode!,
+        nprov_nprov: nprov_nprov |> Poison.encode!,
+        nprov_prov: nprov_prov |> Poison.encode!,
+        prov_prov: prov_prov |> Poison.encode!
       }
 
       {:ok, state}
     end
 
     test "is correct if both are provided", %{both: record} do
-      "me.cjpoll.avro_ex.SomeRecord" = @test_module.full_name(record)
+      qualified_names =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+        |> Map.get(:qualified_names)
+
+      assert "me.cjpoll.avro_ex.SomeRecord" in qualified_names
     end
 
+    @tag :now
     test "is correct if no namespace provided", %{no_namespace: record} do
-      "SomeRecord" = @test_module.full_name(record)
+      full_names =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+        |> Map.get(:qualified_names)
+
+      assert "SomeRecord" in full_names
+      assert "TestRecord" in full_names
     end
 
-    test "can get all qualified names for record", %{both: record} do
-      ["me.cjpoll.avro_ex.SomeRecord", "me.cjpoll.avro_ex.MyRecord"] = @test_module.full_names(record)
+    test "nested record, outer provided, inner not provided", %{prov_nprov: record} do
+      record =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "abc.def.SomeRecord" in record.qualified_names
+      assert "abc.def.TestRecord" in record.qualified_names
+
+      [field | _] = record.fields
+
+      assert "abc.def.InnerRecord" in field.type.qualified_names
+    end
+
+    test "nested record, outer not provided, inner provided", %{nprov_prov: record} do
+      record =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "SomeRecord" in record.qualified_names
+
+      [field | _] = record.fields
+
+      assert "def.abc.InnerRecord" in field.type.qualified_names
+    end
+
+    test "nested record, outer provided, inner provided", %{prov_prov: record} do
+      record =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "abc.def.SomeRecord" in record.qualified_names
+      assert "abc.def.TestRecord" in record.qualified_names
+
+      [field | _] = record.fields
+
+      assert "def.abc.InnerRecord" in field.type.qualified_names
+    end
+
+    test "nested record, outer not provided, inner not provided", %{nprov_nprov: record} do
+      record =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "SomeRecord" in record.qualified_names
+      assert "TestRecord" in record.qualified_names
+
+      [field | _] = record.fields
+
+      assert "InnerRecord" in field.type.qualified_names
+    end
+
+    test "includes all qualified names in record", %{both: record} do
+      record =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "me.cjpoll.avro_ex.SomeRecord" in record.qualified_names
+      assert "me.cjpoll.avro_ex.TestRecord" in record.qualified_names
+    end
+
+    test "correctly gets a qualified alias from outer (namespace not provided)", %{nprov_nprov: record} do
+      outer =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "qrs.tuv.QualifiedAlias" in outer.qualified_names
+    end
+
+    test "correctly gets a qualified alias from inner (namespace not provided)", %{nprov_nprov: record} do
+      inner =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+        |> Map.get(:fields)
+        |> List.first
+        |> Map.get(:type)
+
+      assert "xyz.QualifiedAlias" in inner.qualified_names
+    end
+
+    test "correctly gets a qualified alias from outer (namespace provided)", %{nprov_prov: record} do
+      outer =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+
+      assert "qrs.tuv.QualifiedAlias" in outer.qualified_names
+    end
+
+    test "correctly gets a qualified alias from inner (namespace provided)", %{nprov_prov: record} do
+      inner =
+        record
+        |> Schema.parse!
+        |> Map.get(:schema)
+        |> Map.get(:fields)
+        |> List.first
+        |> Map.get(:type)
+
+      assert "xyz.QualifiedAlias" in inner.qualified_names
     end
   end
 end

@@ -9,6 +9,10 @@ defmodule AvroEx.Decode do
     {:ok, value}
   end
 
+  def do_decode(name, %Context{} = context, data) when is_binary(name) do
+    do_decode(Context.lookup(context, name), context, data)
+  end
+
   def do_decode(%Primitive{type: nil}, %Context{}, data) when is_binary(data) do
     {nil, data}
   end

@@ -6,10 +6,23 @@ defmodule AvroEx.Schema do
 
   defstruct [:context, :schema]
 
-  @type schema_types :: Primitive.t
-  | Record.t
-  | Union.t
+  @type schema_types :: Array.t
+  | Enum.t
+  | Fixed.t
   | Map.t
+  | Record.t
+  | Primitive.t
+  | Union.t
+
+  @type named_type :: AvroEnum.t
+  | Fixed.t
+  | Record.t
+
+  @type name :: String.t
+  @type namespace :: nil | String.t
+  @type full_name :: String.t
+  @type doc :: nil | String.t
+  @type alias :: name
 
   @type t :: %__MODULE__{
     context: Context.t,
@@ -21,9 +34,17 @@ defmodule AvroEx.Schema do
   def parse(json_schema, %Context{} = context \\ %Context{}) do
     with {:ok, schema} <- Poison.decode(json_schema),
          {:ok, schema} <- cast(schema),
+         {:ok, schema} <- namespace(schema),
          {:ok, context} <- expand(schema, context),
          {:ok, schema} <- validate(schema, context) do
       {:ok, %__MODULE__{schema: schema, context: context}}
+    end
+  end
+
+  def parse!(json_schema) do
+    case parse(json_schema) do
+      {:ok, %__MODULE__{} = schema} -> schema
+      _ -> raise "Parsing schema failed"
     end
   end
 
@@ -84,5 +105,105 @@ defmodule AvroEx.Schema do
   def encodable?(%AvroEnum{} = schema, %Context{} = context, data) when is_binary(data) do
     AvroEnum.match?(schema, context, data)
   end
+  def encodable?(name, %Context{} = context, data) when is_binary(name) do
+    schema = Context.lookup(context, name)
+    encodable?(schema, context, data)
+  end
   def encodable?(_, _, _), do: false
+
+  def namespace(schema) do
+    {:ok, namespace(schema, nil)}
+  end
+
+  def namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
+  def namespace(%Record{} = record, parent_namespace) do
+    record = qualify_namespace(record)
+
+    fields =
+      Enum.map(record.fields, fn(field) ->
+        namespace(field, record.namespace || parent_namespace)
+      end)
+
+    full_names = full_names(record, parent_namespace)
+
+    %Record{record | fields: fields, qualified_names: full_names}
+  end
+  def namespace(%Field{} = field, parent_namespace) do
+    type = namespace(field.type, parent_namespace)
+    %Field{field | type: type}
+  end
+  def namespace(%Union{possibilities: possibilities} = union, parent_namespace) do
+    possibilities = Enum.map(possibilities, &(namespace(&1, parent_namespace)))
+    %Union{union | possibilities: possibilities}
+  end
+  def namespace(%Fixed{} = fixed, parent_namespace) do
+    fixed = qualify_namespace(fixed)
+    %Fixed{fixed | qualified_names: full_names(fixed, parent_namespace)}
+  end
+  def namespace(%Map{} = map, parent_namespace) do
+    values = namespace(map.values, parent_namespace)
+    %Map{map | values: values}
+  end
+  def namespace(%Array{} = array, parent_namespace) do
+    %Array{items: namespace(array.items, parent_namespace)}
+  end
+  def namespace(%AvroEnum{} = enum, _parent_namespace) do
+    enum = qualify_namespace(enum)
+    %AvroEnum{enum | qualified_names: full_names(enum, enum.namespace)}
+  end
+
+  def namespace(name, nil) do
+    name
+  end
+
+  def namespace(str, parent_namespace) when is_binary(str) do
+    if String.match?(str, ~r/\./) do
+      str
+    else
+      "#{parent_namespace}.#{str}"
+    end
+  end
+
+  defp qualify_namespace(%{name: name} = schema) do
+    if String.match?(name, ~r/\./) do
+      namespace =
+        name
+        |> String.split(".")
+        |> Enum.reverse
+        |> tail
+        |> Enum.reverse
+        |> Enum.join(".")
+
+      %{schema | namespace: namespace}
+    else
+      schema
+    end
+  end
+
+  defp tail(list) do
+    :lists.nthtail(1, list)
+  end
+
+  @spec full_names(t, namespace) :: [full_name]
+  def full_names(%{aliases: aliases, namespace: namespace} = record, parent_namespace \\ nil) when is_list(aliases) do
+    full_aliases =
+      Enum.map(aliases, fn(name) ->
+        full_name(namespace || parent_namespace, name)
+      end)
+
+    [full_name(namespace || parent_namespace, record.name) | full_aliases]
+  end
+
+  @spec full_name(namespace, name) :: full_name
+  def full_name(nil, name) when is_binary(name) do
+    name
+  end
+
+  def full_name(namespace, name) when is_binary(namespace) and is_binary(name) do
+    if String.match?(name, ~r/\./) do
+      name
+    else
+      "#{namespace}.#{name}"
+    end
+  end
 end

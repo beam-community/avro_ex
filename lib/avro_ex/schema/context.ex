@@ -18,41 +18,40 @@ defmodule AvroEx.Schema.Context do
     end)
   end
 
-  def add_schema(%__MODULE__{} = context, %Fixed{} = record) do
-    record
-    |> Fixed.full_names
-    |> Enum.reduce(context, fn(name, %__MODULE__{} = context) ->
-         names = Map.put_new(context.names, name, record)
-         %__MODULE__{context | names: names}
-       end)
+  def add_schema(%__MODULE__{} = context, %Fixed{} = schema) do
+    Enum.reduce(schema.qualified_names, context, fn(name, %__MODULE__{} = context) ->
+      add_name(context, name, schema)
+    end)
   end
 
-  def add_schema(%__MODULE__{} = context, %Record{} = record) do
+  def add_schema(%__MODULE__{} = context, %Record{} = schema) do
     context =
-      record
-      |> Record.full_names
-      |> Enum.reduce(context, fn(name, %__MODULE__{} = context) ->
-           names = Map.put_new(context.names, name, record)
-           %__MODULE__{context | names: names}
-         end)
+      Enum.reduce(schema.qualified_names, context, fn(name, %__MODULE__{} = context) ->
+        add_name(context, name, schema)
+      end)
 
-    Enum.reduce(record.fields, context, fn
+    Enum.reduce(schema.fields, context, fn
       (%Field{type: type}, %__MODULE__{} = context) ->
         add_schema(context, type)
     end)
   end
 
-  def add_schema(%__MODULE__{} = context, %AvroEnum{} = enum) do
-    enum
-    |> AvroEnum.full_names
-    |> Enum.reduce(context, fn(name, %__MODULE__{} = context) ->
-         names = Map.put_new(context.names, name, enum)
-         %__MODULE__{context | names: names}
-       end)
+  def add_schema(%__MODULE__{} = context, %AvroEnum{} = schema) do
+    Enum.reduce(schema.qualified_names, context, fn(name, %__MODULE__{} = context) ->
+      add_name(context, name, schema)
+    end)
+  end
+
+  def add_schema(%__MODULE__{} = context, name) when is_binary(name) do
+    context
+  end
+
+  def add_name(%__MODULE__{} = context, name, value) when is_binary(name) do
+    %__MODULE__{names: Map.put_new(context.names, name, value)}
   end
 
   @spec lookup(t, String.t) :: nil | Record.t
   def lookup(%__MODULE__{} = context, name) do
-    context[name]
+    context.names[name]
   end
 end

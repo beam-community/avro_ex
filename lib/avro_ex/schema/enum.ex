@@ -13,16 +13,17 @@ defmodule AvroEx.Schema.Enum do
     field :doc, :string
     field :name, :string
     field :namespace, :string
+    field :qualified_names, {:array, :string}, default: []
     field :symbols, {:array, :string}
   end
 
   @type full_name :: String.t
 
   @type t :: %__MODULE__{
-    aliases: [Record.alias],
-    doc: Record.doc,
-    name: Record.name,
-    namespace: Record.namespace,
+    aliases: [Schema.alias],
+    doc: Schema.doc,
+    name: Schema.name,
+    namespace: Schema.namespace,
     symbols: [String.t]
   }
 
@@ -40,29 +41,6 @@ defmodule AvroEx.Schema.Enum do
     struct
     |> cast(params, @optional_fields ++ @required_fields)
     |> validate_required(@required_fields)
-  end
-
-  @spec full_name(t) :: full_name
-  def full_name(%__MODULE__{namespace: namespace, name: name}) do
-    full_name(namespace, name)
-  end
-
-  @spec full_name(Record.namespace, Record.name) :: Record.full_name
-  def full_name(nil, name) when is_binary(name) do
-    name
-  end
-
-  def full_name(namespace, name) when is_binary(namespace) and is_binary(name) do
-    "#{namespace}.#{name}"
-  end
-
-  def full_names(%__MODULE__{aliases: aliases, namespace: namespace} = enum) when is_list(aliases) do
-    full_aliases =
-      Enum.map(aliases, fn(name) ->
-        full_name(namespace, name)
-      end)
-
-    [full_name(enum) | full_aliases]
   end
 
   def match?(%__MODULE__{symbols: symbols}, %Context{}, data) when is_binary(data) do

@@ -20,6 +20,7 @@ defmodule AvroEx.Encode do
   end
 
 
+  def do_encode(name, %Context{} = context, data) when is_binary(name), do: do_encode(Context.lookup(context, name), context, data)
   def do_encode(%Primitive{type: :boolean}, %Context{}, true), do: <<1::8>>
   def do_encode(%Primitive{type: :boolean}, %Context{}, false), do: <<0::8>>
   def do_encode(%Primitive{type: nil}, %Context{}, nil), do: <<>>

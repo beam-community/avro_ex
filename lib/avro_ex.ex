@@ -15,6 +15,13 @@ defmodule AvroEx do
     Schema.parse(json_schema)
   end
 
+  def parse_schema!(json_schema) do
+    case parse_schema(json_schema) do
+      {:ok, schema} -> schema
+      _ -> raise "Parsing schema failed"
+    end
+  end
+
   @doc """
   Given a %Schema{} and some data, takes the data and encodes it according to the schema.
   Checks that the data is encodable before beginning encoding.

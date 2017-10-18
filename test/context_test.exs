@@ -6,16 +6,18 @@ defmodule AvroEx.Schema.Context.Test do
 
   @test_module AvroEx.Schema.Context
 
+  @moduletag :current
+
   describe "add_schema" do
     test "adds the fully qualified record name to the index" do
-      record = %Record{name: "MyRecord", namespace: "me.cjpoll.avro_ex"}
+      record = %Record{qualified_names: ["me.cjpoll.avro_ex.MyRecord"]}
 
       assert %@test_module{names: %{"me.cjpoll.avro_ex.MyRecord" => ^record}} =
         @test_module.add_schema(%@test_module{}, record)
     end
 
     test "adds the fully qualified aliases to the index" do
-      record = %Record{name: "MyRecord", namespace: "me.cjpoll.avro_ex", aliases: ["TestRecord"]}
+      record = %Record{qualified_names: ["me.cjpoll.avro_ex.MyRecord", "me.cjpoll.avro_ex.TestRecord"]}
 
       assert %@test_module{names: %{
         "me.cjpoll.avro_ex.MyRecord" => ^record,
@@ -26,13 +28,13 @@ defmodule AvroEx.Schema.Context.Test do
 
     test "adds the fully qualified names of child records to the index" do
       record = %Record{
-        name: "MyRecord",
-        namespace: "me.cjpoll.avro_ex",
-        aliases: ["TestRecord"],
+        qualified_names: [
+          "me.cjpoll.avro_ex.MyRecord",
+          "me.cjpoll.avro_ex.TestRecord"
+        ],
         fields: [
           %Field{type: child = %Record{
-            name: "ChildRecord",
-            namespace: "me.cjpoll.avro_ex"
+            qualified_names: ["me.cjpoll.avro_ex.ChildRecord"]
           }}
         ]
       }
