@@ -9,13 +9,10 @@ defmodule AvroEx.Encode do
 
   @spec encode(Schema.t, term) :: {:ok, Avro.avro} | {:error, reason} | {:error, reason, term}
   def encode(%Schema{context: %Context{} = context, schema: schema}, data) do
-    if Schema.encodable?(schema, context, data) do
-      case do_encode(schema, context, data) do
-        {:error, _reason, _value} = err -> err
-        val -> {:ok, val}
-      end
-    else
-      {:error, :unmatching_schema}
+    case do_encode(schema, context, data) do
+      {:error, _reason, _value} = err -> err
+      {:error, _reason} = err -> err
+      val -> {:ok, val}
     end
   end
 

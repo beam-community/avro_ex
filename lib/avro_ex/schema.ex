@@ -80,7 +80,6 @@ defmodule AvroEx.Schema do
   def encodable?(%Schema{schema: schema, context: context}, data) do
     encodable?(schema, context, data)
   end
-
   def encodable?(%Primitive{type: nil}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
   def encodable?(%Primitive{type: :integer}, _, n) when is_integer(n), do: true
