@@ -276,6 +276,14 @@ defmodule AvroEx.Encode.Test do
     end
   end
 
+  describe "Doesn't match schema" do
+    test "returns the expected error tuple" do
+      {:ok, schema} = AvroEx.parse_schema(~S("null"))
+
+      assert {:error, :data_does_not_match_schema, :wat, _schema} = @test_module.encode(schema, :wat)
+    end
+  end
+
   def binary_of_size(size, bin \\ "")
   def binary_of_size(0, bin), do: bin
   def binary_of_size(size, bin),  do: binary_of_size(size - 1, bin <> "a")

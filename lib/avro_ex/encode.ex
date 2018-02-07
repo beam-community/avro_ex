@@ -7,9 +7,10 @@ defmodule AvroEx.Encode do
 
   @type reason :: term
 
-  @spec encode(Schema.t, term) :: {:ok, Avro.avro} | {:error, reason} | {:error, reason, term}
+  @spec encode(Schema.t, term) :: {:ok, Avro.avro} | {:error, :data_does_not_match_schema, term, Schema.t} |{:error, reason} | {:error, reason, term}
   def encode(%Schema{context: %Context{} = context, schema: schema}, data) do
     case do_encode(schema, context, data) do
+      {:error, :data_does_not_match_schema, _data, _schema} = err -> err
       {:error, _reason, _value} = err -> err
       {:error, _reason} = err -> err
       val -> {:ok, val}
@@ -107,6 +108,10 @@ defmodule AvroEx.Encode do
     else
       {:error, :invalid_symbol, {data, symbols}}
     end
+  end
+
+  def do_encode(schema, _context, data) do
+    {:error, :data_does_not_match_schema, data, schema}
   end
 
   @spec zigzag_encode(Primitive.t, integer) :: binary
