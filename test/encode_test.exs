@@ -180,6 +180,13 @@ defmodule AvroEx.Encode.Test do
 
       assert encoded_union == index <> encoded_record
     end
+
+    @tag :current
+    test "errors if the data doesn't match the schema" do
+      {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
+
+      assert {:error, :data_does_not_match_schema, "wat", _schema} = @test_module.encode(schema, "wat")
+    end
   end
 
   describe "encode (map)" do
