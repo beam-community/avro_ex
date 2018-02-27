@@ -49,8 +49,8 @@ defmodule AvroEx.Encode do
     bin
   end
 
-  def do_encode(%Fixed{size: size}, %Context{}, bin) when is_binary(bin) do
-    {:error, :incorrect_fixed_size, [expected: size, got: byte_size(bin)]}
+  def do_encode(%Fixed{size: size, name: name}, %Context{}, bin) when is_binary(bin) do
+    {:error, :incorrect_fixed_size, [expected: size, got: byte_size(bin), name: name]}
   end
 
   def do_encode(%Record{fields: fields}, %Context{} = context, record) when is_map(record) do
