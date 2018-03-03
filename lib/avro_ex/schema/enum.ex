@@ -1,16 +1,17 @@
 defmodule AvroEx.Schema.Enum do
   use Ecto.Schema
-  alias AvroEx.Error
+  require AvroEx.Schema.Macros, as: SchemaMacros
   alias AvroEx.Schema.Context
   import Ecto.Changeset
 
   @primary_key false
-  @optional_fields [:aliases, :doc, :namespace]
+  @optional_fields [:aliases, :doc, :metadata, :namespace]
   @required_fields [:name, :symbols]
 
   embedded_schema do
     field :aliases, {:array, :string}, default: []
     field :doc, :string
+    field :metadata, :map, default: %{}
     field :name, :string
     field :namespace, :string
     field :qualified_names, {:array, :string}, default: []
@@ -22,20 +23,13 @@ defmodule AvroEx.Schema.Enum do
   @type t :: %__MODULE__{
     aliases: [Schema.alias],
     doc: Schema.doc,
+    metadata: %{String.t => String.t},
     name: Schema.name,
     namespace: Schema.namespace,
     symbols: [String.t]
   }
 
-  def cast(params) do
-    cs = changeset(%__MODULE__{}, params)
-
-    if cs.valid? do
-      {:ok, apply_changes(cs)}
-    else
-      {:error, Error.errors(cs)}
-    end
-  end
+  SchemaMacros.cast_schema([data_fields: [:aliases, :doc, :name, :namespace, :qualified_names, :symbols]])
 
   def changeset(%__MODULE__{} = struct, params) do
     struct

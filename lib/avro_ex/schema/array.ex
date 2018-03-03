@@ -1,34 +1,30 @@
 defmodule AvroEx.Schema.Array do
   use Ecto.Schema
-  alias AvroEx.{Error, Schema, Term}
+  require AvroEx.Schema.Macros, as: SchemaMacros
+  alias AvroEx.{Schema, Term}
   alias AvroEx.Schema.Context
   alias Ecto.Changeset
   import Ecto.Changeset
 
   @primary_key false
   @required_fields [:items]
+  @optional_fields [:metadata]
 
   embedded_schema do
     field :items, Term
+    field :metadata, :map, default: %{}
   end
 
   @type t :: %__MODULE__{
     items: Schema.schema_types,
+    metadata: %{String.t => String.t}
   }
 
-  def cast(params) do
-    cs = changeset(%__MODULE__{}, params)
-
-    if cs.valid? do
-      {:ok, apply_changes(cs)}
-    else
-      {:error, Error.errors(cs)}
-    end
-  end
+  SchemaMacros.cast_schema([data_fields: [:items]])
 
   def changeset(%__MODULE__{} = struct, params) do
     struct
-    |> cast(params, @required_fields)
+    |> cast(params, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> encode_items
   end

@@ -1,4 +1,21 @@
 defmodule AvroEx.Schema.Test.Macros do
+  defmacro handles_metadata do
+    quote do
+      @tag :current
+      test "has a default empty metadata" do
+        assert {:ok, %@test_module{schema: %@schema{metadata: %{}}}} = @test_module.parse(@json)
+      end
+
+      @tag broken: true, current: true
+      test "includes extra metadata if given" do
+        assert {:ok, %@test_module{schema: %@schema{metadata: %{"meta_prop" => "abc"}}}} =
+          @json
+          |> json_add_property(:meta_prop, "abc")
+          |> @test_module.parse
+      end
+    end
+  end
+
   defmacro cast(passed_in_type, primitive_type) do
     quote do
       test "simple #{unquote(passed_in_type)}" do
@@ -83,6 +100,21 @@ defmodule AvroEx.Schema.Test do
     parse_primitive("string", :string)
   end
 
+  def json_add_property(str, property, value) when is_binary(str) do
+    str
+    |> Poison.decode!
+    |> json_add_property(property, value)
+    |> Poison.encode!
+  end
+
+  def json_add_property(json, property, value) when is_map(json) and is_atom(property)do
+    json_add_property(json, Atom.to_string(property), value)
+  end
+
+  def json_add_property(json, property, value) when is_map(json) and is_binary(property) do
+    Map.update(json, property, value, fn(_) -> value end)
+  end
+
   @json ~S"""
     {
       "type": "record",
@@ -112,17 +144,18 @@ defmodule AvroEx.Schema.Test do
   """
 
   describe "parse record" do
-    @tag :current
+    @schema AvroEx.Schema.Record
+
     test "works" do
       child_record =
-        %Record{
+        %@schema{
           name: "ChildRecord",
           aliases: ["InnerRecord"],
           qualified_names: ["me.cjpoll.avro_ex.ChildRecord", "me.cjpoll.avro_ex.InnerRecord"]
         }
 
       parent =
-        %Record{
+        %@schema{
           aliases: ["OldRecord", "SomeRecord"],
           doc: "A record for testing",
           name: "MyRecord",
@@ -163,6 +196,8 @@ defmodule AvroEx.Schema.Test do
       assert parent == schema.schema
       assert context == schema.context
     end
+
+    handles_metadata()
   end
 
   describe "parse union" do
@@ -175,7 +210,6 @@ defmodule AvroEx.Schema.Test do
       }} = @test_module.parse(~S(["null", "int"]))
     end
 
-    @tag :current
     test "record in union" do
       child_record =
         %Record{
@@ -261,35 +295,46 @@ defmodule AvroEx.Schema.Test do
   end
 
   describe "parse map" do
+    @json ~S({"type": "map", "values": "int"})
+    @schema AvroMap
+
+    handles_metadata()
+
     test "doesn't blow up" do
       assert {:ok, %@test_module{
-        schema: %AvroMap{}
-      }} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+        schema: %@schema{}
+      }} = AvroEx.parse_schema(@json)
     end
 
     test "matches the given type" do
       assert {:ok, %@test_module{
-        schema: %AvroMap{
+        schema: %@schema{
           values: %Primitive{type: :integer}}}} =
-        AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+        AvroEx.parse_schema(@json)
     end
 
     test "works with a union" do
       assert {:ok, %@test_module{
-        schema: %AvroMap{
+        schema: %@schema{
           values: %Union{
             possibilities: [
               %Primitive{type: nil},
               %Primitive{type: :integer}
             ]}}}} =
-        AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
+              @json
+              |> json_add_property(:values, ["null", "int"])
+              |> AvroEx.parse_schema
     end
   end
 
   describe "parse array" do
+    @json ~S({"type": "array", "items": "int"})
+    @schema Array
     test "doesn't blow up" do
-      assert {:ok, %@test_module{schema: %Array{}}} = @test_module.parse(~S({"type": "array", "items": "int"}))
+      assert {:ok, %@test_module{schema: %@schema{}}} = @test_module.parse(@json)
     end
+
+    handles_metadata()
   end
 
   describe "encodable? (primitive)" do
@@ -442,7 +487,6 @@ defmodule AvroEx.Schema.Test do
       {:ok, %{schema: schema}}
     end
 
-    @tag :current
     test "works with a named type", %{schema: schema} do
       assert @test_module.encodable?(schema, %{"value" => 1, "next" => %{"value" => 2, "next" => nil}})
     end

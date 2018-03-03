@@ -1,7 +1,18 @@
+defmodule AvroEx.Schema.Macros do
+  defmacro cast_schema([data_fields: fields]) do
+    quote do
+      def cast(data) do
+        AvroEx.Schema.cast_schema(__MODULE__, data, unquote(fields))
+      end
+    end
+  end
+end
+
 defmodule AvroEx.Schema do
-  alias AvroEx.Schema
-  alias AvroEx.Schema.{Array, Context, Fixed, Map, Primitive, Record, Union}
+  alias AvroEx.{Schema, Error}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
+  alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
 
   defstruct [:context, :schema]
@@ -9,7 +20,7 @@ defmodule AvroEx.Schema do
   @type schema_types :: Array.t
   | Enum.t
   | Fixed.t
-  | Map.t
+  | AvroMap.t
   | Record.t
   | Primitive.t
   | Union.t
@@ -68,7 +79,7 @@ defmodule AvroEx.Schema do
   def cast(str) when is_binary(str), do: {:ok, str}
   def cast(data) when is_list(data), do: Union.cast(data)
   def cast(%{"type" => "record"} = data), do: Record.cast(data)
-  def cast(%{"type" => "map"} = data), do: Map.cast(data)
+  def cast(%{"type" => "map"} = data), do: AvroMap.cast(data)
   def cast(%{"type" => "array"} = data), do: Array.cast(data)
   def cast(%{"type" => "fixed"} = data), do: Fixed.cast(data)
   def cast(%{"type" => "enum"} = data), do: AvroEnum.cast(data)
@@ -92,8 +103,8 @@ defmodule AvroEx.Schema do
   def encodable?(%Field{} = field, %Context{} = context, data), do: Field.match?(field, context, data)
   def encodable?(%Union{} = union, %Context{} = context, data), do: Union.match?(union, context, data)
   def encodable?(%Fixed{} = fixed, %Context{} = context, data), do: Fixed.match?(fixed, context, data)
-  def encodable?(%Map{} = schema, %Context{} = context, data) when is_map(data) do
-    Map.match?(schema, context, data)
+  def encodable?(%AvroMap{} = schema, %Context{} = context, data) when is_map(data) do
+    AvroMap.match?(schema, context, data)
   end
   def encodable?(%Array{} = schema, %Context{} = context, data) when is_list(data) do
     Array.match?(schema, context, data)
@@ -136,12 +147,12 @@ defmodule AvroEx.Schema do
     fixed = qualify_namespace(fixed)
     %Fixed{fixed | qualified_names: full_names(fixed, parent_namespace)}
   end
-  def namespace(%Map{} = map, parent_namespace) do
+  def namespace(%AvroMap{} = map, parent_namespace) do
     values = namespace(map.values, parent_namespace)
-    %Map{map | values: values}
+    %AvroMap{map | values: values}
   end
   def namespace(%Array{} = array, parent_namespace) do
-    %Array{items: namespace(array.items, parent_namespace)}
+    %Array{array | items: namespace(array.items, parent_namespace)}
   end
   def namespace(%AvroEnum{} = enum, _parent_namespace) do
     enum = qualify_namespace(enum)
@@ -200,6 +211,26 @@ defmodule AvroEx.Schema do
       name
     else
       "#{namespace}.#{name}"
+    end
+  end
+
+  def cast_schema(module, data, fields) do
+    metadata = Map.delete(data, "type")
+    metadata = Enum.reduce(fields, metadata, fn(field, meta) ->
+      Map.delete(meta, Atom.to_string(field))
+    end)
+
+    params = Map.update(data, "metadata", metadata, &(&1))
+
+    cs =
+      module
+      |> struct
+      |> module.changeset(params)
+
+    if cs.valid? do
+      {:ok, Ecto.Changeset.apply_changes(cs)}
+    else
+      {:error, Error.errors(cs)}
     end
   end
 end

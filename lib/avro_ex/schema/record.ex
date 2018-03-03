@@ -43,12 +43,12 @@ end
 
 defmodule AvroEx.Schema.Record do
   use Ecto.Schema
+  require AvroEx.Schema.Macros, as: SchemaMacros
 
   import Ecto.Changeset
   alias __MODULE__.Field
-  alias AvroEx.{Error, Schema}
+  alias AvroEx.{Schema}
   alias AvroEx.Schema.Context
-
 
   embedded_schema do
     field :aliases, {:array, :string}, default: []
@@ -56,6 +56,7 @@ defmodule AvroEx.Schema.Record do
     field :name, :string
     field :namespace, :string
     field :qualified_names, {:array, :string}, default: []
+    field :metadata, :map, default: %{}
 
     embeds_many :fields, Field
   end
@@ -64,21 +65,14 @@ defmodule AvroEx.Schema.Record do
     aliases: [Schema.alias],
     doc: Schema.doc,
     name: Schema.name,
-    namespace: Schema.namespace
+    namespace: Schema.namespace,
+    metadata: %{String.t => String.t}
   }
 
   @required_fields [:name]
-  @optional_fields [:namespace, :doc, :aliases]
+  @optional_fields [:namespace, :doc, :aliases, :metadata]
 
-  def cast(params) do
-    cs = changeset(%__MODULE__{}, params)
-
-    if cs.valid? do
-      {:ok, apply_changes(cs)}
-    else
-      {:error, Error.errors(cs)}
-    end
-  end
+  SchemaMacros.cast_schema([data_fields: [:aliases, :doc, :fields, :name, :namespace, :qualified_names, :symbols]])
 
   def changeset(%__MODULE__{} = record, %{"type" => "record"} = params) do
     record

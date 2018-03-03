@@ -1,30 +1,25 @@
 defmodule AvroEx.Schema.Map do
   use Ecto.Schema
-  alias AvroEx.{Error, Schema, Term}
+  require AvroEx.Schema.Macros, as: SchemaMacros
+  alias AvroEx.{Schema, Term}
   alias AvroEx.Schema.{Context, Primitive}
   alias Ecto.Changeset
   import Ecto.Changeset
 
   @primary_key false
-  @required_fields [:values]
+  @required_fields [:metadata, :values]
 
   embedded_schema do
+    field :metadata, :map, default: %{}
     field :values, Term
   end
 
   @type t :: %__MODULE__{
+    metadata: %{String.t => String.t},
     values: Schema.schema_types,
   }
 
-  def cast(params) do
-    cs = changeset(%__MODULE__{}, params)
-
-    if cs.valid? do
-      {:ok, apply_changes(cs)}
-    else
-      {:error, Error.errors(cs)}
-    end
-  end
+  SchemaMacros.cast_schema([data_fields: [:values]])
 
   def changeset(%__MODULE__{} = struct, params) do
     struct
