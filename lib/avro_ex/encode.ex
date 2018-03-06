@@ -49,8 +49,8 @@ defmodule AvroEx.Encode do
     bin
   end
 
-  def do_encode(%Fixed{size: size}, %Context{}, bin) when is_binary(bin) do
-    {:error, :incorrect_fixed_size, [expected: size, got: byte_size(bin)]}
+  def do_encode(%Fixed{size: size, name: name}, %Context{}, bin) when is_binary(bin) do
+    {:error, :incorrect_fixed_size, [expected: size, got: byte_size(bin), name: name]}
   end
 
   def do_encode(%Record{fields: fields}, %Context{} = context, record) when is_map(record) do
@@ -63,15 +63,20 @@ defmodule AvroEx.Encode do
     do_encode(type, context, value)
   end
 
-  def do_encode(%Union{possibilities: possibilities}, %Context{} = context, value)  do
+  def do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, value)  do
     index =
       Enum.find_index(possibilities, fn(possible_schema) ->
         Schema.encodable?(possible_schema, context, value)
       end)
 
-    schema = Enum.at(possibilities, index)
+    if index do
+      schema = Enum.at(possibilities, index)
 
-    do_encode(%Primitive{type: :integer}, context, index) <> do_encode(schema, context, value)
+      do_encode(%Primitive{type: :integer}, context, index) <> do_encode(schema, context, value)
+    else
+      {:error, :data_does_not_match_schema, value, schema}
+    end
+
   end
 
   def do_encode(%Map{values: values}, %Context{} = context, map) when is_map(map) do

@@ -50,7 +50,7 @@ defmodule AvroEx.Schema.Context do
     %__MODULE__{names: Map.put_new(context.names, name, value)}
   end
 
-  @spec lookup(t, String.t) :: nil | Record.t
+  @spec lookup(t, String.t) :: nil | Schema.schema_types
   def lookup(%__MODULE__{} = context, name) do
     context.names[name]
   end
