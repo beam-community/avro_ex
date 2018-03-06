@@ -90,4 +90,62 @@ defmodule AvroEx.Schema.Primitive.Test do
         @test_module.cast(%{"type" => "bytes", "some" => "metadata"})
     end
   end
+
+  alias AvroEx.Schema
+  alias AvroEx.Schema.{Primitive, Record, Record.Field, Union}
+  describe "lookup" do
+    test "looks up a named type" do
+      schema_json =
+        ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
+          {"type": "int", "name": "value"},
+          {"type": ["null", "me.cjpoll.LinkedList"], "name": "next"}
+        ]}])
+
+      assert {:ok, %Schema{schema: %Union{possibilities: [
+        %Primitive{type: nil},
+        %Record{name: "LinkedList", fields: [
+          %Field{name: "value", type: %Primitive{type: :integer}},
+          %Field{name: "next", type: %Union{possibilities: [
+              %Primitive{type: nil},
+              "me.cjpoll.LinkedList" = type
+            ]
+          }}
+        ]} = record
+      ]}} = schema} = AvroEx.parse_schema(schema_json)
+
+      assert AvroEx.named_type(type, schema) == record
+    end
+  end
+
+  describe "encode recursive" do
+    test "can encode and decode a recursive type" do
+      schema_json =
+        ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
+          {"type": "int", "name": "value"},
+          {"type": ["null", "me.cjpoll.LinkedList"], "name": "next"}
+        ]}])
+
+      assert {:ok, %Schema{schema: %Union{possibilities: [
+        %Primitive{type: nil},
+        %Record{name: "LinkedList", fields: [
+          %Field{name: "value", type: %Primitive{type: :integer}},
+          %Field{name: "next", type: %Union{possibilities: [
+              %Primitive{type: nil},
+              "me.cjpoll.LinkedList"
+            ]
+          }}
+        ]}
+      ]}} = schema} = AvroEx.parse_schema(schema_json)
+
+      data =
+        %{"value" => 25, "next" =>
+          %{"value" => 23, "next" =>
+            %{"value" => 20, "next" => nil}
+          }
+        }
+
+      assert {:ok, avro} = AvroEx.encode(schema, data)
+      assert {:ok, ^data} = AvroEx.decode(schema, avro)
+    end
+  end
 end

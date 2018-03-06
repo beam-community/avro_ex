@@ -1,5 +1,8 @@
 FROM elixir:1.6-alpine
 
+RUN apk update
+RUN apk add bash
+
 RUN mix local.hex --force
 RUN mix local.rebar --force
 

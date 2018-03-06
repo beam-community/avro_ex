@@ -181,7 +181,6 @@ defmodule AvroEx.Encode.Test do
       assert encoded_union == index <> encoded_record
     end
 
-    @tag :current
     test "errors if the data doesn't match the schema" do
       {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
 
@@ -251,13 +250,13 @@ defmodule AvroEx.Encode.Test do
     test "fails if the value is too small" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(39)
-      assert {:error, :incorrect_fixed_size, [expected: 40, got: 39]} = @test_module.encode(schema, bad_sha)
+      assert {:error, :incorrect_fixed_size, [expected: 40, got: 39, name: "sha"]} = @test_module.encode(schema, bad_sha)
     end
 
     test "fails if the value is too large" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(41)
-      assert {:error, :incorrect_fixed_size, [expected: 40, got: 41]} = @test_module.encode(schema, bad_sha)
+      assert {:error, :incorrect_fixed_size, [expected: 40, got: 41, name: "sha"]} = @test_module.encode(schema, bad_sha)
     end
   end
 

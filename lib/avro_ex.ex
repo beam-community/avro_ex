@@ -19,6 +19,7 @@ defmodule AvroEx do
   | Enum | String (corresponding to the enum's symbol list) |
   """
   alias AvroEx.Schema
+  alias AvroEx.Schema.Context
 
   @type encoded_avro :: binary
 
@@ -72,5 +73,14 @@ defmodule AvroEx do
   | {:error, AvroEx.Decode.reason}
   def decode(schema, message) do
     AvroEx.Decode.decode(schema, message)
+  end
+
+  @spec named_type(Schema.full_name, Schema.t | Context.t) :: nil | Schema.schema_types
+  def named_type(name, %Schema{context: %Context{} = context}) when is_binary(name) do
+    named_type(name, context)
+  end
+
+  def named_type(name, %Context{} = context) do
+    Context.lookup(context, name)
   end
 end

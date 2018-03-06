@@ -7,8 +7,6 @@ defmodule AvroEx.Schema.Record.Test do
   alias AvroEx.Schema.Primitive
   alias AvroEx.Schema.Record.Field
 
-  @moduletag :current
-
   @test_module AvroEx.Schema.Record
 
   @valid_record %{

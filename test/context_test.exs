@@ -6,8 +6,6 @@ defmodule AvroEx.Schema.Context.Test do
 
   @test_module AvroEx.Schema.Context
 
-  @moduletag :current
-
   describe "add_schema" do
     test "adds the fully qualified record name to the index" do
       record = %Record{qualified_names: ["me.cjpoll.avro_ex.MyRecord"]}

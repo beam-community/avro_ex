@@ -112,7 +112,6 @@ defmodule AvroEx.Schema.Test do
   """
 
   describe "parse record" do
-    @tag :current
     test "works" do
       child_record =
         %Record{
@@ -175,7 +174,6 @@ defmodule AvroEx.Schema.Test do
       }} = @test_module.parse(~S(["null", "int"]))
     end
 
-    @tag :current
     test "record in union" do
       child_record =
         %Record{
@@ -442,7 +440,6 @@ defmodule AvroEx.Schema.Test do
       {:ok, %{schema: schema}}
     end
 
-    @tag :current
     test "works with a named type", %{schema: schema} do
       assert @test_module.encodable?(schema, %{"value" => 1, "next" => %{"value" => 2, "next" => nil}})
     end
