@@ -27,9 +27,50 @@ defmodule AvroEx.Decode do
     {true, rest}
   end
 
+  def do_decode(%Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = type, %Context{}, data) when is_binary(data) do
+    {<<val::32>>, rest} = variable_integer_decode(data, <<>>, type)
+    milliseconds = zigzag_decode(val)
+
+    {:ok, midnight} = Time.new(0, 0, 0)
+    time = Time.add(midnight, milliseconds, :millisecond)
+
+    {time, rest}
+  end
+
   def do_decode(%Primitive{type: :integer} = type, %Context{}, data) when is_binary(data) do
     {<<val::32>>, rest} = variable_integer_decode(data, <<>>, type)
     {zigzag_decode(val), rest}
+  end
+
+  def do_decode(%Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}} = type, %Context{}, data) when is_binary(data) do
+    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    microseconds = zigzag_decode(val)
+
+    {:ok, midnight} = Time.new(0, 0, 0)
+    time = Time.add(midnight, microseconds, :microsecond)
+
+    {time, rest}
+  end
+
+  def do_decode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}} = type, %Context{}, data) when is_binary(data) do
+    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    nanoseconds = zigzag_decode(val)
+    {:ok, date_time} = DateTime.from_unix(nanoseconds, :nanosecond)
+    {date_time, rest}
+  end
+
+  def do_decode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}} = type, %Context{}, data) when is_binary(data) do
+    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    microseconds = zigzag_decode(val)
+    {:ok, date_time} = DateTime.from_unix(microseconds, :microsecond)
+    {date_time, rest}
+  end
+
+  def do_decode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}} = type, %Context{}, data) when is_binary(data) do
+    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    milliseconds = zigzag_decode(val)
+    {:ok, date_time} = DateTime.from_unix(milliseconds, :millisecond)
+    {date_time, rest}
   end
 
   def do_decode(%Primitive{type: :long} = type, %Context{}, data) when is_binary(data) do

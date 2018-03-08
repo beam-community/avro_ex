@@ -144,4 +144,48 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, ^sha} = @test_module.decode(schema, encoded_sha)
     end
   end
+
+  describe "decode logical types" do
+    test "datetime micros" do
+      now = DateTime.utc_now
+
+      {:ok, micro_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-micros"}))
+      {:ok, micro_encode} = AvroEx.encode(micro_schema, now)
+      assert {:ok, ^now} = @test_module.decode(micro_schema, micro_encode)
+    end
+
+    test "datetime millis" do
+      now = DateTime.utc_now |> DateTime.truncate(:millisecond)
+
+      {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-millis"}))
+      {:ok, milli_encode} = AvroEx.encode(milli_schema, now)
+      assert {:ok, ^now} = @test_module.decode(milli_schema, milli_encode)
+    end
+
+    test "datetime nanos" do
+      now = DateTime.utc_now
+
+      {:ok, nano_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-nanos"}))
+      {:ok, nano_encode} = AvroEx.encode(nano_schema, now)
+      assert {:ok, ^now} = @test_module.decode(nano_schema, nano_encode)
+    end
+
+    test "time micros" do
+      now = Time.utc_now |> Time.truncate(:microsecond)
+
+      {:ok, micro_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"time-micros"}))
+      {:ok, micro_encode} = AvroEx.encode(micro_schema, now)
+      assert {:ok, ^now} = @test_module.decode(micro_schema, micro_encode)
+    end
+
+    test "time millis" do
+      now = Time.utc_now |> Time.truncate(:millisecond)
+
+      {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "int", "logicalType":"time-millis"}))
+      {:ok, milli_encode} = AvroEx.encode(milli_schema, now)
+      {:ok, time} = @test_module.decode(milli_schema, milli_encode)
+
+      assert Time.truncate(time, :millisecond) == now
+    end
+  end
 end

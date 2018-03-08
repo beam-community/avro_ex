@@ -24,11 +24,43 @@ defmodule AvroEx.Encode do
   def do_encode(%Primitive{type: nil}, %Context{}, nil), do: <<>>
   def do_encode(%Primitive{type: :float}, %Context{}, float) when is_float(float), do: <<float::little-float-size(32)>>
   def do_encode(%Primitive{type: :double}, %Context{}, double) when is_float(double), do: <<double::little-float-size(64)>>
-  def do_encode(%Primitive{type: type} = schema, %Context{}, int)
-  when is_integer(int) and (type == :integer or type == :long) do
-    schema
-    |> zigzag_encode(int)
-    |> variable_integer_encode
+  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}} = schema, %Context{}, %DateTime{} = dt) do
+    dt
+    |> DateTime.to_unix(:nanosecond)
+    |> encode_integer(schema)
+  end
+  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}} = schema, %Context{}, %DateTime{} = dt) do
+    dt
+    |> DateTime.to_unix(:microsecond)
+    |> encode_integer(schema)
+  end
+  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}} = schema, %Context{}, %DateTime{} = dt) do
+    dt
+    |> DateTime.to_unix(:millisecond)
+    |> encode_integer(schema)
+  end
+
+  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}} = schema, %Context{}, %Time{} = dt) do
+    {:ok, midnight} = Time.new(0, 0, 0)
+
+    dt
+    |> Time.diff(midnight, :microsecond)
+    |> encode_integer(schema)
+  end
+
+  def do_encode(%Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = schema, %Context{}, %Time{} = dt) do
+    {:ok, midnight} = Time.new(0, 0, 0)
+
+    dt
+    |> Time.diff(midnight, :millisecond)
+    |> encode_integer(schema)
+  end
+
+  def do_encode(%Primitive{type: :long} = schema, %Context{}, long) when is_integer(long) do
+    encode_integer(long, schema)
+  end
+  def do_encode(%Primitive{type: :integer} = schema, %Context{}, integer) when is_integer(integer) do
+    encode_integer(integer, schema)
   end
 
   def do_encode(%Primitive{type: :string}, %Context{} = context, str) when is_binary(str) do
@@ -250,4 +282,10 @@ defmodule AvroEx.Encode do
   end
 
   def wrap(byte), do: <<1::1, byte::7>>
+
+  defp encode_integer(int, schema) do
+    schema
+    |> zigzag_encode(int)
+    |> variable_integer_encode
+  end
 end
