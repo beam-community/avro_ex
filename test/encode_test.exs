@@ -237,6 +237,15 @@ defmodule AvroEx.Encode.Test do
 
       assert {:ok, <<_count::8>> <> ^ints} = @test_module.encode(schema, items)
     end
+
+    test "encodes an empty array" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
+      {:ok, long_schema} = AvroEx.parse_schema(~S("long"))
+      {:ok, expected_count} = @test_module.encode(long_schema, 0)
+
+      assert {:ok, <<actual_count::8>>} = @test_module.encode(schema, [])
+      assert expected_count == <<actual_count>>
+    end
   end
 
   describe "encode (fixed)" do

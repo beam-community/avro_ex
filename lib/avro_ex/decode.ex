@@ -136,6 +136,8 @@ defmodule AvroEx.Decode do
     do_decode(schema, context, rest)
   end
 
+  def do_decode(%Array{}, _context, <<0>>), do: {[], ""}
+
   def do_decode(%Array{items: item_schema}, %Context{} = context, data) when is_binary(data) do
     {count, buffer} = do_decode(%Primitive{type: :long}, context, data)
 
