@@ -114,6 +114,14 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, [1, 2, 3, nil, 4, 5, nil]} = @test_module.decode(schema, encoded_array)
     end
 
+    test "empty array" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
+
+      {:ok, encoded_array} = AvroEx.encode(schema, [])
+
+      assert {:ok, []} = @test_module.decode(schema, encoded_array)
+    end
+
     test "map" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
 

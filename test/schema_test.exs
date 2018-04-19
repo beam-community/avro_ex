@@ -526,7 +526,7 @@ defmodule AvroEx.Schema.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
       refute @test_module.encodable?(schema, %{"value" => 11, "value2" => 12, "value3" => 1.1})
     end
- 
+
     test "works with a union" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
       assert @test_module.encodable?(schema, %{"value" => 1, "value2" => 2, "value3" => nil})
@@ -549,12 +549,17 @@ defmodule AvroEx.Schema.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
       refute @test_module.encodable?(schema, [1,2,3,4.5, 6])
     end
- 
+
     test "works with a union" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
       assert @test_module.encodable?(schema, [1, 2, nil, 3, 4, nil, 5])
       assert @test_module.encodable?(schema, [nil, 2, nil, 3, 4, nil, 5])
       refute @test_module.encodable?(schema, [1, 2.1, nil])
+    end
+
+    test "works with an empty array" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
+      assert @test_module.encodable?(schema, [])
     end
   end
 
