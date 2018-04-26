@@ -29,7 +29,7 @@ defmodule AvroEx do
   """
   defdelegate encodable?(schema, data), to: AvroEx.Schema
 
-  @spec parse_schema(Avro.Schema.json_schema)
+  @spec parse_schema(Schema.json_schema)
   :: {:ok, Schema.t}
   | {:error, :unnamed_record}
   | {:error, :invalid_json}
@@ -41,7 +41,7 @@ defmodule AvroEx do
     Schema.parse(json_schema)
   end
 
-  @spec parse_schema!(Avro.Schema.json_schema) :: Schema.t | no_return
+  @spec parse_schema!(Schema.json_schema) :: Schema.t | no_return
   @doc """
   Same as `AvroEx.parse_schema/1`, but raises an exception on failure instead of
   returning an error tuple.
@@ -57,7 +57,7 @@ defmodule AvroEx do
   Given a %Schema{} and some data, takes the data and encodes it according to the schema.
   Checks that the data is encodable before beginning encoding.
   """
-  @spec encode(Avro.Schema.t, term)
+  @spec encode(Schema.t, term)
   :: {:ok, encoded_avro}
   | {:error, :unmatching_schema}
   | {:error, AvroEx.Encode.reason, term}
@@ -68,7 +68,7 @@ defmodule AvroEx do
   @doc """
   Given an encoded message and its accompanying schema, decodes the message.
   """
-  @spec decode(AvroEx.Schema.t, encoded_avro)
+  @spec decode(Schema.t, encoded_avro)
   :: {:ok, term}
   | {:error, AvroEx.Decode.reason}
   def decode(schema, message) do
