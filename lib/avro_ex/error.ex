@@ -3,14 +3,14 @@ defmodule AvroEx.Error do
     cs.errors
     |> Keyword.get_values(field)
     |> Enum.map(fn
-         ({err, _}) when is_binary(err) -> err
-         (any) -> any
-       end)
+      {err, _} when is_binary(err) -> err
+      any -> any
+    end)
   end
 
   def errors(%Ecto.Changeset{} = cs) do
-    Enum.reduce(cs. errors, %{}, fn
-      ({field, {value, _}}, acc) -> Map.update(acc, field, [value], fn(tail) -> [value | tail] end)
+    Enum.reduce(cs.errors, %{}, fn
+      {field, {value, _}}, acc -> Map.update(acc, field, [value], fn tail -> [value | tail] end)
     end)
   end
 

@@ -10,18 +10,18 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex string" do
       assert {:ok, %@test_module{type: :string, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "string", "some" => "metadata"})
+               @test_module.cast(%{"type" => "string", "some" => "metadata"})
     end
   end
 
   describe "null" do
     test "simple null" do
-      assert {:ok, %@test_module{type: :nil}} = @test_module.cast("null")
+      assert {:ok, %@test_module{type: nil}} = @test_module.cast("null")
     end
 
     test "complex null" do
       assert {:ok, %@test_module{type: nil, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "null", "some" => "metadata"})
+               @test_module.cast(%{"type" => "null", "some" => "metadata"})
     end
   end
 
@@ -32,7 +32,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex boolean" do
       assert {:ok, %@test_module{type: :boolean, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "boolean", "some" => "metadata"})
+               @test_module.cast(%{"type" => "boolean", "some" => "metadata"})
     end
   end
 
@@ -43,7 +43,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex integer" do
       assert {:ok, %@test_module{type: :integer, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "int", "some" => "metadata"})
+               @test_module.cast(%{"type" => "int", "some" => "metadata"})
     end
   end
 
@@ -54,7 +54,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex long" do
       assert {:ok, %@test_module{type: :long, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "long", "some" => "metadata"})
+               @test_module.cast(%{"type" => "long", "some" => "metadata"})
     end
   end
 
@@ -65,7 +65,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex float" do
       assert {:ok, %@test_module{type: :float, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "float", "some" => "metadata"})
+               @test_module.cast(%{"type" => "float", "some" => "metadata"})
     end
   end
 
@@ -76,7 +76,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex double" do
       assert {:ok, %@test_module{type: :double, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "double", "some" => "metadata"})
+               @test_module.cast(%{"type" => "double", "some" => "metadata"})
     end
   end
 
@@ -87,12 +87,13 @@ defmodule AvroEx.Schema.Primitive.Test do
 
     test "complex bytes" do
       assert {:ok, %@test_module{type: :bytes, metadata: %{"some" => "metadata"}}} =
-        @test_module.cast(%{"type" => "bytes", "some" => "metadata"})
+               @test_module.cast(%{"type" => "bytes", "some" => "metadata"})
     end
   end
 
   alias AvroEx.Schema
   alias AvroEx.Schema.{Primitive, Record, Record.Field, Union}
+
   describe "lookup" do
     test "looks up a named type" do
       schema_json =
@@ -101,17 +102,29 @@ defmodule AvroEx.Schema.Primitive.Test do
           {"type": ["null", "me.cjpoll.LinkedList"], "name": "next"}
         ]}])
 
-      assert {:ok, %Schema{schema: %Union{possibilities: [
-        %Primitive{type: nil},
-        %Record{name: "LinkedList", fields: [
-          %Field{name: "value", type: %Primitive{type: :integer}},
-          %Field{name: "next", type: %Union{possibilities: [
-              %Primitive{type: nil},
-              "me.cjpoll.LinkedList" = type
-            ]
-          }}
-        ]} = record
-      ]}} = schema} = AvroEx.parse_schema(schema_json)
+      assert {:ok,
+              %Schema{
+                schema: %Union{
+                  possibilities: [
+                    %Primitive{type: nil},
+                    %Record{
+                      name: "LinkedList",
+                      fields: [
+                        %Field{name: "value", type: %Primitive{type: :integer}},
+                        %Field{
+                          name: "next",
+                          type: %Union{
+                            possibilities: [
+                              %Primitive{type: nil},
+                              "me.cjpoll.LinkedList" = type
+                            ]
+                          }
+                        }
+                      ]
+                    } = record
+                  ]
+                }
+              } = schema} = AvroEx.parse_schema(schema_json)
 
       assert AvroEx.named_type(type, schema) == record
     end
@@ -125,24 +138,34 @@ defmodule AvroEx.Schema.Primitive.Test do
           {"type": ["null", "me.cjpoll.LinkedList"], "name": "next"}
         ]}])
 
-      assert {:ok, %Schema{schema: %Union{possibilities: [
-        %Primitive{type: nil},
-        %Record{name: "LinkedList", fields: [
-          %Field{name: "value", type: %Primitive{type: :integer}},
-          %Field{name: "next", type: %Union{possibilities: [
-              %Primitive{type: nil},
-              "me.cjpoll.LinkedList"
-            ]
-          }}
-        ]}
-      ]}} = schema} = AvroEx.parse_schema(schema_json)
+      assert {:ok,
+              %Schema{
+                schema: %Union{
+                  possibilities: [
+                    %Primitive{type: nil},
+                    %Record{
+                      name: "LinkedList",
+                      fields: [
+                        %Field{name: "value", type: %Primitive{type: :integer}},
+                        %Field{
+                          name: "next",
+                          type: %Union{
+                            possibilities: [
+                              %Primitive{type: nil},
+                              "me.cjpoll.LinkedList"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              } = schema} = AvroEx.parse_schema(schema_json)
 
-      data =
-        %{"value" => 25, "next" =>
-          %{"value" => 23, "next" =>
-            %{"value" => 20, "next" => nil}
-          }
-        }
+      data = %{
+        "value" => 25,
+        "next" => %{"value" => 23, "next" => %{"value" => 20, "next" => nil}}
+      }
 
       assert {:ok, avro} = AvroEx.encode(schema, data)
       assert {:ok, ^data} = AvroEx.decode(schema, avro)

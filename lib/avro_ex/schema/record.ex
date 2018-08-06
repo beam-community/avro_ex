@@ -7,11 +7,11 @@ defmodule AvroEx.Schema.Record.Field do
   alias AvroEx.Schema.Context
 
   embedded_schema do
-    field :name, :string
-    field :doc, :string
-    field :type, Term
-    field :default, Term
-    field :aliases, {:array, :string}, default: []
+    field(:name, :string)
+    field(:doc, :string)
+    field(:type, Term)
+    field(:default, Term)
+    field(:aliases, {:array, :string}, default: [])
   end
 
   @required_fields [:name, :type]
@@ -32,7 +32,7 @@ defmodule AvroEx.Schema.Record.Field do
     type =
       cs
       |> Changeset.get_field(:type)
-      |> Schema.cast
+      |> Schema.cast()
 
     case type do
       {:ok, value} -> Changeset.put_change(cs, :type, value)
@@ -51,28 +51,30 @@ defmodule AvroEx.Schema.Record do
   alias AvroEx.Schema.Context
 
   embedded_schema do
-    field :aliases, {:array, :string}, default: []
-    field :doc, :string
-    field :name, :string
-    field :namespace, :string
-    field :qualified_names, {:array, :string}, default: []
-    field :metadata, :map, default: %{}
+    field(:aliases, {:array, :string}, default: [])
+    field(:doc, :string)
+    field(:name, :string)
+    field(:namespace, :string)
+    field(:qualified_names, {:array, :string}, default: [])
+    field(:metadata, :map, default: %{})
 
-    embeds_many :fields, Field
+    embeds_many(:fields, Field)
   end
 
   @type t :: %__MODULE__{
-    aliases: [Schema.alias],
-    doc: Schema.doc,
-    name: Schema.name,
-    namespace: Schema.namespace,
-    metadata: %{String.t => String.t}
-  }
+          aliases: [Schema.alias()],
+          doc: Schema.doc(),
+          name: Schema.name(),
+          namespace: Schema.namespace(),
+          metadata: %{String.t() => String.t()}
+        }
 
   @required_fields [:name]
   @optional_fields [:namespace, :doc, :aliases, :metadata]
 
-  SchemaMacros.cast_schema([data_fields: [:aliases, :doc, :fields, :name, :namespace, :qualified_names, :symbols]])
+  SchemaMacros.cast_schema(
+    data_fields: [:aliases, :doc, :fields, :name, :namespace, :qualified_names, :symbols]
+  )
 
   def changeset(%__MODULE__{} = record, %{"type" => "record"} = params) do
     record
@@ -81,12 +83,13 @@ defmodule AvroEx.Schema.Record do
     |> cast_embed(:fields)
   end
 
-  @spec match?(t, Context.t, term) :: boolean
-  def match?(%__MODULE__{fields: fields}, %Context{} = context, data) when is_map(data) and map_size(data) == length(fields) do
-    Enum.all?(fields, fn(%Field{name: name} = field) ->
+  @spec match?(t, Context.t(), term) :: boolean
+  def match?(%__MODULE__{fields: fields}, %Context{} = context, data)
+      when is_map(data) and map_size(data) == length(fields) do
+    Enum.all?(fields, fn %Field{name: name} = field ->
       Map.has_key?(data, name) and Schema.encodable?(field, context, data[name])
     end)
   end
 
-  def match?(_, _,  _), do: false
+  def match?(_, _, _), do: false
 end

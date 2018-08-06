@@ -3,24 +3,26 @@ defmodule AvroEx.Schema.Primitive do
   @behaviour Ecto.Type
   @primary_key false
 
-  @type primitive :: nil
-  | :boolean
-  | :integer
-  | :long
-  | :float
-  | :double
-  | :bytes
-  | :string
+  @type primitive ::
+          nil
+          | :boolean
+          | :integer
+          | :long
+          | :float
+          | :double
+          | :bytes
+          | :string
 
   embedded_schema do
-    field :metadata, :map, default: %{}
-    field :type, :string # Actually a primitive - placeholder until I create a custom ecto type
+    field(:metadata, :map, default: %{})
+    # Actually a primitive - placeholder until I create a custom ecto type
+    field(:type, :string)
   end
 
   @type t :: %__MODULE__{
-    metadata: %{String.t => String.t},
-    type: primitive,
-  }
+          metadata: %{String.t() => String.t()},
+          type: primitive
+        }
 
   def cast(%{"type" => type} = data) do
     {:ok, %__MODULE__{type: type(type), metadata: Map.delete(data, "type")}}

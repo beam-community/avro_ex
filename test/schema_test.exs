@@ -9,9 +9,9 @@ defmodule AvroEx.Schema.Test.Macros do
       @tag broken: true, current: true
       test "includes extra metadata if given" do
         assert {:ok, %@test_module{schema: %@schema{metadata: %{"meta_prop" => "abc"}}}} =
-          @json
-          |> json_add_property(:meta_prop, "abc")
-          |> @test_module.parse
+                 @json
+                 |> json_add_property(:meta_prop, "abc")
+                 |> @test_module.parse
       end
     end
   end
@@ -19,17 +19,24 @@ defmodule AvroEx.Schema.Test.Macros do
   defmacro cast(passed_in_type, primitive_type) do
     quote do
       test "simple #{unquote(passed_in_type)}" do
-        assert {:ok, %AvroEx.Schema.Primitive{type: unquote(primitive_type)}} = @test_module.cast(unquote(passed_in_type))
+        assert {:ok, %AvroEx.Schema.Primitive{type: unquote(primitive_type)}} =
+                 @test_module.cast(unquote(passed_in_type))
       end
 
       test "complex #{unquote(passed_in_type)}" do
-        assert {:ok, %AvroEx.Schema.Primitive{type: unquote(primitive_type), metadata: %{"some" => "metadata"}}} =
-          @test_module.cast(%{"type" => unquote(passed_in_type), "some" => "metadata"})
+        assert {:ok,
+                %AvroEx.Schema.Primitive{
+                  type: unquote(primitive_type),
+                  metadata: %{"some" => "metadata"}
+                }} = @test_module.cast(%{"type" => unquote(passed_in_type), "some" => "metadata"})
       end
 
       test "complex #{unquote(passed_in_type)} with metadata" do
-        assert {:ok, %AvroEx.Schema.Primitive{type: unquote(primitive_type), metadata: %{"some" => "metadata"}}} =
-          @test_module.cast(%{"type" => unquote(passed_in_type), "some" => "metadata"})
+        assert {:ok,
+                %AvroEx.Schema.Primitive{
+                  type: unquote(primitive_type),
+                  metadata: %{"some" => "metadata"}
+                }} = @test_module.cast(%{"type" => unquote(passed_in_type), "some" => "metadata"})
       end
     end
   end
@@ -37,27 +44,33 @@ defmodule AvroEx.Schema.Test.Macros do
   defmacro parse_primitive(passed_in_type, primitive_type) do
     quote do
       test "simple #{unquote(passed_in_type)}" do
-        assert {:ok, %@test_module{
-          schema: %AvroEx.Schema.Primitive{type: unquote(primitive_type)},
-          context: %AvroEx.Schema.Context{names: %{}}}
-        } = @test_module.parse(~s("#{unquote(passed_in_type)}"))
+        assert {:ok,
+                %@test_module{
+                  schema: %AvroEx.Schema.Primitive{type: unquote(primitive_type)},
+                  context: %AvroEx.Schema.Context{names: %{}}
+                }} = @test_module.parse(~s("#{unquote(passed_in_type)}"))
       end
 
       test "complex #{unquote(passed_in_type)}" do
-        assert {:ok, %@test_module{
-          schema: %AvroEx.Schema.Primitive{type: unquote(primitive_type)},
-          context: %AvroEx.Schema.Context{names: %{}}}} =
-          @test_module.parse(~s({"type": "#{unquote(passed_in_type)}"}))
+        assert {:ok,
+                %@test_module{
+                  schema: %AvroEx.Schema.Primitive{type: unquote(primitive_type)},
+                  context: %AvroEx.Schema.Context{names: %{}}
+                }} = @test_module.parse(~s({"type": "#{unquote(passed_in_type)}"}))
       end
 
       test "complex #{unquote(passed_in_type)} with metadata" do
-        assert {:ok, %@test_module{
-          schema: %AvroEx.Schema.Primitive{
-            type: unquote(primitive_type),
-            metadata: %{"some" => "metadata"}
-          },
-          context: %AvroEx.Schema.Context{names: %{}}}
-        } = @test_module.parse(~s({"type": "#{unquote(passed_in_type)}", "some": "metadata"}))
+        assert {:ok,
+                %@test_module{
+                  schema: %AvroEx.Schema.Primitive{
+                    type: unquote(primitive_type),
+                    metadata: %{"some" => "metadata"}
+                  },
+                  context: %AvroEx.Schema.Context{names: %{}}
+                }} =
+                 @test_module.parse(
+                   ~s({"type": "#{unquote(passed_in_type)}", "some": "metadata"})
+                 )
       end
     end
   end
@@ -102,17 +115,17 @@ defmodule AvroEx.Schema.Test do
 
   def json_add_property(str, property, value) when is_binary(str) do
     str
-    |> Poison.decode!
+    |> Poison.decode!()
     |> json_add_property(property, value)
-    |> Poison.encode!
+    |> Poison.encode!()
   end
 
-  def json_add_property(json, property, value) when is_map(json) and is_atom(property)do
+  def json_add_property(json, property, value) when is_map(json) and is_atom(property) do
     json_add_property(json, Atom.to_string(property), value)
   end
 
   def json_add_property(json, property, value) when is_map(json) and is_binary(property) do
-    Map.update(json, property, value, fn(_) -> value end)
+    Map.update(json, property, value, fn _ -> value end)
   end
 
   @json ~S"""
@@ -147,49 +160,50 @@ defmodule AvroEx.Schema.Test do
     @schema AvroEx.Schema.Record
 
     test "works" do
-      child_record =
-        %@schema{
-          name: "ChildRecord",
-          aliases: ["InnerRecord"],
-          qualified_names: ["me.cjpoll.avro_ex.ChildRecord", "me.cjpoll.avro_ex.InnerRecord"]
-        }
+      child_record = %@schema{
+        name: "ChildRecord",
+        aliases: ["InnerRecord"],
+        qualified_names: ["me.cjpoll.avro_ex.ChildRecord", "me.cjpoll.avro_ex.InnerRecord"]
+      }
 
-      parent =
-        %@schema{
-          aliases: ["OldRecord", "SomeRecord"],
-          doc: "A record for testing",
-          name: "MyRecord",
-          namespace: "me.cjpoll.avro_ex",
-          qualified_names: ["me.cjpoll.avro_ex.MyRecord", "me.cjpoll.avro_ex.OldRecord", "me.cjpoll.avro_ex.SomeRecord"],
-          fields: [
-            %Field{
-              type: %Primitive{
-                type: :long,
-                metadata: %{}
-              },
-              name: "field3",
-              doc: "some field",
-              aliases: ["field1", "field2"]
+      parent = %@schema{
+        aliases: ["OldRecord", "SomeRecord"],
+        doc: "A record for testing",
+        name: "MyRecord",
+        namespace: "me.cjpoll.avro_ex",
+        qualified_names: [
+          "me.cjpoll.avro_ex.MyRecord",
+          "me.cjpoll.avro_ex.OldRecord",
+          "me.cjpoll.avro_ex.SomeRecord"
+        ],
+        fields: [
+          %Field{
+            type: %Primitive{
+              type: :long,
+              metadata: %{}
             },
-            %Field{
-              type: child_record,
-              name: "field6",
-              doc: "some field",
-              aliases: ["field4", "field5"]
-            }
-          ]
-        }
-
-      context =
-        %Context{
-          names: %{
-            "me.cjpoll.avro_ex.OldRecord" => parent,
-            "me.cjpoll.avro_ex.SomeRecord" => parent,
-            "me.cjpoll.avro_ex.MyRecord" => parent,
-            "me.cjpoll.avro_ex.ChildRecord" => child_record,
-            "me.cjpoll.avro_ex.InnerRecord" => child_record
+            name: "field3",
+            doc: "some field",
+            aliases: ["field1", "field2"]
+          },
+          %Field{
+            type: child_record,
+            name: "field6",
+            doc: "some field",
+            aliases: ["field4", "field5"]
           }
+        ]
+      }
+
+      context = %Context{
+        names: %{
+          "me.cjpoll.avro_ex.OldRecord" => parent,
+          "me.cjpoll.avro_ex.SomeRecord" => parent,
+          "me.cjpoll.avro_ex.MyRecord" => parent,
+          "me.cjpoll.avro_ex.ChildRecord" => child_record,
+          "me.cjpoll.avro_ex.InnerRecord" => child_record
         }
+      }
 
       {:ok, %@test_module{} = schema} = @test_module.parse(@json)
 
@@ -202,73 +216,76 @@ defmodule AvroEx.Schema.Test do
 
   describe "parse union" do
     test "primitives" do
-      assert {:ok, %AvroEx.Schema{
-        schema: %Union{possibilities: [
-          %Primitive{type: nil},
-          %Primitive{type: :integer}
-        ]}
-      }} = @test_module.parse(~S(["null", "int"]))
+      assert {:ok,
+              %AvroEx.Schema{
+                schema: %Union{
+                  possibilities: [
+                    %Primitive{type: nil},
+                    %Primitive{type: :integer}
+                  ]
+                }
+              }} = @test_module.parse(~S(["null", "int"]))
     end
 
     test "record in union" do
-      child_record =
-        %Record{
-          name: "ChildRecord",
-          aliases: ["InnerRecord"],
-          qualified_names: [
-            "me.cjpoll.avro_ex.ChildRecord",
-            "me.cjpoll.avro_ex.InnerRecord"
-          ]
-        }
+      child_record = %Record{
+        name: "ChildRecord",
+        aliases: ["InnerRecord"],
+        qualified_names: [
+          "me.cjpoll.avro_ex.ChildRecord",
+          "me.cjpoll.avro_ex.InnerRecord"
+        ]
+      }
 
-      parent =
-        %Record{
-          aliases: ["OldRecord", "SomeRecord"],
-          doc: "A record for testing",
-          name: "MyRecord",
-          namespace: "me.cjpoll.avro_ex",
-          qualified_names: [
-            "me.cjpoll.avro_ex.MyRecord",
-            "me.cjpoll.avro_ex.OldRecord",
-            "me.cjpoll.avro_ex.SomeRecord",
-          ],
-          fields: [
-            %Field{
-              type: %Primitive{
-                type: :long,
-                metadata: %{}
-              },
-              name: "field3",
-              doc: "some field",
-              aliases: ["field1", "field2"]
+      parent = %Record{
+        aliases: ["OldRecord", "SomeRecord"],
+        doc: "A record for testing",
+        name: "MyRecord",
+        namespace: "me.cjpoll.avro_ex",
+        qualified_names: [
+          "me.cjpoll.avro_ex.MyRecord",
+          "me.cjpoll.avro_ex.OldRecord",
+          "me.cjpoll.avro_ex.SomeRecord"
+        ],
+        fields: [
+          %Field{
+            type: %Primitive{
+              type: :long,
+              metadata: %{}
             },
-            %Field{
-              type: child_record,
-              name: "field6",
-              doc: "some field",
-              aliases: ["field4", "field5"]
-            }
-          ]
-        }
-
-      context =
-        %Context{
-          names: %{
-            "me.cjpoll.avro_ex.OldRecord" => parent,
-            "me.cjpoll.avro_ex.SomeRecord" => parent,
-            "me.cjpoll.avro_ex.MyRecord" => parent,
-            "me.cjpoll.avro_ex.ChildRecord" => child_record,
-            "me.cjpoll.avro_ex.InnerRecord" => child_record
+            name: "field3",
+            doc: "some field",
+            aliases: ["field1", "field2"]
+          },
+          %Field{
+            type: child_record,
+            name: "field6",
+            doc: "some field",
+            aliases: ["field4", "field5"]
           }
+        ]
+      }
+
+      context = %Context{
+        names: %{
+          "me.cjpoll.avro_ex.OldRecord" => parent,
+          "me.cjpoll.avro_ex.SomeRecord" => parent,
+          "me.cjpoll.avro_ex.MyRecord" => parent,
+          "me.cjpoll.avro_ex.ChildRecord" => child_record,
+          "me.cjpoll.avro_ex.InnerRecord" => child_record
         }
+      }
 
       {:ok, %AvroEx.Schema{} = schema} = @test_module.parse(~s(["null", #{@json}]))
 
       assert ^context = schema.context
-      assert %Union{possibilities: [
-        %Primitive{type: nil},
-        ^parent
-      ]} = schema.schema
+
+      assert %Union{
+               possibilities: [
+                 %Primitive{type: nil},
+                 ^parent
+               ]
+             } = schema.schema
     end
 
     test "union in record" do
@@ -277,20 +294,23 @@ defmodule AvroEx.Schema.Test do
         {"type": ["null", "int"], "name": "a"}
       ]}
       """
-      assert {:ok, %AvroEx.Schema{
-        schema: %Record{
-          fields: [
-            %Field{
-              name: "a",
-              type: %Union{possibilities: [
-                %Primitive{type: nil},
-                %Primitive{type: :integer}
-              ]}
-            }
-          ]
-        }
 
-      }} = @test_module.parse(schema)
+      assert {:ok,
+              %AvroEx.Schema{
+                schema: %Record{
+                  fields: [
+                    %Field{
+                      name: "a",
+                      type: %Union{
+                        possibilities: [
+                          %Primitive{type: nil},
+                          %Primitive{type: :integer}
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }} = @test_module.parse(schema)
     end
   end
 
@@ -301,29 +321,32 @@ defmodule AvroEx.Schema.Test do
     handles_metadata()
 
     test "doesn't blow up" do
-      assert {:ok, %@test_module{
-        schema: %@schema{}
-      }} = AvroEx.parse_schema(@json)
+      assert {:ok,
+              %@test_module{
+                schema: %@schema{}
+              }} = AvroEx.parse_schema(@json)
     end
 
     test "matches the given type" do
-      assert {:ok, %@test_module{
-        schema: %@schema{
-          values: %Primitive{type: :integer}}}} =
-        AvroEx.parse_schema(@json)
+      assert {:ok, %@test_module{schema: %@schema{values: %Primitive{type: :integer}}}} =
+               AvroEx.parse_schema(@json)
     end
 
     test "works with a union" do
-      assert {:ok, %@test_module{
-        schema: %@schema{
-          values: %Union{
-            possibilities: [
-              %Primitive{type: nil},
-              %Primitive{type: :integer}
-            ]}}}} =
-              @json
-              |> json_add_property(:values, ["null", "int"])
-              |> AvroEx.parse_schema
+      assert {:ok,
+              %@test_module{
+                schema: %@schema{
+                  values: %Union{
+                    possibilities: [
+                      %Primitive{type: nil},
+                      %Primitive{type: :integer}
+                    ]
+                  }
+                }
+              }} =
+               @json
+               |> json_add_property(:values, ["null", "int"])
+               |> AvroEx.parse_schema()
     end
   end
 
@@ -346,14 +369,14 @@ defmodule AvroEx.Schema.Test do
       "float" => 1.0,
       "double" => 1.0,
       "bytes" => "12345",
-      "string" => "12345",
+      "string" => "12345"
     }
 
     for a <- @values, b <- @values do
-      test "#{inspect a} vs #{inspect b}" do
+      test "#{inspect(a)} vs #{inspect(b)}" do
         {ka, va} = unquote(a)
         {_kb, vb} = unquote(b)
-        {:ok, schema} = @test_module.parse(~s(#{inspect ka}))
+        {:ok, schema} = @test_module.parse(~s(#{inspect(ka)}))
 
         assert @test_module.encodable?(schema, va)
         assert @test_module.encodable?(schema, vb) == (va === vb)
@@ -383,31 +406,39 @@ defmodule AvroEx.Schema.Test do
 
   describe "parse (enum)" do
     test "doesn't blow up" do
-      assert {:ok, _enum_schema} = AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+      assert {:ok, _enum_schema} =
+               AvroEx.parse_schema(
+                 ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
+               )
     end
 
     test "returns an Enum struct" do
-      assert {:ok, %Schema{schema: %AvroEnum{}}} = AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+      assert {:ok, %Schema{schema: %AvroEnum{}}} =
+               AvroEx.parse_schema(
+                 ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
+               )
     end
 
     test "fails if the symbols aren't all strings" do
-      assert {:ok, %Schema{schema: %AvroEnum{}}} = AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+      assert {:ok, %Schema{schema: %AvroEnum{}}} =
+               AvroEx.parse_schema(
+                 ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
+               )
     end
   end
 
   describe "encodable? (record: non-nested)" do
     setup do
-      schema =
-        """
-        {
-          "type": "record",
-          "name": "Person",
-          "fields": [
-            {"name": "first_name", "type": "string"},
-            {"name": "age", "type": "int"}
-          ]
-        }
-        """
+      schema = """
+      {
+        "type": "record",
+        "name": "Person",
+        "fields": [
+          {"name": "first_name", "type": "string"},
+          {"name": "age", "type": "int"}
+        ]
+      }
+      """
 
       {:ok, schema} = @test_module.parse(schema)
       {:ok, %{schema: schema}}
@@ -430,27 +461,26 @@ defmodule AvroEx.Schema.Test do
 
   describe "encodable? (record: nested)" do
     setup do
-      schema =
-        """
-        {
-          "type": "record",
-          "name": "Person",
-          "fields": [
-            {"name": "first_name", "type": "string"},
-            {"name": "age", "type": "int"},
-            {
-              "name": "thing",
-              "type":{
-                "type": "record",
-                "name": "Thing",
-                "fields": [
-                  {"name": "some_field", "type": "null"}
-                ]
-              }
+      schema = """
+      {
+        "type": "record",
+        "name": "Person",
+        "fields": [
+          {"name": "first_name", "type": "string"},
+          {"name": "age", "type": "int"},
+          {
+            "name": "thing",
+            "type":{
+              "type": "record",
+              "name": "Thing",
+              "fields": [
+                {"name": "some_field", "type": "null"}
+              ]
             }
-          ]
-        }
-        """
+          }
+        ]
+      }
+      """
 
       {:ok, schema} = @test_module.parse(schema)
       {:ok, %{schema: schema}}
@@ -471,24 +501,26 @@ defmodule AvroEx.Schema.Test do
 
   describe "encodable? (record: named)" do
     setup do
-      schema =
-        """
-        {
-          "type": "record",
-          "name": "LinkedList",
-          "fields": [
-            {"name": "value", "type": "int"},
-            {"name": "next", "type": ["null", "LinkedList"]}
-          ]
-        }
-        """
+      schema = """
+      {
+        "type": "record",
+        "name": "LinkedList",
+        "fields": [
+          {"name": "value", "type": "int"},
+          {"name": "next", "type": ["null", "LinkedList"]}
+        ]
+      }
+      """
 
       {:ok, schema} = @test_module.parse(schema)
       {:ok, %{schema: schema}}
     end
 
     test "works with a named type", %{schema: schema} do
-      assert @test_module.encodable?(schema, %{"value" => 1, "next" => %{"value" => 2, "next" => nil}})
+      assert @test_module.encodable?(schema, %{
+               "value" => 1,
+               "next" => %{"value" => 2, "next" => nil}
+             })
     end
   end
 
@@ -537,7 +569,7 @@ defmodule AvroEx.Schema.Test do
   describe "encodable? (array)" do
     test "works as expected" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
-      assert @test_module.encodable?(schema, [1,2,3,4,5])
+      assert @test_module.encodable?(schema, [1, 2, 3, 4, 5])
     end
 
     test "fails if item does not match type" do
@@ -547,7 +579,7 @@ defmodule AvroEx.Schema.Test do
 
     test "fails if one item does not match type" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
-      refute @test_module.encodable?(schema, [1,2,3,4.5, 6])
+      refute @test_module.encodable?(schema, [1, 2, 3, 4.5, 6])
     end
 
     test "works with a union" do
@@ -582,12 +614,20 @@ defmodule AvroEx.Schema.Test do
 
   describe "encodable? (enum)" do
     test "works as expected" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+      {:ok, schema} =
+        AvroEx.parse_schema(
+          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
+        )
+
       assert @test_module.encodable?(schema, "heart")
     end
 
     test "fails if string is not in symbols" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+      {:ok, schema} =
+        AvroEx.parse_schema(
+          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
+        )
+
       refute @test_module.encodable?(schema, "kkjasdfkasdfj")
     end
   end

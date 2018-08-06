@@ -1,5 +1,5 @@
 defmodule AvroEx.Schema.Macros do
-  defmacro cast_schema([data_fields: fields]) do
+  defmacro cast_schema(data_fields: fields) do
     quote do
       def cast(data) do
         AvroEx.Schema.cast_schema(__MODULE__, data, unquote(fields))
@@ -17,29 +17,31 @@ defmodule AvroEx.Schema do
 
   defstruct [:context, :schema]
 
-  @type schema_types :: Array.t
-  | Enum.t
-  | Fixed.t
-  | AvroMap.t
-  | Record.t
-  | Primitive.t
-  | Union.t
+  @type schema_types ::
+          Array.t()
+          | Enum.t()
+          | Fixed.t()
+          | AvroMap.t()
+          | Record.t()
+          | Primitive.t()
+          | Union.t()
 
-  @type named_type :: AvroEnum.t
-  | Fixed.t
-  | Record.t
+  @type named_type ::
+          AvroEnum.t()
+          | Fixed.t()
+          | Record.t()
 
-  @type name :: String.t
-  @type namespace :: nil | String.t
-  @type full_name :: String.t
-  @type doc :: nil | String.t
+  @type name :: String.t()
+  @type namespace :: nil | String.t()
+  @type full_name :: String.t()
+  @type doc :: nil | String.t()
   @type alias :: name
 
   @type t :: %__MODULE__{
-    context: Context.t,
-    schema: term
-  }
-  @type json_schema :: String.t
+          context: Context.t(),
+          schema: term
+        }
+  @type json_schema :: String.t()
 
   @spec parse(json_schema) :: t
   def parse(json_schema, %Context{} = context \\ %Context{}) do
@@ -91,6 +93,7 @@ defmodule AvroEx.Schema do
   def encodable?(%Schema{schema: schema, context: context}, data) do
     encodable?(schema, context, data)
   end
+
   def encodable?(%Primitive{type: nil}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
   def encodable?(%Primitive{type: :integer}, _, n) when is_integer(n), do: true
@@ -99,23 +102,36 @@ defmodule AvroEx.Schema do
   def encodable?(%Primitive{type: :double}, _, n) when is_float(n), do: true
   def encodable?(%Primitive{type: :bytes}, _, bytes) when is_binary(bytes), do: true
   def encodable?(%Primitive{type: :string}, _, str) when is_binary(str), do: String.valid?(str)
-  def encodable?(%Record{} = record, %Context{} = context, data) when is_map(data), do: Record.match?(record, context, data)
-  def encodable?(%Field{} = field, %Context{} = context, data), do: Field.match?(field, context, data)
-  def encodable?(%Union{} = union, %Context{} = context, data), do: Union.match?(union, context, data)
-  def encodable?(%Fixed{} = fixed, %Context{} = context, data), do: Fixed.match?(fixed, context, data)
+
+  def encodable?(%Record{} = record, %Context{} = context, data) when is_map(data),
+    do: Record.match?(record, context, data)
+
+  def encodable?(%Field{} = field, %Context{} = context, data),
+    do: Field.match?(field, context, data)
+
+  def encodable?(%Union{} = union, %Context{} = context, data),
+    do: Union.match?(union, context, data)
+
+  def encodable?(%Fixed{} = fixed, %Context{} = context, data),
+    do: Fixed.match?(fixed, context, data)
+
   def encodable?(%AvroMap{} = schema, %Context{} = context, data) when is_map(data) do
     AvroMap.match?(schema, context, data)
   end
+
   def encodable?(%Array{} = schema, %Context{} = context, data) when is_list(data) do
     Array.match?(schema, context, data)
   end
+
   def encodable?(%AvroEnum{} = schema, %Context{} = context, data) when is_binary(data) do
     AvroEnum.match?(schema, context, data)
   end
+
   def encodable?(name, %Context{} = context, data) when is_binary(name) do
     schema = Context.lookup(context, name)
     encodable?(schema, context, data)
   end
+
   def encodable?(_, _, _), do: false
 
   def namespace(schema) do
@@ -123,11 +139,12 @@ defmodule AvroEx.Schema do
   end
 
   def namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
+
   def namespace(%Record{} = record, parent_namespace) do
     record = qualify_namespace(record)
 
     fields =
-      Enum.map(record.fields, fn(field) ->
+      Enum.map(record.fields, fn field ->
         namespace(field, record.namespace || parent_namespace)
       end)
 
@@ -135,25 +152,31 @@ defmodule AvroEx.Schema do
 
     %Record{record | fields: fields, qualified_names: full_names}
   end
+
   def namespace(%Field{} = field, parent_namespace) do
     type = namespace(field.type, parent_namespace)
     %Field{field | type: type}
   end
+
   def namespace(%Union{possibilities: possibilities} = union, parent_namespace) do
-    possibilities = Enum.map(possibilities, &(namespace(&1, parent_namespace)))
+    possibilities = Enum.map(possibilities, &namespace(&1, parent_namespace))
     %Union{union | possibilities: possibilities}
   end
+
   def namespace(%Fixed{} = fixed, parent_namespace) do
     fixed = qualify_namespace(fixed)
     %Fixed{fixed | qualified_names: full_names(fixed, parent_namespace)}
   end
+
   def namespace(%AvroMap{} = map, parent_namespace) do
     values = namespace(map.values, parent_namespace)
     %AvroMap{map | values: values}
   end
+
   def namespace(%Array{} = array, parent_namespace) do
     %Array{array | items: namespace(array.items, parent_namespace)}
   end
+
   def namespace(%AvroEnum{} = enum, _parent_namespace) do
     enum = qualify_namespace(enum)
     %AvroEnum{enum | qualified_names: full_names(enum, enum.namespace)}
@@ -176,9 +199,9 @@ defmodule AvroEx.Schema do
       namespace =
         name
         |> String.split(".")
-        |> Enum.reverse
+        |> Enum.reverse()
         |> tail
-        |> Enum.reverse
+        |> Enum.reverse()
         |> Enum.join(".")
 
       %{schema | namespace: namespace}
@@ -192,9 +215,10 @@ defmodule AvroEx.Schema do
   end
 
   @spec full_names(t, namespace) :: [full_name]
-  def full_names(%{aliases: aliases, namespace: namespace} = record, parent_namespace \\ nil) when is_list(aliases) do
+  def full_names(%{aliases: aliases, namespace: namespace} = record, parent_namespace \\ nil)
+      when is_list(aliases) do
     full_aliases =
-      Enum.map(aliases, fn(name) ->
+      Enum.map(aliases, fn name ->
         full_name(namespace || parent_namespace, name)
       end)
 
@@ -216,11 +240,13 @@ defmodule AvroEx.Schema do
 
   def cast_schema(module, data, fields) do
     metadata = Map.delete(data, "type")
-    metadata = Enum.reduce(fields, metadata, fn(field, meta) ->
-      Map.delete(meta, Atom.to_string(field))
-    end)
 
-    params = Map.update(data, "metadata", metadata, &(&1))
+    metadata =
+      Enum.reduce(fields, metadata, fn field, meta ->
+        Map.delete(meta, Atom.to_string(field))
+      end)
+
+    params = Map.update(data, "metadata", metadata, & &1)
 
     cs =
       module
