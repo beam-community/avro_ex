@@ -126,6 +126,10 @@ defmodule AvroEx.Encode do
     |> Enum.join()
   end
 
+  def do_encode(%Field{type: type, default: default}, %Context{} = context, nil) do
+    do_encode(type, context, default)
+  end
+
   def do_encode(%Field{type: type}, %Context{} = context, value) do
     do_encode(type, context, value)
   end
