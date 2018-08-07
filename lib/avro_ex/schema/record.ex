@@ -24,6 +24,11 @@ defmodule AvroEx.Schema.Record.Field do
     |> encode_type
   end
 
+  def match?(%__MODULE__{type: type, default: default}, %Context{} = context, nil)
+      when type != nil do
+    Schema.encodable?(type, context, default)
+  end
+
   def match?(%__MODULE__{type: type}, %Context{} = context, data) do
     Schema.encodable?(type, context, data)
   end
@@ -85,9 +90,9 @@ defmodule AvroEx.Schema.Record do
 
   @spec match?(t, Context.t(), term) :: boolean
   def match?(%__MODULE__{fields: fields}, %Context{} = context, data)
-      when is_map(data) and map_size(data) == length(fields) do
+      when is_map(data) do
     Enum.all?(fields, fn %Field{name: name} = field ->
-      Map.has_key?(data, name) and Schema.encodable?(field, context, data[name])
+      Schema.encodable?(field, context, data[name])
     end)
   end
 

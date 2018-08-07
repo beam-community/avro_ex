@@ -269,12 +269,12 @@ defmodule AvroEx.Encode.Test do
         {
           "type": "record", "name": "Record", "fields": [
           {
-            "name": "record", 
+            "name": "record",
             "default": null,
-            "type": 
+            "type":
               [
-                "null", 
-                { 
+                "null",
+                {
                   "name": "optional_record",
                   "type": "record",
                   "fields": [
@@ -301,12 +301,12 @@ defmodule AvroEx.Encode.Test do
         {
           "type": "record", "name": "Record", "fields": [
           {
-            "name": "record", 
+            "name": "record",
             "default": null,
-            "type": 
+            "type":
               [
-                "null", 
-                { 
+                "null",
+                {
                   "name": "optional_record",
                   "type": "record",
                   "fields": [
@@ -323,7 +323,23 @@ defmodule AvroEx.Encode.Test do
       ))
 
       assert {:ok, encoded} = @test_module.encode(schema, record)
-      assert {:ok, res} = AvroEx.decode(schema, encoded)
+      assert {:ok, %{"record" => %{"hello" => nil}}} == AvroEx.decode(schema, encoded)
+    end
+
+    test "atom keys" do
+      {:ok, schema} = AvroEx.parse_schema(~S(
+        {
+          "type": "record", "name": "Record", "fields": [
+            {
+              "name": "record",
+              "type": "string"
+            }
+          ]}
+        ))
+
+      record = %{record: "string"}
+      assert {:ok, encoded} = @test_module.encode(schema, record)
+      assert {:ok, %{"record" => "string"}} = AvroEx.decode(schema, encoded)
     end
   end
 
