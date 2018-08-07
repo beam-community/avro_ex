@@ -12,6 +12,7 @@ defmodule AvroEx.Encode.Test do
   require __MODULE__.Macros
   alias __MODULE__.Macros
   use ExUnit.Case
+  use ExUnitProperties
 
   @test_module AvroEx.Encode
 
@@ -22,35 +23,49 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, ""} = @test_module.encode(schema, nil)
     end
 
-    test "boolean" do
-      {:ok, schema} = AvroEx.parse_schema(~S("boolean"))
+    property "boolean" do
+      check all bool <- StreamData.boolean() do
+        {:ok, schema} = AvroEx.parse_schema(~S("boolean"))
 
-      assert {:ok, <<1::8>>} = @test_module.encode(schema, true)
-      assert {:ok, <<0::8>>} = @test_module.encode(schema, false)
+        assert {:ok, <<_::8>>} = @test_module.encode(schema, bool)
+      end
     end
 
-    test "integer" do
-      {:ok, schema} = AvroEx.parse_schema(~S("int"))
+    property "integer" do
+      check all int <- StreamData.integer() do
+        {:ok, schema} = AvroEx.parse_schema(~S("int"))
 
-      assert {:ok, <<2::8>>} = @test_module.encode(schema, 1)
+        assert {:ok, <<2::8>>} = @test_module.encode(schema, 1)
+        assert {:ok, _} = @test_module.encode(schema, int)
+      end
     end
 
-    test "long" do
-      {:ok, schema} = AvroEx.parse_schema(~S("long"))
+    property "long" do
+      check all long <- StreamData.integer() do
+        {:ok, schema} = AvroEx.parse_schema(~S("long"))
 
-      assert {:ok, <<2::8>>} = @test_module.encode(schema, 1)
+        assert {:ok, <<2::8>>} = @test_module.encode(schema, 1)
+        assert {:ok, _} = @test_module.encode(schema, long)
+      end
     end
 
     test "float" do
       {:ok, schema} = AvroEx.parse_schema(~S("float"))
-
       assert {:ok, <<205, 204, 140, 63>>} = @test_module.encode(schema, 1.1)
     end
 
-    test "double" do
-      {:ok, schema} = AvroEx.parse_schema(~S("double"))
+    property "float" do
+      check all float <- StreamData.float() do
+        {:ok, schema} = AvroEx.parse_schema(~S("float"))
+        assert {:ok, _} = @test_module.encode(schema, float)
+      end
+    end
 
-      assert {:ok, <<154, 153, 153, 153, 153, 153, 241, 63>>} = @test_module.encode(schema, 1.1)
+    property "double" do
+      check all double <- StreamData.float() do
+        {:ok, schema} = AvroEx.parse_schema(~S("double"))
+        assert {:ok, _} = @test_module.encode(schema, double)
+      end
     end
 
     test "bytes" do
@@ -60,11 +75,20 @@ defmodule AvroEx.Encode.Test do
                @test_module.encode(schema, "abcdefg")
     end
 
-    test "string" do
-      {:ok, schema} = AvroEx.parse_schema(~S("string"))
+    property "bytes" do
+      check all bytes <- StreamData.binary() do
+        {:ok, schema} = AvroEx.parse_schema(~S("bytes"))
 
-      assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} =
-               @test_module.encode(schema, "abcdefg")
+        assert {:ok, _} = @test_module.encode(schema, bytes)
+      end
+    end
+
+    property "string" do
+      check all string <- StreamData.string(:printable) do
+        {:ok, schema} = AvroEx.parse_schema(~S("string"))
+
+        assert {:ok, _} = @test_module.encode(schema, string)
+      end
     end
   end
 
@@ -147,8 +171,19 @@ defmodule AvroEx.Encode.Test do
   end
 
   describe "encode (record)" do
-    test "works as expected with primitive fields" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+    property "primitive fields" do
+      check all record <-
+                  fixed_map(%{
+                    "null" => nil,
+                    "bool" => boolean(),
+                    "integer" => integer(),
+                    "long" => integer(),
+                    "float" => float(),
+                    "double" => float(),
+                    "string" => string(:printable),
+                    "bytes" => binary()
+                  }) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
         {"type": "null", "name": "null"},
         {"type": "boolean", "name": "bool"},
         {"type": "int", "name": "integer"},
@@ -159,42 +194,43 @@ defmodule AvroEx.Encode.Test do
         {"type": "bytes", "name": "bytes"}
       ]}))
 
-      record = %{
-        "null" => nil,
-        "bool" => true,
-        "integer" => 25,
-        "long" => 25,
-        "float" => 2.5,
-        "double" => 2.5,
-        "string" => "abcdefg",
-        "bytes" => "abcdefg"
-      }
+        {:ok, null_schema} = AvroEx.parse_schema(~S("null"))
+        {:ok, boolean_schema} = AvroEx.parse_schema(~S("boolean"))
+        {:ok, int_schema} = AvroEx.parse_schema(~S("int"))
+        {:ok, long_schema} = AvroEx.parse_schema(~S("long"))
+        {:ok, float_schema} = AvroEx.parse_schema(~S("float"))
+        {:ok, double_schema} = AvroEx.parse_schema(~S("double"))
+        {:ok, string_schema} = AvroEx.parse_schema(~S("string"))
+        {:ok, bytes_schema} = AvroEx.parse_schema(~S("bytes"))
 
-      {:ok, null_schema} = AvroEx.parse_schema(~S("null"))
-      {:ok, boolean_schema} = AvroEx.parse_schema(~S("boolean"))
-      {:ok, int_schema} = AvroEx.parse_schema(~S("int"))
-      {:ok, long_schema} = AvroEx.parse_schema(~S("long"))
-      {:ok, float_schema} = AvroEx.parse_schema(~S("float"))
-      {:ok, double_schema} = AvroEx.parse_schema(~S("double"))
-      {:ok, string_schema} = AvroEx.parse_schema(~S("string"))
-      {:ok, bytes_schema} = AvroEx.parse_schema(~S("bytes"))
-
-      assert {:ok,
-              [
-                @test_module.encode(null_schema, record["null"]) |> elem(1),
-                @test_module.encode(boolean_schema, record["bool"]) |> elem(1),
-                @test_module.encode(int_schema, record["integer"]) |> elem(1),
-                @test_module.encode(long_schema, record["long"]) |> elem(1),
-                @test_module.encode(float_schema, record["float"]) |> elem(1),
-                @test_module.encode(double_schema, record["double"]) |> elem(1),
-                @test_module.encode(string_schema, record["string"]) |> elem(1),
-                @test_module.encode(bytes_schema, record["bytes"]) |> elem(1)
-              ]
-              |> Enum.join()} == @test_module.encode(schema, record)
+        assert {:ok,
+                [
+                  @test_module.encode(null_schema, record["null"]) |> elem(1),
+                  @test_module.encode(boolean_schema, record["bool"]) |> elem(1),
+                  @test_module.encode(int_schema, record["integer"]) |> elem(1),
+                  @test_module.encode(long_schema, record["long"]) |> elem(1),
+                  @test_module.encode(float_schema, record["float"]) |> elem(1),
+                  @test_module.encode(double_schema, record["double"]) |> elem(1),
+                  @test_module.encode(string_schema, record["string"]) |> elem(1),
+                  @test_module.encode(bytes_schema, record["bytes"]) |> elem(1)
+                ]
+                |> Enum.join()} == @test_module.encode(schema, record)
+      end
     end
 
-    test "works as expected with default values" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+    property "partial" do
+      check all record <-
+                  optional_map(%{
+                    "null" => nil,
+                    "bool" => boolean(),
+                    "integer" => integer(),
+                    "long" => integer(),
+                    "float" => float(),
+                    "double" => float(),
+                    "string" => string(:printable),
+                    "bytes" => binary()
+                  }) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
         {"type": "null", "name": "null", "default": null},
         {"type": "boolean", "name": "bool", "default": false},
         {"type": "int", "name": "integer", "default": 0},
@@ -205,16 +241,89 @@ defmodule AvroEx.Encode.Test do
         {"type": "bytes", "name": "bytes", "default": "ok"}
       ]}))
 
-      assert {:ok, _encoded} = @test_module.encode(schema, %{})
+        assert {:ok, encoded} = @test_module.encode(schema, record)
+        assert {:ok, decoded} = @test_module.encode(schema, record)
+      end
     end
 
-    test "works as expected with default of null on union type" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+    property "nullable, potentially empty record" do
+      check all record <-
+                  optional_map(%{
+                    "maybe_null" => one_of([nil, string(:printable)])
+                  }) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
         {"type": ["null", "string"], "name": "maybe_null", "default": null}
         ]}))
 
-      assert {:ok, <<0>>} = @test_module.encode(schema, %{})
-      assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
+        assert {:ok, encoded} = @test_module.encode(schema, record)
+        assert {:ok, %{"maybe_null" => _}} = AvroEx.decode(schema, encoded)
+      end
+    end
+
+    property "nested potentially nullable" do
+      check all record <-
+                  optional_map(%{
+                    "record" => one_of([nil, optional_map(%{"hello" => string(:printable)})])
+                  }) do
+        {:ok, schema} = AvroEx.parse_schema(~S(
+        {
+          "type": "record", "name": "Record", "fields": [
+          {
+            "name": "record", 
+            "default": null,
+            "type": 
+              [
+                "null", 
+                { 
+                  "name": "optional_record",
+                  "type": "record",
+                  "fields": [
+                    {
+                      "name": "hello",
+                    "type": ["null", "string"],
+                    "default": null
+                    }
+                  ]
+                }
+              ]
+          }
+        ]}
+      ))
+
+        assert {:ok, encoded} = @test_module.encode(schema, record)
+        assert {:ok, %{"record" => _}} = AvroEx.decode(schema, encoded)
+      end
+    end
+
+    test "encoding nullable union" do
+      record = %{"record" => %{}}
+      {:ok, schema} = AvroEx.parse_schema(~S(
+        {
+          "type": "record", "name": "Record", "fields": [
+          {
+            "name": "record", 
+            "default": null,
+            "type": 
+              [
+                "null", 
+                { 
+                  "name": "optional_record",
+                  "type": "record",
+                  "fields": [
+                    {
+                      "name": "hello",
+                    "type": ["null", "string"],
+                    "default": null
+                    }
+                  ]
+                }
+              ]
+          }
+        ]}
+      ))
+
+      assert {:ok, encoded} = @test_module.encode(schema, record)
+      assert {:ok, res} = AvroEx.decode(schema, encoded)
     end
   end
 
@@ -276,6 +385,14 @@ defmodule AvroEx.Encode.Test do
   end
 
   describe "encode (map)" do
+    property "" do
+      check all map <- StreamData.map_of(StreamData.string(:ascii), StreamData.integer()) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+        assert {:ok, encoded_array} = @test_module.encode(schema, map)
+        assert {:ok, ^map} = AvroEx.decode(schema, encoded_array)
+      end
+    end
+
     test "encodes the count as a long" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
       {:ok, long_schema} = AvroEx.parse_schema(~S("long"))
@@ -309,6 +426,14 @@ defmodule AvroEx.Encode.Test do
   end
 
   describe "encode (array)" do
+    property "" do
+      check all items <- list_of(integer()) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
+        assert {:ok, encoded} = @test_module.encode(schema, items)
+        assert {:ok, ^items} = AvroEx.decode(schema, encoded)
+      end
+    end
+
     test "encodes the count as a long" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": "int"}))
       {:ok, long_schema} = AvroEx.parse_schema(~S("long"))

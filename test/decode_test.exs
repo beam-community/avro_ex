@@ -1,5 +1,6 @@
 defmodule AvroEx.Decode.Test do
   use ExUnit.Case
+  use ExUnitProperties
 
   @test_module AvroEx.Decode
 
@@ -10,156 +11,140 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, nil} = @test_module.decode(schema, avro_message)
     end
 
-    test "boolean" do
-      {:ok, schema} = AvroEx.parse_schema(~S("boolean"))
-      {:ok, true_message} = AvroEx.encode(schema, true)
-      {:ok, false_message} = AvroEx.encode(schema, false)
+    property "boolean" do
+      check all bool <- StreamData.boolean() do
+        {:ok, schema} = AvroEx.parse_schema(~S("boolean"))
+        {:ok, encoded} = AvroEx.encode(schema, bool)
 
-      assert {:ok, true} = @test_module.decode(schema, true_message)
-      assert {:ok, false} = @test_module.decode(schema, false_message)
+        assert {:ok, bool} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "integer" do
-      {:ok, schema} = AvroEx.parse_schema(~S("int"))
-      {:ok, zero} = AvroEx.encode(schema, 0)
-      {:ok, neg_ten} = AvroEx.encode(schema, -10)
-      {:ok, ten} = AvroEx.encode(schema, 10)
-      {:ok, big} = AvroEx.encode(schema, 5_000_000)
-      {:ok, small} = AvroEx.encode(schema, -5_000_000)
+    property "integer" do
+      check all integer <- StreamData.integer() do
+        {:ok, schema} = AvroEx.parse_schema(~S("int"))
+        {:ok, encoded} = AvroEx.encode(schema, integer)
 
-      assert {:ok, 0} = @test_module.decode(schema, zero)
-      assert {:ok, -10} = @test_module.decode(schema, neg_ten)
-      assert {:ok, 10} = @test_module.decode(schema, ten)
-      assert {:ok, 5_000_000} = @test_module.decode(schema, big)
-      assert {:ok, -5_000_000} = @test_module.decode(schema, small)
+        assert {:ok, ^integer} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "long" do
-      {:ok, schema} = AvroEx.parse_schema(~S("long"))
-      {:ok, zero} = AvroEx.encode(schema, 0)
-      {:ok, neg_ten} = AvroEx.encode(schema, -10)
-      {:ok, ten} = AvroEx.encode(schema, 10)
-      {:ok, big} = AvroEx.encode(schema, 2_147_483_647)
-      {:ok, small} = AvroEx.encode(schema, -2_147_483_647)
+    property "long" do
+      check all long <- StreamData.integer(-2_147_483_647..2_147_483_647) do
+        {:ok, schema} = AvroEx.parse_schema(~S("long"))
+        {:ok, encoded} = AvroEx.encode(schema, long)
 
-      assert {:ok, 0} = @test_module.decode(schema, zero)
-      assert {:ok, -10} = @test_module.decode(schema, neg_ten)
-      assert {:ok, 10} = @test_module.decode(schema, ten)
-      assert {:ok, 2_147_483_647} = @test_module.decode(schema, big)
-      assert {:ok, -2_147_483_647} = @test_module.decode(schema, small)
+        assert {:ok, ^long} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "float" do
-      {:ok, schema} = AvroEx.parse_schema(~S("float"))
-      {:ok, zero} = AvroEx.encode(schema, 0.0)
-      {:ok, big} = AvroEx.encode(schema, 256.25)
+    property "float" do
+      check all float <- StreamData.float() do
+        {:ok, schema} = AvroEx.parse_schema(~S("float"))
+        {:ok, encoded} = AvroEx.encode(schema, float)
 
-      assert {:ok, 0.0} = @test_module.decode(schema, zero)
-      assert {:ok, 256.25} = @test_module.decode(schema, big)
+        assert {:ok, _} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "double" do
-      {:ok, schema} = AvroEx.parse_schema(~S("double"))
-      {:ok, zero} = AvroEx.encode(schema, 0.0)
-      {:ok, big} = AvroEx.encode(schema, 256.25)
+    property "double" do
+      check all double <- StreamData.float() do
+        {:ok, schema} = AvroEx.parse_schema(~S("double"))
+        {:ok, encoded} = AvroEx.encode(schema, double)
 
-      assert {:ok, 0.0} = @test_module.decode(schema, zero)
-      assert {:ok, 256.25} = @test_module.decode(schema, big)
+        assert {:ok, ^double} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "bytes" do
-      {:ok, schema} = AvroEx.parse_schema(~S("bytes"))
-      {:ok, bytes} = AvroEx.encode(schema, <<222, 213, 194, 34, 58, 92, 95, 62>>)
+    property "bytes" do
+      check all bytes <- StreamData.binary() do
+        {:ok, schema} = AvroEx.parse_schema(~S("bytes"))
+        {:ok, encoded} = AvroEx.encode(schema, bytes)
 
-      assert {:ok, <<222, 213, 194, 34, 58, 92, 95, 62>>} = @test_module.decode(schema, bytes)
+        assert {:ok, ^bytes} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "string" do
-      {:ok, schema} = AvroEx.parse_schema(~S("string"))
-      {:ok, bytes} = AvroEx.encode(schema, "Hello there 🕶")
+    property "string" do
+      check all string <- StreamData.string(:printable) do
+        {:ok, schema} = AvroEx.parse_schema(~S("string"))
+        {:ok, encoded} = AvroEx.encode(schema, string)
 
-      assert {:ok, "Hello there 🕶"} = @test_module.decode(schema, bytes)
+        assert {:ok, ^string} = @test_module.decode(schema, encoded)
+      end
     end
   end
 
   describe "complex types" do
-    test "record" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "MyRecord", "fields": [
+    property "record" do
+      check all record <-
+                  fixed_map(%{
+                    "a" => integer(),
+                    "b" => integer(),
+                    "e" => string(:printable)
+                  }) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "MyRecord", "fields": [
         {"type": "int", "name": "a"},
         {"type": "int", "name": "b", "aliases": ["c", "d"]},
         {"type": "string", "name": "e"}
       ]}))
 
-      {:ok, encoded_message} = AvroEx.encode(schema, %{"a" => 1, "b" => 2, "e" => "Hello world!"})
+        # %{"a" => 1, "b" => 2, "e" => "Hello world!"})
+        {:ok, encoded_message} = AvroEx.encode(schema, record)
 
-      assert {:ok, %{"a" => 1, "b" => 2, "e" => "Hello world!"}} =
-               @test_module.decode(schema, encoded_message)
+        assert {:ok, ^record} = @test_module.decode(schema, encoded_message)
+      end
     end
 
-    test "union" do
-      {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
+    property "union" do
+      check all item <- one_of([nil, integer()]) do
+        {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
 
-      {:ok, encoded_null} = AvroEx.encode(schema, nil)
-      {:ok, encoded_int} = AvroEx.encode(schema, 25)
+        {:ok, encoded} = AvroEx.encode(schema, item)
 
-      assert {:ok, nil} = @test_module.decode(schema, encoded_null)
-      assert {:ok, 25} = @test_module.decode(schema, encoded_int)
+        assert {:ok, ^item} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "array" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
+    property "array" do
+      check all items <- list_of(one_of([nil, integer()])) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
 
-      {:ok, encoded_array} = AvroEx.encode(schema, [1, 2, 3, nil, 4, 5, nil])
+        {:ok, encoded_array} = AvroEx.encode(schema, items)
 
-      assert {:ok, [1, 2, 3, nil, 4, 5, nil]} = @test_module.decode(schema, encoded_array)
+        assert {:ok, ^items} = @test_module.decode(schema, encoded_array)
+      end
     end
 
-    test "empty array" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
+    property "map" do
+      check all map <- StreamData.map_of(StreamData.string(:ascii), StreamData.integer()) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
 
-      {:ok, encoded_array} = AvroEx.encode(schema, [])
+        {:ok, encoded_array} = AvroEx.encode(schema, map)
 
-      assert {:ok, []} = @test_module.decode(schema, encoded_array)
+        assert {:ok, ^map} = @test_module.decode(schema, encoded_array)
+      end
     end
 
-    test "map" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
+    property "enum" do
+      check all option <- member_of(["heart", "spade", "diamond", "club"]) do
+        {:ok, schema} =
+          AvroEx.parse_schema(
+            ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
+          )
 
-      {:ok, encoded_array} = AvroEx.encode(schema, %{"a" => 1, "b" => nil, "c" => 3})
+        {:ok, encoded} = AvroEx.encode(schema, option)
 
-      assert {:ok, %{"a" => 1, "b" => nil, "c" => 3}} = @test_module.decode(schema, encoded_array)
+        assert {:ok, ^option} = @test_module.decode(schema, encoded)
+      end
     end
 
-    test "empty map" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
-
-      {:ok, encoded_map} = AvroEx.encode(schema, %{})
-
-      assert {:ok, %{}} = @test_module.decode(schema, encoded_map)
-    end
-
-    test "enum" do
-      {:ok, schema} =
-        AvroEx.parse_schema(
-          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
-        )
-
-      {:ok, club} = AvroEx.encode(schema, "club")
-      {:ok, heart} = AvroEx.encode(schema, "heart")
-      {:ok, diamond} = AvroEx.encode(schema, "diamond")
-      {:ok, spade} = AvroEx.encode(schema, "spade")
-
-      assert {:ok, "club"} = @test_module.decode(schema, club)
-      assert {:ok, "heart"} = @test_module.decode(schema, heart)
-      assert {:ok, "diamond"} = @test_module.decode(schema, diamond)
-      assert {:ok, "spade"} = @test_module.decode(schema, spade)
-    end
-
-    test "fixed" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "SHA", "size": "40"}))
-      sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      {:ok, encoded_sha} = AvroEx.encode(schema, sha)
-      assert {:ok, ^sha} = @test_module.decode(schema, encoded_sha)
+    property "fixed" do
+      check all sha <- string(:ascii, length: 40) do
+        {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "SHA", "size": "40"}))
+        {:ok, encoded_sha} = AvroEx.encode(schema, sha)
+        assert {:ok, ^sha} = @test_module.decode(schema, encoded_sha)
+      end
     end
   end
 
