@@ -532,6 +532,11 @@ defmodule AvroEx.Schema.Test do
       assert @test_module.encodable?(schema, %{"value" => 1, "value2" => 2, "value3" => nil})
       refute @test_module.encodable?(schema, %{"value" => 1, "value2" => 2.1, "value3" => nil})
     end
+
+    test "works with an empty map" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+      assert @test_module.encodable?(schema, %{})
+    end
   end
 
   describe "encodable? (array)" do
