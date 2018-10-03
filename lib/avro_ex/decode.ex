@@ -178,6 +178,8 @@ defmodule AvroEx.Decode do
     {Enum.reverse(decoded_items), rest}
   end
 
+  def do_decode(%AvroEx.Schema.Map{}, _context, <<0>>), do: {%{}, ""}
+
   def do_decode(%AvroEx.Schema.Map{values: value_schema}, %Context{} = context, data)
       when is_binary(data) do
     {count, buffer} = do_decode(%Primitive{type: :long}, context, data)
