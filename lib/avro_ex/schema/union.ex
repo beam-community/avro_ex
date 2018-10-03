@@ -14,8 +14,8 @@ defmodule AvroEx.Schema.Union do
   end
 
   @type t :: %__MODULE__{
-    possibilities: [Schema.schema_types],
-  }
+          possibilities: [Schema.schema_types()]
+        }
 
   def cast(union) when is_list(union) do
     cs = changeset(%__MODULE__{}, %{possibilities: union})

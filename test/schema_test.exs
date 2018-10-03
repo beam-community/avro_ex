@@ -372,7 +372,8 @@ defmodule AvroEx.Schema.Test do
       "string" => "12345"
     }
 
-    for a <- @values, b <- @values do
+    for a <- @values,
+        b <- @values do
       test "#{inspect(a)} vs #{inspect(b)}" do
         {ka, va} = unquote(a)
         {_kb, vb} = unquote(b)
