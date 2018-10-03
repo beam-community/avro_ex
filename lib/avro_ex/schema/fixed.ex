@@ -20,7 +20,7 @@ defmodule AvroEx.Schema.Fixed do
           metadata: %{String.t() => String.t()},
           name: Schema.name(),
           namespace: Schema.namespace(),
-          size: Schema.integer()
+          size: integer
         }
 
   @required_fields [:name, :size]

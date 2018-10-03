@@ -1,6 +1,7 @@
 defmodule AvroEx.Schema.Enum do
   use Ecto.Schema
   require AvroEx.Schema.Macros, as: SchemaMacros
+  alias AvroEx.Schema
   alias AvroEx.Schema.Context
   import Ecto.Changeset
 

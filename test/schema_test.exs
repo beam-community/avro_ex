@@ -1,12 +1,10 @@
 defmodule AvroEx.Schema.Test.Macros do
   defmacro handles_metadata do
     quote do
-      @tag :current
       test "has a default empty metadata" do
         assert {:ok, %@test_module{schema: %@schema{metadata: %{}}}} = @test_module.parse(@json)
       end
 
-      @tag broken: true, current: true
       test "includes extra metadata if given" do
         assert {:ok, %@test_module{schema: %@schema{metadata: %{"meta_prop" => "abc"}}}} =
                  @json
@@ -372,7 +370,8 @@ defmodule AvroEx.Schema.Test do
       "string" => "12345"
     }
 
-    for a <- @values, b <- @values do
+    for a <- @values,
+        b <- @values do
       test "#{inspect(a)} vs #{inspect(b)}" do
         {ka, va} = unquote(a)
         {_kb, vb} = unquote(b)
@@ -563,6 +562,11 @@ defmodule AvroEx.Schema.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
       assert @test_module.encodable?(schema, %{"value" => 1, "value2" => 2, "value3" => nil})
       refute @test_module.encodable?(schema, %{"value" => 1, "value2" => 2.1, "value3" => nil})
+    end
+
+    test "works with an empty map" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+      assert @test_module.encodable?(schema, %{})
     end
   end
 

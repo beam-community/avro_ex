@@ -8,7 +8,7 @@ defmodule AvroEx.Encode do
   @type reason :: term
 
   @spec encode(Schema.t(), term) ::
-          {:ok, Avro.avro()}
+          {:ok, AvroEx.encoded_avro()}
           | {:error, :data_does_not_match_schema, term, Schema.t()}
           | {:error, reason}
           | {:error, reason, term}

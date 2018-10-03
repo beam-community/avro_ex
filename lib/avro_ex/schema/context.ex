@@ -1,4 +1,5 @@
 defmodule AvroEx.Schema.Context do
+  alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Fixed, Primitive, Record, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Record.Field
@@ -6,7 +7,7 @@ defmodule AvroEx.Schema.Context do
   defstruct names: %{}
 
   @type t :: %__MODULE__{
-          names: %{Record.full_name() => Record.t()}
+          names: %{Schema.full_name() => Record.t()}
         }
 
   def add_schema(%__MODULE__{} = context, %Primitive{}), do: context
@@ -34,9 +35,8 @@ defmodule AvroEx.Schema.Context do
         add_name(context, name, schema)
       end)
 
-    Enum.reduce(schema.fields, context, fn
-      %Field{type: type}, %__MODULE__{} = context ->
-        add_schema(context, type)
+    Enum.reduce(schema.fields, context, fn %Field{type: type}, %__MODULE__{} = context ->
+      add_schema(context, type)
     end)
   end
 

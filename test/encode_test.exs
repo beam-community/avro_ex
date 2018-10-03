@@ -297,6 +297,15 @@ defmodule AvroEx.Encode.Test do
 
       assert rest == expected_key <> expected_value
     end
+
+    test "encodes an empty map" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+      {:ok, long_schema} = AvroEx.parse_schema(~S("long"))
+      {:ok, expected_count} = @test_module.encode(long_schema, 0)
+
+      assert {:ok, <<actual_count::8>>} = @test_module.encode(schema, %{})
+      assert expected_count == <<actual_count>>
+    end
   end
 
   describe "encode (array)" do

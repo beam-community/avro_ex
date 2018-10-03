@@ -43,7 +43,7 @@ defmodule AvroEx.Schema do
         }
   @type json_schema :: String.t()
 
-  @spec parse(json_schema) :: t
+  @spec parse(json_schema, Context.t()) :: {:ok, t} | {:error, term}
   def parse(json_schema, %Context{} = context \\ %Context{}) do
     with {:ok, schema} <- Poison.decode(json_schema),
          {:ok, schema} <- cast(schema),
@@ -214,7 +214,7 @@ defmodule AvroEx.Schema do
     :lists.nthtail(1, list)
   end
 
-  @spec full_names(t, namespace) :: [full_name]
+  @spec full_names(Enum.t() | Fixed.t() | Record.t(), namespace) :: [full_name]
   def full_names(%{aliases: aliases, namespace: namespace} = record, parent_namespace \\ nil)
       when is_list(aliases) do
     full_aliases =

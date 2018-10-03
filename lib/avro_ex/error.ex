@@ -9,8 +9,8 @@ defmodule AvroEx.Error do
   end
 
   def errors(%Ecto.Changeset{} = cs) do
-    Enum.reduce(cs.errors, %{}, fn
-      {field, {value, _}}, acc -> Map.update(acc, field, [value], fn tail -> [value | tail] end)
+    Enum.reduce(cs.errors, %{}, fn {field, {value, _}}, acc ->
+      Map.update(acc, field, [value], fn tail -> [value | tail] end)
     end)
   end
 
