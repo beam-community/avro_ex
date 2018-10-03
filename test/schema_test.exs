@@ -1,12 +1,10 @@
 defmodule AvroEx.Schema.Test.Macros do
   defmacro handles_metadata do
     quote do
-      @tag :current
       test "has a default empty metadata" do
         assert {:ok, %@test_module{schema: %@schema{metadata: %{}}}} = @test_module.parse(@json)
       end
 
-      @tag broken: true, current: true
       test "includes extra metadata if given" do
         assert {:ok, %@test_module{schema: %@schema{metadata: %{"meta_prop" => "abc"}}}} =
                  @json

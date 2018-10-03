@@ -192,6 +192,30 @@ defmodule AvroEx.Encode.Test do
               ]
               |> Enum.join()} == @test_module.encode(schema, record)
     end
+
+    test "works as expected with default values" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+        {"type": "null", "name": "null", "default": null},
+        {"type": "boolean", "name": "bool", "default": false},
+        {"type": "int", "name": "integer", "default": 0},
+        {"type": "long", "name": "long", "default": 0},
+        {"type": "float", "name": "float", "default": 0.0},
+        {"type": "double", "name": "double", "default": 0.0},
+        {"type": "string", "name": "string", "default": "ok"},
+        {"type": "bytes", "name": "bytes", "default": "ok"}
+      ]}))
+
+      assert {:ok, _encoded} = @test_module.encode(schema, %{})
+    end
+
+    test "works as expected with default of null on union type" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+        {"type": ["null", "string"], "name": "maybe_null", "default": null}
+        ]}))
+
+      assert {:ok, <<0>>} = @test_module.encode(schema, %{})
+      assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
+    end
   end
 
   describe "encode (union)" do
