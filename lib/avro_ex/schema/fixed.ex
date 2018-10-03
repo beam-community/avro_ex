@@ -7,26 +7,26 @@ defmodule AvroEx.Schema.Fixed do
   alias AvroEx.Schema
 
   embedded_schema do
-    field :aliases, {:array, :string}, default: []
-    field :metadata, {:map, :string}, default: %{}
-    field :name, :string
-    field :namespace, :string
-    field :qualified_names, {:array, :string}, default: []
-    field :size, :integer
+    field(:aliases, {:array, :string}, default: [])
+    field(:metadata, {:map, :string}, default: %{})
+    field(:name, :string)
+    field(:namespace, :string)
+    field(:qualified_names, {:array, :string}, default: [])
+    field(:size, :integer)
   end
 
   @type t :: %__MODULE__{
-    aliases: [Schema.alias],
-    metadata: %{String.t => String.t},
-    name: Schema.name,
-    namespace: Schema.namespace,
-    size: integer
-  }
+          aliases: [Schema.alias()],
+          metadata: %{String.t() => String.t()},
+          name: Schema.name(),
+          namespace: Schema.namespace(),
+          size: integer
+        }
 
   @required_fields [:name, :size]
   @optional_fields [:aliases, :metadata, :namespace]
 
-  SchemaMacros.cast_schema([data_fields: [:aliases, :name, :namespace, :size, :qualified_names]])
+  SchemaMacros.cast_schema(data_fields: [:aliases, :name, :namespace, :size, :qualified_names])
 
   def changeset(%__MODULE__{} = fixed, %{"type" => "fixed"} = params) do
     fixed
@@ -34,10 +34,11 @@ defmodule AvroEx.Schema.Fixed do
     |> validate_required(@required_fields)
   end
 
-  @spec match?(t, Context.t, term) :: boolean
-  def match?(%__MODULE__{size: size}, %Context{}, data) when is_binary(data) and byte_size(data) == size do
+  @spec match?(t, Context.t(), term) :: boolean
+  def match?(%__MODULE__{size: size}, %Context{}, data)
+      when is_binary(data) and byte_size(data) == size do
     true
   end
 
-  def match?(_, _,  _), do: false
+  def match?(_, _, _), do: false
 end

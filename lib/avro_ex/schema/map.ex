@@ -10,16 +10,16 @@ defmodule AvroEx.Schema.Map do
   @required_fields [:metadata, :values]
 
   embedded_schema do
-    field :metadata, :map, default: %{}
-    field :values, Term
+    field(:metadata, :map, default: %{})
+    field(:values, Term)
   end
 
   @type t :: %__MODULE__{
-    metadata: %{String.t => String.t},
-    values: Schema.schema_types,
-  }
+          metadata: %{String.t() => String.t()},
+          values: Schema.schema_types()
+        }
 
-  SchemaMacros.cast_schema([data_fields: [:values]])
+  SchemaMacros.cast_schema(data_fields: [:values])
 
   def changeset(%__MODULE__{} = struct, params) do
     struct
@@ -32,7 +32,7 @@ defmodule AvroEx.Schema.Map do
     values =
       cs
       |> get_field(:values)
-      |> Schema.cast
+      |> Schema.cast()
 
     case values do
       {:ok, value} -> put_change(cs, :values, value)
@@ -41,10 +41,11 @@ defmodule AvroEx.Schema.Map do
   end
 
   def match?(%__MODULE__{values: value_type}, %Context{} = context, data) when is_map(data) do
-    Enum.all?(data, fn({key, value}) ->
-      Schema.encodable?(%Primitive{type: :string}, context, key) and Schema.encodable?(value_type, context, value)
+    Enum.all?(data, fn {key, value} ->
+      Schema.encodable?(%Primitive{type: :string}, context, key) and
+        Schema.encodable?(value_type, context, value)
     end)
   end
 
-  def match?(_, _,  _), do: false
+  def match?(_, _, _), do: false
 end

@@ -11,16 +11,16 @@ defmodule AvroEx.Schema.Array do
   @optional_fields [:metadata]
 
   embedded_schema do
-    field :items, Term
-    field :metadata, :map, default: %{}
+    field(:items, Term)
+    field(:metadata, :map, default: %{})
   end
 
   @type t :: %__MODULE__{
-    items: Schema.schema_types,
-    metadata: %{String.t => String.t}
-  }
+          items: Schema.schema_types(),
+          metadata: %{String.t() => String.t()}
+        }
 
-  SchemaMacros.cast_schema([data_fields: [:items]])
+  SchemaMacros.cast_schema(data_fields: [:items])
 
   def changeset(%__MODULE__{} = struct, params) do
     struct
@@ -33,7 +33,7 @@ defmodule AvroEx.Schema.Array do
     items =
       cs
       |> get_field(:items)
-      |> Schema.cast
+      |> Schema.cast()
 
     case items do
       {:ok, item} -> put_change(cs, :items, item)
@@ -42,10 +42,10 @@ defmodule AvroEx.Schema.Array do
   end
 
   def match?(%__MODULE__{items: item_type}, %Context{} = context, data) when is_list(data) do
-    Enum.all?(data, fn(item) ->
+    Enum.all?(data, fn item ->
       Schema.encodable?(item_type, context, item)
     end)
   end
 
-  def match?(_, _,  _), do: false
+  def match?(_, _, _), do: false
 end

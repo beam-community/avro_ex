@@ -1,6 +1,6 @@
 defmodule AvroEx.Schema.Fixed.Test do
   use ExUnit.Case
-  #import AvroEx.Error
+  # import AvroEx.Error
 
   @test_module AvroEx.Schema.Fixed
 
@@ -14,8 +14,7 @@ defmodule AvroEx.Schema.Fixed.Test do
 
   describe "changeset" do
     test "params are valid" do
-      assert {:ok, %@test_module{}} =
-        @test_module.cast(@valid_params)
+      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params)
     end
 
     test "errors if type is not fixed" do
@@ -25,28 +24,23 @@ defmodule AvroEx.Schema.Fixed.Test do
     end
 
     test "errors if name is not provided" do
-      assert {:error, _} =
-        @test_module.cast(@valid_params |> Map.delete("name"))
+      assert {:error, _} = @test_module.cast(@valid_params |> Map.delete("name"))
     end
 
     test "errors if size is not provided" do
-      assert {:error, _} =
-        @test_module.cast(@valid_params |> Map.delete("size"))
+      assert {:error, _} = @test_module.cast(@valid_params |> Map.delete("size"))
     end
 
     test "does not error if namespace is not given" do
-      assert {:ok, %@test_module{}} =
-        @test_module.cast(@valid_params |> Map.delete("namespace"))
+      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params |> Map.delete("namespace"))
     end
 
     test "does not error if aliases are not given" do
-      assert {:ok, %@test_module{}} =
-        @test_module.cast(@valid_params |> Map.delete("aliases"))
+      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params |> Map.delete("aliases"))
     end
 
     test "does not error if aliases is empty" do
-      assert {:ok, %@test_module{}} =
-        @test_module.cast(@valid_params |> Map.put("aliases", []))
+      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params |> Map.put("aliases", []))
     end
   end
 end

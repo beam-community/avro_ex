@@ -7,7 +7,11 @@ defmodule AvroEx.Encode do
 
   @type reason :: term
 
-  @spec encode(Schema.t, term) :: {:ok, AvroEx.encoded_avro} | {:error, :data_does_not_match_schema, term, Schema.t} |{:error, reason} | {:error, reason, term}
+  @spec encode(Schema.t(), term) ::
+          {:ok, AvroEx.encoded_avro()}
+          | {:error, :data_does_not_match_schema, term, Schema.t()}
+          | {:error, reason}
+          | {:error, reason, term}
   def encode(%Schema{context: %Context{} = context, schema: schema}, data) do
     case do_encode(schema, context, data) do
       {:error, :data_does_not_match_schema, _data, _schema} = err -> err
@@ -17,30 +21,54 @@ defmodule AvroEx.Encode do
     end
   end
 
+  def do_encode(name, %Context{} = context, data) when is_binary(name),
+    do: do_encode(Context.lookup(context, name), context, data)
 
-  def do_encode(name, %Context{} = context, data) when is_binary(name), do: do_encode(Context.lookup(context, name), context, data)
   def do_encode(%Primitive{type: :boolean}, %Context{}, true), do: <<1::8>>
   def do_encode(%Primitive{type: :boolean}, %Context{}, false), do: <<0::8>>
   def do_encode(%Primitive{type: nil}, %Context{}, nil), do: <<>>
-  def do_encode(%Primitive{type: :float}, %Context{}, float) when is_float(float), do: <<float::little-float-size(32)>>
-  def do_encode(%Primitive{type: :double}, %Context{}, double) when is_float(double), do: <<double::little-float-size(64)>>
-  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}} = schema, %Context{}, %DateTime{} = dt) do
+
+  def do_encode(%Primitive{type: :float}, %Context{}, float) when is_float(float),
+    do: <<float::little-float-size(32)>>
+
+  def do_encode(%Primitive{type: :double}, %Context{}, double) when is_float(double),
+    do: <<double::little-float-size(64)>>
+
+  def do_encode(
+        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}} = schema,
+        %Context{},
+        %DateTime{} = dt
+      ) do
     dt
     |> DateTime.to_unix(:nanosecond)
     |> encode_integer(schema)
   end
-  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}} = schema, %Context{}, %DateTime{} = dt) do
+
+  def do_encode(
+        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}} = schema,
+        %Context{},
+        %DateTime{} = dt
+      ) do
     dt
     |> DateTime.to_unix(:microsecond)
     |> encode_integer(schema)
   end
-  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}} = schema, %Context{}, %DateTime{} = dt) do
+
+  def do_encode(
+        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}} = schema,
+        %Context{},
+        %DateTime{} = dt
+      ) do
     dt
     |> DateTime.to_unix(:millisecond)
     |> encode_integer(schema)
   end
 
-  def do_encode(%Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}} = schema, %Context{}, %Time{} = dt) do
+  def do_encode(
+        %Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}} = schema,
+        %Context{},
+        %Time{} = dt
+      ) do
     {:ok, midnight} = Time.new(0, 0, 0)
 
     dt
@@ -48,7 +76,11 @@ defmodule AvroEx.Encode do
     |> encode_integer(schema)
   end
 
-  def do_encode(%Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = schema, %Context{}, %Time{} = dt) do
+  def do_encode(
+        %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = schema,
+        %Context{},
+        %Time{} = dt
+      ) do
     {:ok, midnight} = Time.new(0, 0, 0)
 
     dt
@@ -59,7 +91,9 @@ defmodule AvroEx.Encode do
   def do_encode(%Primitive{type: :long} = schema, %Context{}, long) when is_integer(long) do
     encode_integer(long, schema)
   end
-  def do_encode(%Primitive{type: :integer} = schema, %Context{}, integer) when is_integer(integer) do
+
+  def do_encode(%Primitive{type: :integer} = schema, %Context{}, integer)
+      when is_integer(integer) do
     encode_integer(integer, schema)
   end
 
@@ -77,7 +111,8 @@ defmodule AvroEx.Encode do
     size <> bin
   end
 
-  def do_encode(%Fixed{size: size}, %Context{}, bin) when is_binary(bin) and byte_size(bin) == size do
+  def do_encode(%Fixed{size: size}, %Context{}, bin)
+      when is_binary(bin) and byte_size(bin) == size do
     bin
   end
 
@@ -87,17 +122,17 @@ defmodule AvroEx.Encode do
 
   def do_encode(%Record{fields: fields}, %Context{} = context, record) when is_map(record) do
     fields
-    |> Enum.map(fn(field) -> do_encode(field, context, record[field.name]) end)
-    |> Enum.join
+    |> Enum.map(fn field -> do_encode(field, context, record[field.name]) end)
+    |> Enum.join()
   end
 
   def do_encode(%Field{type: type}, %Context{} = context, value) do
     do_encode(type, context, value)
   end
 
-  def do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, value)  do
+  def do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, value) do
     index =
-      Enum.find_index(possibilities, fn(possible_schema) ->
+      Enum.find_index(possibilities, fn possible_schema ->
         Schema.encodable?(possible_schema, context, value)
       end)
 
@@ -108,15 +143,17 @@ defmodule AvroEx.Encode do
     else
       {:error, :data_does_not_match_schema, value, schema}
     end
-
   end
 
   def do_encode(%Map{values: values}, %Context{} = context, map) when is_map(map) do
     case map_size(map) do
-      0 -> <<0>>
+      0 ->
+        <<0>>
+
       size ->
         acc = do_encode(%Primitive{type: :long}, context, size)
-        Enum.reduce(map, acc, fn({k, v}, acc) ->
+
+        Enum.reduce(map, acc, fn {k, v}, acc ->
           key = do_encode(%Primitive{type: :string}, context, k)
           value = do_encode(values, context, v)
 
@@ -127,10 +164,13 @@ defmodule AvroEx.Encode do
 
   def do_encode(%Array{items: items}, %Context{} = context, data) when is_list(data) do
     case length(data) do
-      0 -> <<0>>
+      0 ->
+        <<0>>
+
       size ->
         acc = do_encode(%Primitive{type: :long}, context, size)
-        Enum.reduce(data, acc, fn(v, acc) ->
+
+        Enum.reduce(data, acc, fn v, acc ->
           value = do_encode(items, context, v)
 
           acc <> value
@@ -140,7 +180,7 @@ defmodule AvroEx.Encode do
 
   def do_encode(%AvroEnum{symbols: symbols}, %Context{} = context, data) when is_binary(data) do
     if data in symbols do
-      index = Enum.find_index(symbols, fn(e) -> e == data end)
+      index = Enum.find_index(symbols, fn e -> e == data end)
       do_encode(%Primitive{type: :long}, context, index)
     else
       {:error, :invalid_symbol, {data, symbols}}
@@ -151,7 +191,7 @@ defmodule AvroEx.Encode do
     {:error, :data_does_not_match_schema, data, schema}
   end
 
-  @spec zigzag_encode(Primitive.t, integer) :: binary
+  @spec zigzag_encode(Primitive.t(), integer) :: binary
   def zigzag_encode(%Primitive{type: :integer}, int) when is_integer(int) do
     value =
       int
@@ -172,6 +212,7 @@ defmodule AvroEx.Encode do
 
   def variable_integer_encode(<<0::32>>), do: <<0::8>>
   def variable_integer_encode(<<0::25, byte::7>>), do: <<byte::8>>
+
   def variable_integer_encode(<<0::18, byte1::7, byte2::7>>) do
     <<byte2::8>> = wrap(byte2)
     <<byte2, byte1>>
@@ -200,6 +241,7 @@ defmodule AvroEx.Encode do
 
   def variable_integer_encode(<<0::64>>), do: <<0::8>>
   def variable_integer_encode(<<0::57, byte1::7>>), do: <<byte1::8>>
+
   def variable_integer_encode(<<0::50, byte1::7, byte2::7>>) do
     <<byte2::8>> = wrap(byte2)
     <<byte2, byte1>>
@@ -226,7 +268,9 @@ defmodule AvroEx.Encode do
     <<byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(<<0::22, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7>>) do
+  def variable_integer_encode(
+        <<0::22, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7>>
+      ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -235,7 +279,9 @@ defmodule AvroEx.Encode do
     <<byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(<<0::15, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7>>) do
+  def variable_integer_encode(
+        <<0::15, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7>>
+      ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -245,7 +291,9 @@ defmodule AvroEx.Encode do
     <<byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(<<0::8, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7>>) do
+  def variable_integer_encode(
+        <<0::8, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7>>
+      ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -256,7 +304,10 @@ defmodule AvroEx.Encode do
     <<byte8, byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(<<0::1, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7, byte9::7>>) do
+  def variable_integer_encode(
+        <<0::1, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7,
+          byte9::7>>
+      ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -268,7 +319,10 @@ defmodule AvroEx.Encode do
     <<byte9, byte8, byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(<<byte1::1, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7, byte9::7, byte10::7>>) do
+  def variable_integer_encode(
+        <<byte1::1, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7,
+          byte9::7, byte10::7>>
+      ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
