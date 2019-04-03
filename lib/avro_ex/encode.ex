@@ -351,11 +351,8 @@ defmodule AvroEx.Encode do
 
   defp stringify_keys(nil), do: nil
 
-  defp stringify_keys(map) when is_map(map) do
-    map
-    |> Enum.map(fn {k, v} -> {stringify_atom(k), stringify_keys(v)} end)
-    |> Enum.into(%{})
-  end
+  defp stringify_keys(map) when is_map(map),
+    do: Enum.into(map, %{}, fn {k, v} -> {stringify_atom(k), stringify_keys(v)} end)
 
   defp stringify_keys([head | rest]), do: [stringify_keys(head) | stringify_keys(rest)]
   defp stringify_keys(not_a_map), do: not_a_map

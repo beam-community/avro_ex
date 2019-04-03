@@ -113,9 +113,9 @@ defmodule AvroEx.Schema.Test do
 
   def json_add_property(str, property, value) when is_binary(str) do
     str
-    |> Poison.decode!()
+    |> Jason.decode!()
     |> json_add_property(property, value)
-    |> Poison.encode!()
+    |> Jason.encode!()
   end
 
   def json_add_property(json, property, value) when is_map(json) and is_atom(property) do
