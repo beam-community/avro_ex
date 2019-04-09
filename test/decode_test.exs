@@ -161,6 +161,41 @@ defmodule AvroEx.Decode.Test do
       {:ok, encoded_sha} = AvroEx.encode(schema, sha)
       assert {:ok, ^sha} = @test_module.decode(schema, encoded_sha)
     end
+
+    test "record with empty array of records" do
+      {:ok, schema} = AvroEx.parse_schema(~S(
+        {
+          "type": "record",
+          "name": "User",
+          "fields": [
+            {
+              "name": "friends",
+              "type": {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "Friend",
+                  "fields": [
+                    {
+                      "name": "userId",
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "username",
+              "type": "string"
+            }
+          ]
+        }
+      ))
+
+      {:ok, encoded} = AvroEx.encode(schema, %{"friends" => [], "username" => "iamauser"})
+
+      assert {:ok, %{"friends" => [], "username" => "iamauser"}} = @test_module.decode(schema, encoded)
+    end
   end
 
   describe "decode logical types" do
