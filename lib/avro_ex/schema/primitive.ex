@@ -28,6 +28,7 @@ defmodule AvroEx.Schema.Primitive do
           type: primitive
         }
 
+  @spec cast(any()) :: :error | {:ok, AvroEx.Schema.Primitive.t()}
   def cast(%{"type" => type} = data) do
     {:ok, %__MODULE__{type: type(type), metadata: Map.delete(data, "type")}}
   end
@@ -42,12 +43,16 @@ defmodule AvroEx.Schema.Primitive do
 
   def cast(_), do: :error
 
+  @spec load(any()) :: {:ok, any()}
   def load(data), do: {:ok, data}
 
+  @spec dump(any()) :: {:ok, any()}
   def dump(data), do: {:ok, data}
 
+  @spec type() :: :primitive
   def type, do: :primitive
 
+  @spec type(nil | <<_::24, _::_*8>>) :: :boolean | :bytes | :double | :float | :integer | :long | nil | :string
   def type("null"), do: nil
   def type(nil), do: nil
   def type("boolean"), do: :boolean

@@ -29,6 +29,8 @@ defmodule AvroEx.Schema.Fixed do
 
   SchemaMacros.cast_schema(data_fields: [:aliases, :name, :namespace, :size, :qualified_names])
 
+  @spec changeset(AvroEx.Schema.Fixed.t(), %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}) ::
+          Ecto.Changeset.t()
   def changeset(%__MODULE__{} = fixed, %{"type" => "fixed"} = params) do
     fixed
     |> cast(params, @required_fields ++ @optional_fields)

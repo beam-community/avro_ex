@@ -6,12 +6,29 @@ defmodule AvroEx.Decode do
 
   @type reason :: term
 
+  @spec decode(AvroEx.Schema.t(), binary()) :: {:ok, any()}
   def decode(%Schema{schema: schema, context: context}, avro_message)
       when is_binary(avro_message) do
     {value, ""} = do_decode(schema, context, avro_message)
     {:ok, value}
   end
 
+  @spec do_decode(
+          binary()
+          | %{
+              __struct__:
+                AvroEx.Schema.Array
+                | AvroEx.Schema.Enum
+                | AvroEx.Schema.Fixed
+                | AvroEx.Schema.Map
+                | AvroEx.Schema.Primitive
+                | AvroEx.Schema.Record
+                | AvroEx.Schema.Record.Field
+                | AvroEx.Schema.Union
+            },
+          AvroEx.Schema.Context.t(),
+          binary()
+        ) :: {any(), any()}
   def do_decode(name, %Context{} = context, data) when is_binary(name) do
     do_decode(Context.lookup(context, name), context, data)
   end
@@ -208,12 +225,14 @@ defmodule AvroEx.Decode do
     {fixed, rest}
   end
 
+  @spec zigzag_decode(integer()) :: integer()
   def zigzag_decode(int) do
     int
     |> Bitwise.bsr(1)
     |> Bitwise.bxor(-(int |> Bitwise.band(1)))
   end
 
+  @spec variable_integer_decode(bitstring, bitstring(), Primitive.t()) :: {bitstring, bitstring()}
   def variable_integer_decode(<<0::1, n::7, rest::bitstring>>, acc, %Primitive{type: :integer})
       when is_bitstring(acc) do
     leading_zero_count = 24 - bit_size(acc)

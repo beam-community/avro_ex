@@ -10,6 +10,20 @@ defmodule AvroEx.Schema.Context do
           names: %{Schema.full_name() => Record.t()}
         }
 
+  @spec add_schema(
+          AvroEx.Schema.Context.t(),
+          binary()
+          | %{
+              __struct__:
+                AvroEx.Schema.Array
+                | AvroEx.Schema.Enum
+                | AvroEx.Schema.Fixed
+                | AvroEx.Schema.Map
+                | AvroEx.Schema.Primitive
+                | AvroEx.Schema.Record
+                | AvroEx.Schema.Union
+            }
+        ) :: any()
   def add_schema(%__MODULE__{} = context, %Primitive{}), do: context
 
   def add_schema(%__MODULE__{} = context, %AvroEx.Schema.Map{values: values}),
@@ -50,6 +64,7 @@ defmodule AvroEx.Schema.Context do
     context
   end
 
+  @spec add_name(AvroEx.Schema.Context.t(), binary(), any()) :: AvroEx.Schema.Context.t()
   def add_name(%__MODULE__{} = context, name, value) when is_binary(name) do
     %__MODULE__{names: Map.put_new(context.names, name, value)}
   end

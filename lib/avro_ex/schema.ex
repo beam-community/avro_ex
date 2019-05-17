@@ -1,15 +1,3 @@
-defmodule AvroEx.Schema.Macros do
-  @moduledoc false
-
-  defmacro cast_schema(data_fields: fields) do
-    quote do
-      def cast(data) do
-        AvroEx.Schema.cast_schema(__MODULE__, data, unquote(fields))
-      end
-    end
-  end
-end
-
 defmodule AvroEx.Schema do
   alias AvroEx.{Error, Schema}
   alias AvroEx.Schema.Enum, as: AvroEnum
@@ -55,6 +43,7 @@ defmodule AvroEx.Schema do
     end
   end
 
+  @spec parse!(binary()) :: AvroEx.Schema.t()
   def parse!(json_schema) do
     case parse(json_schema) do
       {:ok, %__MODULE__{} = schema} -> schema
@@ -62,6 +51,7 @@ defmodule AvroEx.Schema do
     end
   end
 
+  @spec cast(nil | binary() | maybe_improper_list() | map()) :: :error | {:error, any()} | {:ok, binary() | map()}
   def cast(nil), do: Primitive.cast(nil)
   def cast("null"), do: Primitive.cast("null")
   def cast("boolean"), do: Primitive.cast("boolean")
@@ -88,14 +78,30 @@ defmodule AvroEx.Schema do
   def cast(%{"type" => "fixed"} = data), do: Fixed.cast(data)
   def cast(%{"type" => "enum"} = data), do: AvroEnum.cast(data)
 
+  @spec expand(
+          binary()
+          | %{
+              __struct__:
+                AvroEx.Schema.Array
+                | AvroEx.Schema.Enum
+                | AvroEx.Schema.Fixed
+                | AvroEx.Schema.Map
+                | AvroEx.Schema.Primitive
+                | AvroEx.Schema.Record
+                | AvroEx.Schema.Union
+            },
+          AvroEx.Schema.Context.t()
+        ) :: {:ok, any()}
   def expand(schema, context) do
     {:ok, Context.add_schema(context, schema)}
   end
 
+  @spec encodable?(AvroEx.Schema.t(), any()) :: boolean()
   def encodable?(%Schema{schema: schema, context: context}, data) do
     encodable?(schema, context, data)
   end
 
+  @spec encodable?(any(), any(), any()) :: boolean()
   def encodable?(%Primitive{type: nil}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
   def encodable?(%Primitive{type: :integer}, _, n) when is_integer(n), do: true
@@ -136,10 +142,12 @@ defmodule AvroEx.Schema do
 
   def encodable?(_, _, _), do: false
 
+  @spec namespace(any()) :: {:ok, any()}
   def namespace(schema) do
     {:ok, namespace(schema, nil)}
   end
 
+  @spec namespace(any(), any()) :: any()
   def namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
 
   def namespace(%Record{} = record, parent_namespace) do
@@ -240,6 +248,7 @@ defmodule AvroEx.Schema do
     end
   end
 
+  @spec cast_schema(atom(), map(), any()) :: {:error, any()} | {:ok, map()}
   def cast_schema(module, data, fields) do
     metadata = Map.delete(data, "type")
 

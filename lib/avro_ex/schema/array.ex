@@ -22,6 +22,10 @@ defmodule AvroEx.Schema.Array do
 
   SchemaMacros.cast_schema(data_fields: [:items])
 
+  @spec changeset(
+          AvroEx.Schema.Array.t(),
+          :invalid | %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}
+        ) :: Ecto.Changeset.t()
   def changeset(%__MODULE__{} = struct, params) do
     struct
     |> cast(params, @required_fields ++ @optional_fields)
@@ -41,6 +45,7 @@ defmodule AvroEx.Schema.Array do
     end
   end
 
+  @spec match?(any(), any(), any()) :: boolean()
   def match?(%__MODULE__{items: item_type}, %Context{} = context, data) when is_list(data) do
     Enum.all?(data, fn item ->
       Schema.encodable?(item_type, context, item)

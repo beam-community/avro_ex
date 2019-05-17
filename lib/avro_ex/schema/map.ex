@@ -24,6 +24,10 @@ defmodule AvroEx.Schema.Map do
 
   SchemaMacros.cast_schema(data_fields: [:values])
 
+  @spec changeset(
+          AvroEx.Schema.Map.t(),
+          :invalid | %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}
+        ) :: Ecto.Changeset.t()
   def changeset(%__MODULE__{} = struct, params) do
     struct
     |> cast(params, @required_fields)
@@ -43,6 +47,7 @@ defmodule AvroEx.Schema.Map do
     end
   end
 
+  @spec match?(any(), any(), any()) :: boolean()
   def match?(%__MODULE__{values: value_type}, %Context{} = context, data) when is_map(data) do
     Enum.all?(data, fn {key, value} ->
       Schema.encodable?(%Primitive{type: :string}, context, key) and
