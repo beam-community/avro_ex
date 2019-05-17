@@ -92,8 +92,7 @@ defmodule AvroEx.Decode.Test do
 
       {:ok, encoded_message} = AvroEx.encode(schema, %{"a" => 1, "b" => 2, "e" => "Hello world!"})
 
-      assert {:ok, %{"a" => 1, "b" => 2, "e" => "Hello world!"}} =
-               @test_module.decode(schema, encoded_message)
+      assert {:ok, %{"a" => 1, "b" => 2, "e" => "Hello world!"}} = @test_module.decode(schema, encoded_message)
     end
 
     test "union" do
@@ -140,9 +139,7 @@ defmodule AvroEx.Decode.Test do
 
     test "enum" do
       {:ok, schema} =
-        AvroEx.parse_schema(
-          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
-        )
+        AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
 
       {:ok, club} = AvroEx.encode(schema, "club")
       {:ok, heart} = AvroEx.encode(schema, "heart")
@@ -202,8 +199,7 @@ defmodule AvroEx.Decode.Test do
     test "datetime micros" do
       now = DateTime.utc_now()
 
-      {:ok, micro_schema} =
-        AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-micros"}))
+      {:ok, micro_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-micros"}))
 
       {:ok, micro_encode} = AvroEx.encode(micro_schema, now)
       assert {:ok, ^now} = @test_module.decode(micro_schema, micro_encode)
@@ -212,8 +208,7 @@ defmodule AvroEx.Decode.Test do
     test "datetime millis" do
       now = DateTime.utc_now() |> DateTime.truncate(:millisecond)
 
-      {:ok, milli_schema} =
-        AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-millis"}))
+      {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-millis"}))
 
       {:ok, milli_encode} = AvroEx.encode(milli_schema, now)
       assert {:ok, ^now} = @test_module.decode(milli_schema, milli_encode)
@@ -222,8 +217,7 @@ defmodule AvroEx.Decode.Test do
     test "datetime nanos" do
       now = DateTime.utc_now()
 
-      {:ok, nano_schema} =
-        AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-nanos"}))
+      {:ok, nano_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-nanos"}))
 
       {:ok, nano_encode} = AvroEx.encode(nano_schema, now)
       assert {:ok, ^now} = @test_module.decode(nano_schema, nano_encode)

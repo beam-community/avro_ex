@@ -1,12 +1,15 @@
 defmodule AvroEx.Schema.Enum do
   use Ecto.Schema
+
   require AvroEx.Schema.Macros, as: SchemaMacros
-  alias AvroEx.Schema
-  alias AvroEx.Schema.Context
+
   import Ecto.Changeset
 
-  @primary_key false
+  alias AvroEx.Schema
+  alias AvroEx.Schema.Context
+
   @optional_fields [:aliases, :doc, :metadata, :namespace]
+  @primary_key false
   @required_fields [:name, :symbols]
 
   embedded_schema do
@@ -30,9 +33,7 @@ defmodule AvroEx.Schema.Enum do
           symbols: [String.t()]
         }
 
-  SchemaMacros.cast_schema(
-    data_fields: [:aliases, :doc, :name, :namespace, :qualified_names, :symbols]
-  )
+  SchemaMacros.cast_schema(data_fields: [:aliases, :doc, :name, :namespace, :qualified_names, :symbols])
 
   def changeset(%__MODULE__{} = struct, params) do
     struct

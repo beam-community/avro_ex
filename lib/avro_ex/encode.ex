@@ -16,7 +16,6 @@ defmodule AvroEx.Encode do
     case do_encode(schema, context, data) do
       {:error, :data_does_not_match_schema, _data, _schema} = err -> err
       {:error, _reason, _value} = err -> err
-      {:error, _reason} = err -> err
       val -> {:ok, val}
     end
   end
@@ -278,9 +277,7 @@ defmodule AvroEx.Encode do
     <<byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(
-        <<0::22, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7>>
-      ) do
+  def variable_integer_encode(<<0::22, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7>>) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -289,9 +286,7 @@ defmodule AvroEx.Encode do
     <<byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(
-        <<0::15, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7>>
-      ) do
+  def variable_integer_encode(<<0::15, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7>>) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -301,9 +296,7 @@ defmodule AvroEx.Encode do
     <<byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
-  def variable_integer_encode(
-        <<0::8, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7>>
-      ) do
+  def variable_integer_encode(<<0::8, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7>>) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
     <<byte4::8>> = wrap(byte4)
@@ -315,8 +308,7 @@ defmodule AvroEx.Encode do
   end
 
   def variable_integer_encode(
-        <<0::1, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7,
-          byte9::7>>
+        <<0::1, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7, byte9::7>>
       ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)
@@ -330,8 +322,7 @@ defmodule AvroEx.Encode do
   end
 
   def variable_integer_encode(
-        <<byte1::1, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7,
-          byte9::7, byte10::7>>
+        <<byte1::1, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7, byte9::7, byte10::7>>
       ) do
     <<byte2::8>> = wrap(byte2)
     <<byte3::8>> = wrap(byte3)

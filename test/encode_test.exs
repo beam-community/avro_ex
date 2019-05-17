@@ -56,15 +56,13 @@ defmodule AvroEx.Encode.Test do
     test "bytes" do
       {:ok, schema} = AvroEx.parse_schema(~S("bytes"))
 
-      assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} =
-               @test_module.encode(schema, "abcdefg")
+      assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, "abcdefg")
     end
 
     test "string" do
       {:ok, schema} = AvroEx.parse_schema(~S("string"))
 
-      assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} =
-               @test_module.encode(schema, "abcdefg")
+      assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, "abcdefg")
     end
   end
 
@@ -82,20 +80,20 @@ defmodule AvroEx.Encode.Test do
       @test_module,
       :variable_integer_encode,
       [<<128::size(32)>>],
-      <<32769::size(16)>>
+      <<32_769::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16383::size(32)>>],
-      <<65407::size(16)>>
+      [<<16_383::size(32)>>],
+      <<65_407::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16384::size(32)>>],
+      [<<16_384::size(32)>>],
       <<8_421_377::size(24)>>
     )
 
@@ -121,20 +119,20 @@ defmodule AvroEx.Encode.Test do
       @test_module,
       :variable_integer_encode,
       [<<128::size(64)>>],
-      <<32769::size(16)>>
+      <<32_769::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16383::size(64)>>],
-      <<65407::size(16)>>
+      [<<16_383::size(64)>>],
+      <<65_407::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16384::size(64)>>],
+      [<<16_384::size(64)>>],
       <<8_421_377::size(24)>>
     )
 
@@ -180,17 +178,16 @@ defmodule AvroEx.Encode.Test do
       {:ok, bytes_schema} = AvroEx.parse_schema(~S("bytes"))
 
       assert {:ok,
-              [
-                @test_module.encode(null_schema, record["null"]) |> elem(1),
-                @test_module.encode(boolean_schema, record["bool"]) |> elem(1),
-                @test_module.encode(int_schema, record["integer"]) |> elem(1),
-                @test_module.encode(long_schema, record["long"]) |> elem(1),
-                @test_module.encode(float_schema, record["float"]) |> elem(1),
-                @test_module.encode(double_schema, record["double"]) |> elem(1),
-                @test_module.encode(string_schema, record["string"]) |> elem(1),
-                @test_module.encode(bytes_schema, record["bytes"]) |> elem(1)
-              ]
-              |> Enum.join()} == @test_module.encode(schema, record)
+              Enum.join([
+                elem(@test_module.encode(null_schema, record["null"]), 1),
+                elem(@test_module.encode(boolean_schema, record["bool"]), 1),
+                elem(@test_module.encode(int_schema, record["integer"]), 1),
+                elem(@test_module.encode(long_schema, record["long"]), 1),
+                elem(@test_module.encode(float_schema, record["float"]), 1),
+                elem(@test_module.encode(double_schema, record["double"]), 1),
+                elem(@test_module.encode(string_schema, record["string"]), 1),
+                elem(@test_module.encode(bytes_schema, record["bytes"]), 1)
+              ])} == @test_module.encode(schema, record)
     end
 
     test "works as expected with default values" do
@@ -270,8 +267,7 @@ defmodule AvroEx.Encode.Test do
     test "errors if the data doesn't match the schema" do
       {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
 
-      assert {:error, :data_does_not_match_schema, "wat", _schema} =
-               @test_module.encode(schema, "wat")
+      assert {:error, :data_does_not_match_schema, "wat", _schema} = @test_module.encode(schema, "wat")
     end
   end
 
@@ -327,9 +323,7 @@ defmodule AvroEx.Encode.Test do
   describe "encode (enum)" do
     test "encodes the index of the symbol" do
       {:ok, enum_schema} =
-        AvroEx.parse_schema(
-          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
-        )
+        AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
 
       {:ok, long_schema} = AvroEx.parse_schema(~S("long"))
 
@@ -354,8 +348,7 @@ defmodule AvroEx.Encode.Test do
     test "returns the expected error tuple" do
       {:ok, schema} = AvroEx.parse_schema(~S("null"))
 
-      assert {:error, :data_does_not_match_schema, :wat, _schema} =
-               @test_module.encode(schema, :wat)
+      assert {:error, :data_does_not_match_schema, :wat, _schema} = @test_module.encode(schema, :wat)
     end
   end
 

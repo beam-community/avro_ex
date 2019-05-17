@@ -173,6 +173,7 @@ defmodule AvroEx.Decode do
           {decoded_item, buffer} = do_decode(item_schema, context, buffer)
           {[decoded_item | decoded_items], buffer}
         end)
+
       {Enum.reverse(decoded_items), String.slice(rest, 1..-1)}
     else
       {[], buffer}
@@ -197,8 +198,7 @@ defmodule AvroEx.Decode do
     end
   end
 
-  def do_decode(%AvroEx.Schema.Enum{symbols: symbols}, %Context{} = context, data)
-      when is_binary(data) do
+  def do_decode(%AvroEx.Schema.Enum{symbols: symbols}, %Context{} = context, data) when is_binary(data) do
     {index, rest} = do_decode(%Primitive{type: :long}, context, data)
     {:lists.nth(index + 1, symbols), rest}
   end
@@ -215,21 +215,19 @@ defmodule AvroEx.Decode do
   end
 
   def variable_integer_decode(<<0::1, n::7, rest::bitstring>>, acc, %Primitive{type: :integer})
-      when is_bitstring(acc) and is_bitstring(acc) do
+      when is_bitstring(acc) do
     leading_zero_count = 24 - bit_size(acc)
     val = <<0::size(leading_zero_count), n::8, acc::bitstring>>
     {val, rest}
   end
 
-  def variable_integer_decode(<<0::1, n::7, rest::bitstring>>, acc, %Primitive{type: :long})
-      when is_bitstring(acc) and is_bitstring(acc) do
+  def variable_integer_decode(<<0::1, n::7, rest::bitstring>>, acc, %Primitive{type: :long}) when is_bitstring(acc) do
     leading_zero_count = 56 - bit_size(acc)
     val = <<0::size(leading_zero_count), n::8, acc::bitstring>>
     {val, rest}
   end
 
-  def variable_integer_decode(<<1::1, n::7, rest::bitstring>>, acc, type)
-      when is_bitstring(acc) and is_bitstring(acc) do
+  def variable_integer_decode(<<1::1, n::7, rest::bitstring>>, acc, type) when is_bitstring(acc) do
     variable_integer_decode(rest, <<n::7, acc::bitstring>>, type)
   end
 end

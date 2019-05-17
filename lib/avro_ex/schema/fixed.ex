@@ -3,8 +3,9 @@ defmodule AvroEx.Schema.Fixed do
   require AvroEx.Schema.Macros, as: SchemaMacros
 
   import Ecto.Changeset
-  alias AvroEx.Schema.Context
+
   alias AvroEx.Schema
+  alias AvroEx.Schema.Context
 
   embedded_schema do
     field(:aliases, {:array, :string}, default: [])

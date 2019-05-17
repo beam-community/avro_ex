@@ -66,8 +66,7 @@ defmodule AvroEx.Schema.Record.Test do
     end
 
     test "Looks at doc if given" do
-      {:ok, %@test_module{doc: "An example Record for testing"}} =
-        @test_module.cast(@valid_record)
+      {:ok, %@test_module{doc: "An example Record for testing"}} = @test_module.cast(@valid_record)
     end
 
     test "Does not require doc" do
