@@ -157,12 +157,15 @@ defmodule AvroEx.Encode do
       size ->
         acc = do_encode(%Primitive{type: :long}, context, size)
 
-        Enum.reduce(map, acc, fn {k, v}, acc ->
-          key = do_encode(%Primitive{type: :string}, context, k)
-          value = do_encode(values, context, v)
+        encoded_map =
+          Enum.reduce(map, acc, fn {k, v}, acc ->
+            key = do_encode(%Primitive{type: :string}, context, k)
+            value = do_encode(values, context, v)
 
-          acc <> key <> value
-        end)
+            acc <> key <> value
+          end)
+
+        encoded_map <> <<0>>
     end
   end
 
@@ -174,11 +177,14 @@ defmodule AvroEx.Encode do
       size ->
         acc = do_encode(%Primitive{type: :long}, context, size)
 
-        Enum.reduce(data, acc, fn v, acc ->
-          value = do_encode(items, context, v)
+        encoded_array =
+          Enum.reduce(data, acc, fn v, acc ->
+            value = do_encode(items, context, v)
 
-          acc <> value
-        end)
+            acc <> value
+          end)
+
+        encoded_array <> <<0>>
     end
   end
 
