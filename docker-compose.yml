@@ -1,8 +1,0 @@
-version: '3'
-
-services:
-  avro_ex:
-    build: .
-    command: ash
-    volumes:
-      - .:/app
