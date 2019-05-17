@@ -72,9 +72,7 @@ defmodule AvroEx.Schema.Record do
   @required_fields [:name]
   @optional_fields [:namespace, :doc, :aliases, :metadata]
 
-  SchemaMacros.cast_schema(
-    data_fields: [:aliases, :doc, :fields, :name, :namespace, :qualified_names, :symbols]
-  )
+  SchemaMacros.cast_schema(data_fields: [:aliases, :doc, :fields, :name, :namespace, :qualified_names, :symbols])
 
   def changeset(%__MODULE__{} = record, %{"type" => "record"} = params) do
     record

@@ -4,7 +4,7 @@ defmodule AvroEx.Mixfile do
   def project do
     [
       app: :avro_ex,
-      version: "0.1.0-beta.6",
+      version: "1.0.0",
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -16,8 +16,7 @@ defmodule AvroEx.Mixfile do
   end
 
   def application do
-    # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger, :ecto]]
+    [extra_applications: [:ecto, :logger]]
   end
 
   defp aliases do
@@ -26,17 +25,19 @@ defmodule AvroEx.Mixfile do
 
   defp deps do
     [
+      {:ecto, "~> 3.0"},
       {:jason, "~> 1.1"},
-      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false},
-      {:ecto, "~> 3.0"}
+      {:credo, "~> 1.0", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false}
     ]
   end
 
   defp package do
     [
       licenses: ["MIT"],
-      maintainers: ["cjpoll@gmail.com"],
-      links: %{"Github" => "http://github.com/cjpoll/avro_ex"}
+      maintainers: ["doomspork", "cjpoll"],
+      links: %{"Github" => "http://github.com/beam-community/avro_ex"}
     ]
   end
 end

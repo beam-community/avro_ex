@@ -1,4 +1,6 @@
 defmodule AvroEx.Schema.Macros do
+  @moduledoc false
+
   defmacro cast_schema(data_fields: fields) do
     quote do
       def cast(data) do
@@ -9,11 +11,11 @@ defmodule AvroEx.Schema.Macros do
 end
 
 defmodule AvroEx.Schema do
-  alias AvroEx.{Schema, Error}
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+  alias AvroEx.{Error, Schema}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
 
   defstruct [:context, :schema]
 
