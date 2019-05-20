@@ -28,7 +28,7 @@ defmodule AvroEx.Mixfile do
     [
       {:poison, "~> 3.1.0"},
       {:ex_doc, "~> 0.18.0", only: :dev, runtime: false},
-      {:ecto, "~> 2.1.0 or ~> 2.2.0"}
+      {:ecto, "~> 3.0"}
     ]
   end
 
