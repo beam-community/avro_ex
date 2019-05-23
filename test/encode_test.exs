@@ -216,6 +216,48 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<0>>} = @test_module.encode(schema, %{})
       assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
     end
+
+
+    test "works as expected with atom keys" do
+      {:ok, schema} = AvroEx.parse_schema(~S(
+        {
+          "type": "record", "name": "Record", "fields": [
+            {
+              "name": "record",
+              "type": "string"
+            }
+          ]}
+        ))
+
+      record = %{record: "string"}
+      assert {:ok, encoded} = @test_module.encode(schema, record)
+      assert {:ok, %{"record" => "string"}} = AvroEx.decode(schema, encoded)
+    end
+
+    test "works as expected with nested atomized keys" do
+      {:ok, schema} = AvroEx.parse_schema(~S(
+        {
+          "type": "record", "name": "Record", "fields": [
+            {
+              "name": "record",
+              "type": {
+                "type": "record",
+                "name": "inner-record",
+                "fields": [
+                  {
+                    "name": "field",
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          ]}
+        ))
+
+      record = %{record: %{field: "string"}}
+      assert {:ok, encoded} = @test_module.encode(schema, record)
+      assert {:ok, %{"record" => %{"field" => "string"}}} = AvroEx.decode(schema, encoded)
+    end
   end
 
   describe "encode (union)" do

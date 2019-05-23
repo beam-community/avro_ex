@@ -121,6 +121,8 @@ defmodule AvroEx.Encode do
   end
 
   def do_encode(%Record{fields: fields}, %Context{} = context, record) when is_map(record) do
+    record = stringify_keys(record)
+
     fields
     |> Enum.map(fn field -> do_encode(field, context, record[field.name]) end)
     |> Enum.join()
@@ -352,4 +354,13 @@ defmodule AvroEx.Encode do
     |> zigzag_encode(int)
     |> variable_integer_encode
   end
+
+  defp stringify_keys(map) when is_map(map),
+    do: Enum.into(map, %{}, fn {k, v} -> {stringify_atom(k), stringify_keys(v)} end)
+
+  defp stringify_keys([head | rest]), do: [stringify_keys(head) | stringify_keys(rest)]
+  defp stringify_keys(not_a_map), do: not_a_map
+
+  defp stringify_atom(atom) when is_atom(atom), do: Atom.to_string(atom)
+  defp stringify_atom(not_a_atom), do: not_a_atom
 end
