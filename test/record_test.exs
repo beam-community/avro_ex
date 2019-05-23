@@ -159,12 +159,12 @@ defmodule AvroEx.Schema.Record.Test do
       }
 
       state = %{
-        both: both |> Poison.encode!(),
-        no_namespace: no_namespace |> Poison.encode!(),
-        prov_nprov: prov_nprov |> Poison.encode!(),
-        nprov_nprov: nprov_nprov |> Poison.encode!(),
-        nprov_prov: nprov_prov |> Poison.encode!(),
-        prov_prov: prov_prov |> Poison.encode!()
+        both: both |> Jason.encode!(),
+        no_namespace: no_namespace |> Jason.encode!(),
+        prov_nprov: prov_nprov |> Jason.encode!(),
+        nprov_nprov: nprov_nprov |> Jason.encode!(),
+        nprov_prov: nprov_prov |> Jason.encode!(),
+        prov_prov: prov_prov |> Jason.encode!()
       }
 
       {:ok, state}

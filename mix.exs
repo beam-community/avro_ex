@@ -26,7 +26,7 @@ defmodule AvroEx.Mixfile do
 
   defp deps do
     [
-      {:poison, "~> 3.1.0"},
+      {:jason, "~> 1.1"},
       {:ex_doc, "~> 0.18.0", only: :dev, runtime: false},
       {:ecto, "~> 3.0"}
     ]
