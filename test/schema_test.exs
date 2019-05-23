@@ -498,6 +498,62 @@ defmodule AvroEx.Schema.Test do
     end
   end
 
+  describe "encodable? (record: wioth defaults)" do
+    setup do
+      schema = """
+      {
+        "type": "record",
+        "name": "Person",
+        "fields": [
+          {"name": "first_name", "type": "string"},
+          {"name": "age", "type": "int"},
+          {"name": "has_dog", "type": "boolean", "default": false},
+          {
+            "name": "thing",
+            "type":{
+              "type": "record",
+              "name": "Thing",
+              "fields": [
+                {"name": "some_field", "type": "null", "default": null}
+              ]
+            }
+          }
+        ]
+      }
+      """
+
+      {:ok, schema} = @test_module.parse(schema)
+      {:ok, %{schema: schema}}
+    end
+
+    test "accepts complete records", %{schema: schema} do
+      assert @test_module.encodable?(schema, %{
+               "first_name" => "Cody",
+               "age" => 30,
+               "has_dog" => true,
+               "thing" => %{"some_field" => nil}
+             })
+    end
+
+    test "accpets partially complete records", %{schema: schema} do
+      assert @test_module.encodable?(schema, %{
+               "first_name" => "Cody",
+               "age" => 30,
+               "thing" => %{}
+             })
+    end
+
+    test "does not accept missing fields without default", %{schema: schema} do
+      # Should this be encodable?
+      refute @test_module.encodable?(schema, %{"first_name" => "Cody", "age" => 30})
+    end
+
+    test "checks typing on child records", %{schema: schema} do
+      data = %{"first_name" => "Cody", "age" => 30, "thing" => %{"some_field" => 1}}
+      refute @test_module.encodable?(schema, data)
+    end
+  end
+
   describe "encodable? (record: named)" do
     setup do
       schema = """
