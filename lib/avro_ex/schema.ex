@@ -45,7 +45,7 @@ defmodule AvroEx.Schema do
 
   @spec parse(json_schema, Context.t()) :: {:ok, t} | {:error, term}
   def parse(json_schema, %Context{} = context \\ %Context{}) do
-    with {:ok, schema} <- Poison.decode(json_schema),
+    with {:ok, schema} <- Jason.decode(json_schema),
          {:ok, schema} <- cast(schema),
          {:ok, schema} <- namespace(schema),
          {:ok, context} <- expand(schema, context) do
