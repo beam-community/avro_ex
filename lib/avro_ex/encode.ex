@@ -20,6 +20,11 @@ defmodule AvroEx.Encode do
     end
   end
 
+  @spec do_encode(any(), any(), any()) ::
+          binary()
+          | {:error, :incorrect_fixed_size | :invalid_string | :invalid_symbol,
+             binary() | [{any(), any()}, ...] | {binary(), any()}}
+          | {:error, :data_does_not_match_schema, any(), any()}
   def do_encode(name, %Context{} = context, data) when is_binary(name),
     do: do_encode(Context.lookup(context, name), context, data)
 
@@ -219,6 +224,7 @@ defmodule AvroEx.Encode do
     <<value::64>>
   end
 
+  @spec variable_integer_encode(<<_::32, _::_*32>>) :: <<_::8, _::_*8>>
   def variable_integer_encode(<<0::32>>), do: <<0::8>>
   def variable_integer_encode(<<0::25, byte::7>>), do: <<byte::8>>
 
@@ -336,6 +342,7 @@ defmodule AvroEx.Encode do
     <<byte10, byte9, byte8, byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
   end
 
+  @spec wrap(integer()) :: <<_::8>>
   def wrap(byte), do: <<1::1, byte::7>>
 
   defp encode_integer(int, schema) do

@@ -1,13 +1,3 @@
-defmodule AvroEx.Encode.Test.Macros do
-  defmacro assert_result(m, f, a, result) do
-    quote do
-      test "#{unquote(m)}.#{unquote(f)} - #{unquote(:erlang.unique_integer())}" do
-        assert apply(unquote(m), unquote(f), unquote(a)) == unquote(result)
-      end
-    end
-  end
-end
-
 defmodule AvroEx.Encode.Test do
   require __MODULE__.Macros
   alias __MODULE__.Macros
@@ -352,6 +342,7 @@ defmodule AvroEx.Encode.Test do
     end
   end
 
+  @spec binary_of_size(integer, binary) :: binary
   def binary_of_size(size, bin \\ "")
   def binary_of_size(0, bin), do: bin
   def binary_of_size(size, bin), do: binary_of_size(size - 1, bin <> "a")

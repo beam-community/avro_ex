@@ -1,4 +1,5 @@
 defmodule Helper do
+  @spec to_bits(bitstring(), any()) :: [any()]
   def to_bits(bitstring, bits \\ [])
 
   def to_bits(<<bit::1, rest::bitstring>>, bits) do

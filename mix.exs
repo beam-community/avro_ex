@@ -10,6 +10,7 @@ defmodule AvroEx.Mixfile do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       package: package(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       description: "A pure-elixir avro encoding/decoding library",
       deps: deps()
     ]
@@ -29,7 +30,7 @@ defmodule AvroEx.Mixfile do
       {:jason, "~> 1.1"},
       {:credo, "~> 1.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.20", only: :dev, runtime: false}
     ]
   end
 
@@ -40,4 +41,7 @@ defmodule AvroEx.Mixfile do
       links: %{"Github" => "http://github.com/beam-community/avro_ex"}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end

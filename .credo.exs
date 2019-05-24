@@ -139,10 +139,10 @@
         #
         # Controversial and experimental checks (opt-in, just replace `false` with `[]`)
         #
-        {Credo.Check.Consistency.MultiAliasImportRequireUse, false},
+        {Credo.Check.Consistency.MultiAliasImportRequireUse, []},
         {Credo.Check.Design.DuplicatedCode, false},
         {Credo.Check.Readability.MultiAlias, false},
-        {Credo.Check.Readability.Specs, false},
+        {Credo.Check.Readability.Specs, []},
         {Credo.Check.Refactor.ABCSize, false},
         {Credo.Check.Refactor.AppendSingleItem, false},
         {Credo.Check.Refactor.DoubleBooleanNegation, false},
