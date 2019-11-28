@@ -65,10 +65,7 @@ defmodule AvroEx.Schema.Test.Macros do
                     metadata: %{"some" => "metadata"}
                   },
                   context: %AvroEx.Schema.Context{names: %{}}
-                }} =
-                 @test_module.parse(
-                   ~s({"type": "#{unquote(passed_in_type)}", "some": "metadata"})
-                 )
+                }} = @test_module.parse(~s({"type": "#{unquote(passed_in_type)}", "some": "metadata"}))
       end
     end
   end
@@ -81,10 +78,10 @@ defmodule AvroEx.Schema.Test do
   import __MODULE__.Macros
 
   alias AvroEx.Schema
-  alias AvroEx.Schema.{Array, Context, Primitive, Record, Union}
-  alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Enum, as: AvroEnum
+  alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
+  alias AvroEx.Schema.{Array, Context, Primitive, Record, Union}
 
   @test_module AvroEx.Schema
 
@@ -326,8 +323,7 @@ defmodule AvroEx.Schema.Test do
     end
 
     test "matches the given type" do
-      assert {:ok, %@test_module{schema: %@schema{values: %Primitive{type: :integer}}}} =
-               AvroEx.parse_schema(@json)
+      assert {:ok, %@test_module{schema: %@schema{values: %Primitive{type: :integer}}}} = AvroEx.parse_schema(@json)
     end
 
     test "works with a union" do
@@ -619,18 +615,14 @@ defmodule AvroEx.Schema.Test do
   describe "encodable? (enum)" do
     test "works as expected" do
       {:ok, schema} =
-        AvroEx.parse_schema(
-          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
-        )
+        AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
 
       assert @test_module.encodable?(schema, "heart")
     end
 
     test "fails if string is not in symbols" do
       {:ok, schema} =
-        AvroEx.parse_schema(
-          ~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]})
-        )
+        AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
 
       refute @test_module.encodable?(schema, "kkjasdfkasdfj")
     end

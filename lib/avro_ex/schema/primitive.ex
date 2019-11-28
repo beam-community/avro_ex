@@ -1,4 +1,8 @@
 defmodule AvroEx.Schema.Primitive do
+  @moduledoc """
+  Functions for handling primitive types in Avro schemas
+  """
+
   use Ecto.Schema
   @behaviour Ecto.Type
   @primary_key false
@@ -42,7 +46,7 @@ defmodule AvroEx.Schema.Primitive do
 
   def dump(data), do: {:ok, data}
 
-  def type(), do: :primitive
+  def type, do: :primitive
 
   def type("null"), do: nil
   def type(nil), do: nil

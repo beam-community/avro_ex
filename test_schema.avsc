@@ -1,8 +1,0 @@
-{
-	"type": "record",
-	"name": "LinkedList",
-	"fields": [
-		{"name": "value", "type": "int"},
-		{"name": "next", "type": ["null", "LinkedList"]}
-	]
-}

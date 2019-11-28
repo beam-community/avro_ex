@@ -1,10 +1,13 @@
 defmodule AvroEx.Schema.Map do
   use Ecto.Schema
+
   require AvroEx.Schema.Macros, as: SchemaMacros
+
+  import Ecto.Changeset
+
   alias AvroEx.{Schema, Term}
   alias AvroEx.Schema.{Context, Primitive}
   alias Ecto.Changeset
-  import Ecto.Changeset
 
   @primary_key false
   @required_fields [:metadata, :values]

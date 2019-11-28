@@ -96,8 +96,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
   describe "lookup" do
     test "looks up a named type" do
-      schema_json =
-        ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
+      schema_json = ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
           {"type": "int", "name": "value"},
           {"type": ["null", "me.cjpoll.LinkedList"], "name": "next"}
         ]}])
@@ -132,8 +131,7 @@ defmodule AvroEx.Schema.Primitive.Test do
 
   describe "encode recursive" do
     test "can encode and decode a recursive type" do
-      schema_json =
-        ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
+      schema_json = ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
           {"type": "int", "name": "value"},
           {"type": ["null", "me.cjpoll.LinkedList"], "name": "next"}
         ]}])

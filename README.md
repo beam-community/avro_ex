@@ -10,7 +10,7 @@ The docs can be found on [hex.pm](https://hexdocs.pm/avro_ex/AvroEx.html)
 
 ```
 def deps do
-  [{:avro_ex, "~> 0.1.0-beta.0"}]
+  [{:avro_ex, "~> 1.0"}]
 end
 ```
 
