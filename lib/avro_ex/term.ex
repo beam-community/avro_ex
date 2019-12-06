@@ -1,5 +1,5 @@
 defmodule AvroEx.Term do
-  @behaviour Ecto.Type
+  use Ecto.Type
 
   def cast(type), do: {:ok, type}
   def load(data), do: {:ok, data}
