@@ -4,7 +4,7 @@ defmodule AvroEx.Schema.Primitive do
   """
 
   use Ecto.Schema
-  @behaviour Ecto.Type
+  use Ecto.Type
   @primary_key false
 
   @type primitive ::
