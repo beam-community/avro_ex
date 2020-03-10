@@ -4,7 +4,7 @@ defmodule AvroEx.Mixfile do
   def project do
     [
       app: :avro_ex,
-      version: "1.0.0",
+      version: "1.1.0",
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -29,7 +29,7 @@ defmodule AvroEx.Mixfile do
       {:jason, "~> 1.1"},
       {:credo, "~> 1.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 
