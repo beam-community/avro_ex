@@ -35,12 +35,17 @@ defmodule AvroEx.Schema.Enum do
 
   SchemaMacros.cast_schema(data_fields: [:aliases, :doc, :name, :namespace, :qualified_names, :symbols])
 
+  @spec changeset(
+          AvroEx.Schema.Enum.t(),
+          :invalid | %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}
+        ) :: Ecto.Changeset.t()
   def changeset(%__MODULE__{} = struct, params) do
     struct
     |> cast(params, @optional_fields ++ @required_fields)
     |> validate_required(@required_fields)
   end
 
+  @spec match?(any(), any(), any()) :: boolean()
   def match?(%__MODULE__{symbols: symbols}, %Context{}, data) when is_binary(data) do
     data in symbols
   end

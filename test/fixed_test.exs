@@ -19,28 +19,45 @@ defmodule AvroEx.Schema.Fixed.Test do
 
     test "errors if type is not fixed" do
       assert_raise FunctionClauseError, fn ->
-        @test_module.cast(@valid_params |> Map.put("type", "record"))
+        @valid_params
+        |> Map.put("type", "record")
+        |> @test_module.cast()
       end
     end
 
     test "errors if name is not provided" do
-      assert {:error, _} = @test_module.cast(@valid_params |> Map.delete("name"))
+      assert {:error, _} =
+               @valid_params
+               |> Map.delete("name")
+               |> @test_module.cast()
     end
 
     test "errors if size is not provided" do
-      assert {:error, _} = @test_module.cast(@valid_params |> Map.delete("size"))
+      assert {:error, _} =
+               @valid_params
+               |> Map.delete("size")
+               |> @test_module.cast()
     end
 
     test "does not error if namespace is not given" do
-      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params |> Map.delete("namespace"))
+      assert {:ok, %@test_module{}} =
+               @valid_params
+               |> Map.delete("namespace")
+               |> @test_module.cast()
     end
 
     test "does not error if aliases are not given" do
-      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params |> Map.delete("aliases"))
+      assert {:ok, %@test_module{}} =
+               @valid_params
+               |> Map.delete("aliases")
+               |> @test_module.cast()
     end
 
     test "does not error if aliases is empty" do
-      assert {:ok, %@test_module{}} = @test_module.cast(@valid_params |> Map.put("aliases", []))
+      assert {:ok, %@test_module{}} =
+               @valid_params
+               |> Map.put("aliases", [])
+               |> @test_module.cast()
     end
   end
 end

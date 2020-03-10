@@ -44,7 +44,7 @@ defmodule AvroEx.Schema.Record.Test do
     end
 
     test "Errors if a name field is not specified" do
-      schema = @valid_record |> Map.delete("name")
+      schema = Map.delete(@valid_record, "name")
 
       assert {:error, errors} = @test_module.cast(schema)
       assert error("can't be blank") in errors.name
@@ -59,7 +59,7 @@ defmodule AvroEx.Schema.Record.Test do
     end
 
     test "Does not require a namespace" do
-      schema = @valid_record |> Map.delete("namespace")
+      schema = Map.delete(@valid_record, "namespace")
 
       assert {:ok, %@test_module{} = record} = @test_module.cast(schema)
       assert record.namespace == nil
@@ -70,7 +70,7 @@ defmodule AvroEx.Schema.Record.Test do
     end
 
     test "Does not require doc" do
-      schema = @valid_record |> Map.delete("doc")
+      schema = Map.delete(@valid_record, "doc")
 
       {:ok, %@test_module{doc: nil}} = @test_module.cast(schema)
     end
@@ -82,7 +82,7 @@ defmodule AvroEx.Schema.Record.Test do
     end
 
     test "Does not require aliases" do
-      schema = @valid_record |> Map.delete("aliases")
+      schema = Map.delete(@valid_record, "aliases")
 
       {:ok, %@test_module{aliases: []}} = @test_module.cast(schema)
     end

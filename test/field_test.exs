@@ -14,14 +14,14 @@ defmodule AvroEx.Schema.Record.Field.Test do
     }
 
     test "Errors if a type is not specified" do
-      schema = @schema |> Map.delete("type")
+      schema = Map.delete(@schema, "type")
       cs = @test_module.changeset(%@test_module{}, schema)
       refute cs.valid?
       assert error("can't be blank") in errors(cs, :type)
     end
 
     test "Errors if a name is not specified" do
-      schema = @schema |> Map.delete("name")
+      schema = Map.delete(@schema, "name")
       cs = @test_module.changeset(%@test_module{}, schema)
       refute cs.valid?
       assert error("can't be blank") in errors(cs, :name)
@@ -34,7 +34,7 @@ defmodule AvroEx.Schema.Record.Field.Test do
     end
 
     test "Does not require doc" do
-      schema = @schema |> Map.delete("doc")
+      schema = Map.delete(@schema, "doc")
       cs = @test_module.changeset(%@test_module{}, schema)
       assert cs.valid?
       assert Changeset.get_field(cs, :doc) == nil
@@ -47,7 +47,7 @@ defmodule AvroEx.Schema.Record.Field.Test do
     end
 
     test "Does not require default" do
-      schema = @schema |> Map.delete("default")
+      schema = Map.delete(@schema, "default")
       cs = @test_module.changeset(%@test_module{}, schema)
       assert cs.valid?
       assert Changeset.get_field(cs, :default) == nil
