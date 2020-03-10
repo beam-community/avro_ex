@@ -363,8 +363,8 @@ defmodule AvroEx.Schema.Test do
       }
       """
 
-      {:ok, schema} = @test_module.parse(schema)
-      {:ok, %{schema: schema}}
+      {:ok, parsed_schema} = @test_module.parse(schema)
+      {:ok, %{schema: parsed_schema}}
     end
 
     test "can be encoded with a map", %{schema: schema} do
@@ -405,8 +405,8 @@ defmodule AvroEx.Schema.Test do
       }
       """
 
-      {:ok, schema} = @test_module.parse(schema)
-      {:ok, %{schema: schema}}
+      {:ok, parsed_schema} = @test_module.parse(schema)
+      {:ok, %{schema: parsed_schema}}
     end
 
     test "works as expected", %{schema: schema} do
@@ -435,8 +435,8 @@ defmodule AvroEx.Schema.Test do
       }
       """
 
-      {:ok, schema} = @test_module.parse(schema)
-      {:ok, %{schema: schema}}
+      {:ok, parsed_schema} = @test_module.parse(schema)
+      {:ok, %{schema: parsed_schema}}
     end
 
     test "works with a named type", %{schema: schema} do

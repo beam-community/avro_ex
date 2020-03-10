@@ -3,8 +3,8 @@ defmodule AvroEx.Schema.Primitive do
   Functions for handling primitive types in Avro schemas
   """
 
-  use Ecto.Schema
-  use Ecto.Type
+  use Ecto.{Schema, Type}
+
   @primary_key false
 
   @type primitive ::

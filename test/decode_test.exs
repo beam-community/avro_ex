@@ -206,7 +206,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "datetime millis" do
-      now = DateTime.utc_now() |> DateTime.truncate(:millisecond)
+      now = DateTime.truncate(DateTime.utc_now(), :millisecond)
 
       {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-millis"}))
 
@@ -224,7 +224,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "time micros" do
-      now = Time.utc_now() |> Time.truncate(:microsecond)
+      now = Time.truncate(Time.utc_now(), :microsecond)
 
       {:ok, micro_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"time-micros"}))
       {:ok, micro_encode} = AvroEx.encode(micro_schema, now)
@@ -232,7 +232,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "time millis" do
-      now = Time.utc_now() |> Time.truncate(:millisecond)
+      now = Time.truncate(Time.utc_now(), :millisecond)
 
       {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "int", "logicalType":"time-millis"}))
       {:ok, milli_encode} = AvroEx.encode(milli_schema, now)

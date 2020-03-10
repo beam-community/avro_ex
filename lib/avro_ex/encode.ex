@@ -201,7 +201,7 @@ defmodule AvroEx.Encode do
     end
   end
 
-  def do_encode(schema, _context, data) do
+  def do_encode(schema, _, data) do
     {:error, :data_does_not_match_schema, data, schema}
   end
 
@@ -210,7 +210,7 @@ defmodule AvroEx.Encode do
     value =
       int
       |> Bitwise.bsl(1)
-      |> Bitwise.bxor(int |> Bitwise.bsr(31))
+      |> Bitwise.bxor(Bitwise.bsr(int, 31))
 
     <<value::32>>
   end
@@ -219,7 +219,7 @@ defmodule AvroEx.Encode do
     value =
       long
       |> Bitwise.bsl(1)
-      |> Bitwise.bxor(long |> Bitwise.bsr(61))
+      |> Bitwise.bxor(Bitwise.bsr(long, 61))
 
     <<value::64>>
   end

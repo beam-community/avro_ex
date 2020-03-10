@@ -157,7 +157,7 @@ defmodule AvroEx.Decode do
         {[val | decoded], buff}
       end)
 
-    decoded =
+    decoded_map =
       decoded
       |> Enum.reverse()
       |> Enum.zip(record.fields)
@@ -166,7 +166,7 @@ defmodule AvroEx.Decode do
       end)
       |> Map.new()
 
-    {decoded, buffer}
+    {decoded_map, buffer}
   end
 
   def do_decode(%Field{type: type}, %Context{} = context, data) when is_binary(data) do
@@ -229,7 +229,7 @@ defmodule AvroEx.Decode do
   def zigzag_decode(int) do
     int
     |> Bitwise.bsr(1)
-    |> Bitwise.bxor(-(int |> Bitwise.band(1)))
+    |> Bitwise.bxor(-Bitwise.band(int, 1))
   end
 
   @spec variable_integer_decode(bitstring, bitstring(), Primitive.t()) :: {bitstring, bitstring()}

@@ -148,7 +148,7 @@ defmodule AvroEx.Schema do
   end
 
   @spec namespace(any(), any()) :: any()
-  def namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
+  def namespace(%Primitive{} = primitive, _), do: primitive
 
   def namespace(%Record{} = record, parent_namespace) do
     record = qualify_namespace(record)
@@ -187,7 +187,7 @@ defmodule AvroEx.Schema do
     %Array{array | items: namespace(array.items, parent_namespace)}
   end
 
-  def namespace(%AvroEnum{} = enum, _parent_namespace) do
+  def namespace(%AvroEnum{} = enum, _) do
     enum = qualify_namespace(enum)
     %AvroEnum{enum | qualified_names: full_names(enum, enum.namespace)}
   end
@@ -252,12 +252,12 @@ defmodule AvroEx.Schema do
   def cast_schema(module, data, fields) do
     metadata = Map.delete(data, "type")
 
-    metadata =
+    reduced_metadata =
       Enum.reduce(fields, metadata, fn field, meta ->
         Map.delete(meta, Atom.to_string(field))
       end)
 
-    params = Map.update(data, "metadata", metadata, & &1)
+    params = Map.update(data, "metadata", reduced_metadata, & &1)
 
     cs =
       module
