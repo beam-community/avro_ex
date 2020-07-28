@@ -207,143 +207,22 @@ defmodule AvroEx.Encode do
 
   @spec zigzag_encode(Primitive.t(), integer) :: binary
   def zigzag_encode(%Primitive{type: :integer}, int) when is_integer(int) do
-    value =
-      int
-      |> Bitwise.bsl(1)
-      |> Bitwise.bxor(Bitwise.bsr(int, 31))
-
-    <<value::32>>
+    int
+    |> Bitwise.bsl(1)
+    |> Bitwise.bxor(Bitwise.bsr(int, 31))
   end
 
   def zigzag_encode(%Primitive{type: :long}, long) when is_integer(long) do
-    value =
-      long
-      |> Bitwise.bsl(1)
-      |> Bitwise.bxor(Bitwise.bsr(long, 63))
-
-    <<value::64>>
+    long
+    |> Bitwise.bsl(1)
+    |> Bitwise.bxor(Bitwise.bsr(long, 63))
   end
 
-  @spec variable_integer_encode(<<_::32, _::_*32>>) :: <<_::8, _::_*8>>
-  def variable_integer_encode(<<0::32>>), do: <<0::8>>
-  def variable_integer_encode(<<0::25, byte::7>>), do: <<byte::8>>
-
-  def variable_integer_encode(<<0::18, byte1::7, byte2::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte2, byte1>>
+  @spec variable_integer_encode(integer()) :: <<_::8, _::_*8>>
+  def variable_integer_encode(value) when value <= 127, do: <<value>>
+  def variable_integer_encode(value) do
+    <<128 + Bitwise.band(value, 127)>> <> variable_integer_encode(Bitwise.bsr(value, 7))
   end
-
-  def variable_integer_encode(<<0::11, byte1::7, byte2::7, byte3::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::4, byte1::7, byte2::7, byte3::7, byte4::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<byte1::4, byte2::7, byte3::7, byte4::7, byte5::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::64>>), do: <<0::8>>
-  def variable_integer_encode(<<0::57, byte1::7>>), do: <<byte1::8>>
-
-  def variable_integer_encode(<<0::50, byte1::7, byte2::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::43, byte1::7, byte2::7, byte3::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::36, byte1::7, byte2::7, byte3::7, byte4::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::29, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::22, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte6::8>> = wrap(byte6)
-    <<byte6, byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::15, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte6::8>> = wrap(byte6)
-    <<byte7::8>> = wrap(byte7)
-    <<byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(<<0::8, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7>>) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte6::8>> = wrap(byte6)
-    <<byte7::8>> = wrap(byte7)
-    <<byte8::8>> = wrap(byte8)
-    <<byte8, byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(
-        <<0::1, byte1::7, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7, byte9::7>>
-      ) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte6::8>> = wrap(byte6)
-    <<byte7::8>> = wrap(byte7)
-    <<byte8::8>> = wrap(byte8)
-    <<byte9::8>> = wrap(byte9)
-    <<byte9, byte8, byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  def variable_integer_encode(
-        <<byte1::1, byte2::7, byte3::7, byte4::7, byte5::7, byte6::7, byte7::7, byte8::7, byte9::7, byte10::7>>
-      ) do
-    <<byte2::8>> = wrap(byte2)
-    <<byte3::8>> = wrap(byte3)
-    <<byte4::8>> = wrap(byte4)
-    <<byte5::8>> = wrap(byte5)
-    <<byte6::8>> = wrap(byte6)
-    <<byte7::8>> = wrap(byte7)
-    <<byte8::8>> = wrap(byte8)
-    <<byte9::8>> = wrap(byte9)
-    <<byte10::8>> = wrap(byte10)
-    <<byte10, byte9, byte8, byte7, byte6, byte5, byte4, byte3, byte2, byte1>>
-  end
-
-  @spec wrap(integer()) :: <<_::8>>
-  def wrap(byte), do: <<1::1, byte::7>>
 
   defp encode_integer(int, schema) do
     schema

@@ -57,79 +57,87 @@ defmodule AvroEx.Encode.Test do
   end
 
   describe "variable_integer_encode (int)" do
-    Macros.assert_result(@test_module, :variable_integer_encode, [<<0::size(32)>>], <<0>>)
+    Macros.assert_result(
+      @test_module,
+      :variable_integer_encode,
+      [0], <<0>>)
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<1::size(32)>>],
+      [1],
       <<1::size(8)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<128::size(32)>>],
+      [128],
       <<32_769::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16_383::size(32)>>],
+      [16_383],
       <<65_407::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16_384::size(32)>>],
+      [16_384],
       <<8_421_377::size(24)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<4_294_967_041::size(32)>>],
+      [4_294_967_041],
       <<129, 254, 255, 255, 15>>
     )
   end
 
   describe "variable_integer_encode (long)" do
-    Macros.assert_result(@test_module, :variable_integer_encode, [<<0::size(64)>>], <<0>>)
+    Macros.assert_result(
+      @test_module,
+      :variable_integer_encode,
+      [0],
+      <<0>>
+    )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<1::size(64)>>],
+      [1],
       <<1::size(8)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<128::size(64)>>],
+      [128],
       <<32_769::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16_383::size(64)>>],
+      [16_383],
       <<65_407::size(16)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<16_384::size(64)>>],
+      [16_384],
       <<8_421_377::size(24)>>
     )
 
     Macros.assert_result(
       @test_module,
       :variable_integer_encode,
-      [<<4_294_967_041::size(64)>>],
+      [4_294_967_041],
       <<129, 254, 255, 255, 15>>
     )
   end
