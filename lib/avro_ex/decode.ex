@@ -46,12 +46,12 @@ defmodule AvroEx.Decode do
   end
 
   def do_decode(
-        %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = type,
+        %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}},
         %Context{},
         data
       )
       when is_binary(data) do
-    {<<val::32>>, rest} = variable_integer_decode(data, <<>>, type)
+    {val, rest} = variable_integer_decode(data, 0, 0, 32)
     milliseconds = zigzag_decode(val)
 
     {:ok, midnight} = Time.new(0, 0, 0)
@@ -60,18 +60,18 @@ defmodule AvroEx.Decode do
     {time, rest}
   end
 
-  def do_decode(%Primitive{type: :integer} = type, %Context{}, data) when is_binary(data) do
-    {<<val::32>>, rest} = variable_integer_decode(data, <<>>, type)
+  def do_decode(%Primitive{type: :integer}, %Context{}, data) when is_binary(data) do
+    {val, rest} = variable_integer_decode(data, 0, 0, 32)
     {zigzag_decode(val), rest}
   end
 
   def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}} = type,
+        %Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}},
         %Context{},
         data
       )
       when is_binary(data) do
-    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    {val, rest} = variable_integer_decode(data, 0, 0, 64)
     microseconds = zigzag_decode(val)
 
     {:ok, midnight} = Time.new(0, 0, 0)
@@ -81,43 +81,43 @@ defmodule AvroEx.Decode do
   end
 
   def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}} = type,
+        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}},
         %Context{},
         data
       )
       when is_binary(data) do
-    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    {val, rest} = variable_integer_decode(data, 0, 0, 64)
     nanoseconds = zigzag_decode(val)
     {:ok, date_time} = DateTime.from_unix(nanoseconds, :nanosecond)
     {date_time, rest}
   end
 
   def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}} = type,
+        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}},
         %Context{},
         data
       )
       when is_binary(data) do
-    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    {val, rest} = variable_integer_decode(data, 0, 0, 64)
     microseconds = zigzag_decode(val)
     {:ok, date_time} = DateTime.from_unix(microseconds, :microsecond)
     {date_time, rest}
   end
 
   def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}} = type,
+        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}},
         %Context{},
         data
       )
       when is_binary(data) do
-    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+    {val, rest} = variable_integer_decode(data, 0, 0, 64)
     milliseconds = zigzag_decode(val)
     {:ok, date_time} = DateTime.from_unix(milliseconds, :millisecond)
     {date_time, rest}
   end
 
-  def do_decode(%Primitive{type: :long} = type, %Context{}, data) when is_binary(data) do
-    {<<val::64>>, rest} = variable_integer_decode(data, <<>>, type)
+  def do_decode(%Primitive{type: :long}, %Context{}, data) when is_binary(data) do
+    {val, rest} = variable_integer_decode(data, 0, 0, 64)
     {zigzag_decode(val), rest}
   end
 
@@ -232,21 +232,17 @@ defmodule AvroEx.Decode do
     |> Bitwise.bxor(-Bitwise.band(int, 1))
   end
 
-  @spec variable_integer_decode(bitstring, bitstring(), Primitive.t()) :: {bitstring, bitstring()}
-  def variable_integer_decode(<<0::1, n::7, rest::bitstring>>, acc, %Primitive{type: :integer})
-      when is_bitstring(acc) do
-    leading_zero_count = 24 - bit_size(acc)
-    val = <<0::size(leading_zero_count), n::8, acc::bitstring>>
-    {val, rest}
-  end
-
-  def variable_integer_decode(<<0::1, n::7, rest::bitstring>>, acc, %Primitive{type: :long}) when is_bitstring(acc) do
-    leading_zero_count = 56 - bit_size(acc)
-    val = <<0::size(leading_zero_count), n::8, acc::bitstring>>
-    {val, rest}
-  end
-
-  def variable_integer_decode(<<1::1, n::7, rest::bitstring>>, acc, type) when is_bitstring(acc) do
-    variable_integer_decode(rest, <<n::7, acc::bitstring>>, type)
+  @spec variable_integer_decode(bitstring(), integer(), integer(), integer()) :: {integer(), bitstring()}
+  def variable_integer_decode(<<tag::1, value::7, tail::bitstring>>, acc, acc_bits, max_bits) do
+    true = (acc_bits < max_bits)  # assertion
+    new_acc =
+      value
+      |> Bitwise.bsl(acc_bits)
+      |> Bitwise.bor(acc)
+    
+    case tag do
+      0 -> {new_acc, tail}
+      1 -> variable_integer_decode(tail, new_acc, acc_bits + 7, max_bits)
+    end
   end
 end
