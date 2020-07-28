@@ -36,7 +36,6 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, -5_000_000} = @test_module.decode(schema, small)
       assert {:ok, -2_147_483_648} = @test_module.decode(schema, min_int32)
       assert {:ok, 2_147_483_647} = @test_module.decode(schema, max_int32)
-
     end
 
     test "long" do

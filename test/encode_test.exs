@@ -57,10 +57,7 @@ defmodule AvroEx.Encode.Test do
   end
 
   describe "variable_integer_encode (int)" do
-    Macros.assert_result(
-      @test_module,
-      :variable_integer_encode,
-      [0], <<0>>)
+    Macros.assert_result(@test_module, :variable_integer_encode, [0], <<0>>)
 
     Macros.assert_result(
       @test_module,

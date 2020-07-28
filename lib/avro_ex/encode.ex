@@ -220,6 +220,7 @@ defmodule AvroEx.Encode do
 
   @spec variable_integer_encode(integer()) :: <<_::8, _::_*8>>
   def variable_integer_encode(value) when value <= 127, do: <<value>>
+
   def variable_integer_encode(value) do
     <<128 + Bitwise.band(value, 127)>> <> variable_integer_encode(Bitwise.bsr(value, 7))
   end

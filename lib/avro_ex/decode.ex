@@ -234,12 +234,14 @@ defmodule AvroEx.Decode do
 
   @spec variable_integer_decode(bitstring(), integer(), integer(), integer()) :: {integer(), bitstring()}
   def variable_integer_decode(<<tag::1, value::7, tail::bitstring>>, acc, acc_bits, max_bits) do
-    true = (acc_bits < max_bits)  # assertion
+    # assertion
+    true = acc_bits < max_bits
+
     new_acc =
       value
       |> Bitwise.bsl(acc_bits)
       |> Bitwise.bor(acc)
-    
+
     case tag do
       0 -> {new_acc, tail}
       1 -> variable_integer_decode(tail, new_acc, acc_bits + 7, max_bits)
