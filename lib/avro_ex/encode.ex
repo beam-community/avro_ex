@@ -219,7 +219,7 @@ defmodule AvroEx.Encode do
     value =
       long
       |> Bitwise.bsl(1)
-      |> Bitwise.bxor(Bitwise.bsr(long, 61))
+      |> Bitwise.bxor(Bitwise.bsr(long, 63))
 
     <<value::64>>
   end
