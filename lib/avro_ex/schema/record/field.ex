@@ -6,6 +6,8 @@ defmodule AvroEx.Schema.Record.Field do
   alias AvroEx.{Schema, Term}
   alias AvroEx.Schema.Context
 
+  @type t() :: %__MODULE__{}
+
   embedded_schema do
     field(:name, :string)
     field(:doc, :string)
