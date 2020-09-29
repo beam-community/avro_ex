@@ -26,12 +26,16 @@ defmodule AvroEx.Decode.Test do
       {:ok, ten} = AvroEx.encode(schema, 10)
       {:ok, big} = AvroEx.encode(schema, 5_000_000)
       {:ok, small} = AvroEx.encode(schema, -5_000_000)
+      {:ok, min_int32} = AvroEx.encode(schema, -2_147_483_648)
+      {:ok, max_int32} = AvroEx.encode(schema, 2_147_483_647)
 
       assert {:ok, 0} = @test_module.decode(schema, zero)
       assert {:ok, -10} = @test_module.decode(schema, neg_ten)
       assert {:ok, 10} = @test_module.decode(schema, ten)
       assert {:ok, 5_000_000} = @test_module.decode(schema, big)
       assert {:ok, -5_000_000} = @test_module.decode(schema, small)
+      assert {:ok, -2_147_483_648} = @test_module.decode(schema, min_int32)
+      assert {:ok, 2_147_483_647} = @test_module.decode(schema, max_int32)
     end
 
     test "long" do
@@ -41,12 +45,16 @@ defmodule AvroEx.Decode.Test do
       {:ok, ten} = AvroEx.encode(schema, 10)
       {:ok, big} = AvroEx.encode(schema, 2_147_483_647)
       {:ok, small} = AvroEx.encode(schema, -2_147_483_647)
+      {:ok, min_int64} = AvroEx.encode(schema, -9_223_372_036_854_775_808)
+      {:ok, max_int64} = AvroEx.encode(schema, 9_223_372_036_854_775_807)
 
       assert {:ok, 0} = @test_module.decode(schema, zero)
       assert {:ok, -10} = @test_module.decode(schema, neg_ten)
       assert {:ok, 10} = @test_module.decode(schema, ten)
       assert {:ok, 2_147_483_647} = @test_module.decode(schema, big)
       assert {:ok, -2_147_483_647} = @test_module.decode(schema, small)
+      assert {:ok, -9_223_372_036_854_775_808} = @test_module.decode(schema, min_int64)
+      assert {:ok, 9_223_372_036_854_775_807} = @test_module.decode(schema, max_int64)
     end
 
     test "float" do
