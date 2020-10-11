@@ -113,6 +113,28 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, 25} = @test_module.decode(schema, encoded_int)
     end
 
+    test "union with DateTime" do
+      {:ok, schema} = AvroEx.parse_schema(~S(["null", {"type": "long", "logicalType":"timestamp-micros"}]))
+      datetime = DateTime.utc_now()
+
+      {:ok, encoded_null} = AvroEx.encode(schema, nil)
+      {:ok, encoded_datetime} = AvroEx.encode(schema, datetime)
+
+      assert {:ok, nil} = @test_module.decode(schema, encoded_null)
+      assert {:ok, ^datetime} = @test_module.decode(schema, encoded_datetime)
+    end
+
+    test "union with Time" do
+      {:ok, schema} = AvroEx.parse_schema(~S(["null", {"type": "long", "logicalType":"time-micros"}]))
+      time = Time.utc_now()
+
+      {:ok, encoded_null} = AvroEx.encode(schema, nil)
+      {:ok, encoded_time} = AvroEx.encode(schema, time)
+
+      assert {:ok, nil} = @test_module.decode(schema, encoded_null)
+      assert {:ok, ^time} = @test_module.decode(schema, encoded_time)
+    end
+
     test "array" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
 

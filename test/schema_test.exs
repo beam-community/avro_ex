@@ -459,6 +459,18 @@ defmodule AvroEx.Schema.Test do
       refute @test_module.encodable?(schema, true)
       refute @test_module.encodable?(schema, %{"Hello" => "world"})
     end
+
+    test "works with logical types" do
+      {:ok, schema} = @test_module.parse(~S(["null", {"type": "long", "logicalType":"timestamp-millis"}]))
+
+      assert @test_module.encodable?(schema, nil)
+      assert @test_module.encodable?(schema, DateTime.utc_now())
+      assert @test_module.encodable?(schema, 1_525_658_987)
+
+      refute @test_module.encodable?(schema, 1.5)
+      refute @test_module.encodable?(schema, "AvroEx")
+      refute @test_module.encodable?(schema, Time.utc_now())
+    end
   end
 
   describe "encodable? (map)" do

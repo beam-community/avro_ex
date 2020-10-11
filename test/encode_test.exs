@@ -190,6 +190,20 @@ defmodule AvroEx.Encode.Test do
       assert encoded_union == index <> encoded_int
     end
 
+    test "works as expected with logical types" do
+      datetime_json = ~S({"type": "long", "logicalType":"timestamp-millis"})
+      datetime_value = ~U[2020-09-17 12:56:50.438Z]
+
+      {:ok, schema} = AvroEx.parse_schema(~s(["null", #{datetime_json}]))
+      {:ok, datetime_schema} = AvroEx.parse_schema(datetime_json)
+
+      {:ok, index} = @test_module.encode(datetime_schema, 1)
+      {:ok, encoded_datetime} = @test_module.encode(datetime_schema, datetime_value)
+      {:ok, encoded_union} = @test_module.encode(schema, datetime_value)
+
+      assert encoded_union == index <> encoded_datetime
+    end
+
     test "works as expected with records" do
       record_json = ~S"""
         {
