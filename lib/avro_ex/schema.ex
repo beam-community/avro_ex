@@ -111,6 +111,12 @@ defmodule AvroEx.Schema do
   def encodable?(%Primitive{type: :bytes}, _, bytes) when is_binary(bytes), do: true
   def encodable?(%Primitive{type: :string}, _, str) when is_binary(str), do: String.valid?(str)
 
+  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}}, _, %DateTime{}), do: true
+  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}}, _, %DateTime{}), do: true
+  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}}, _, %DateTime{}), do: true
+  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}}, _, %Time{}), do: true
+  def encodable?(%Primitive{type: :int, metadata: %{"logicalType" => "time-millis"}}, _, %Time{}), do: true
+
   def encodable?(%Record{} = record, %Context{} = context, data) when is_map(data),
     do: Record.match?(record, context, data)
 
