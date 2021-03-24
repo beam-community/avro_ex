@@ -46,6 +46,22 @@ defmodule AvroEx.Decode do
   end
 
   def do_decode(
+        %Primitive{type: :integer, metadata: %{"logicalType" => "date"}},
+        %Context{},
+        data
+      )
+      when is_binary(data) do
+    {val, rest} = variable_integer_decode(data, 0, 0, 32)
+    days = zigzag_decode(val)
+    seconds_in_day = 86_400
+
+    {:ok, datetime} = DateTime.from_unix(seconds_in_day * days)
+    date = DateTime.to_date(datetime)
+
+    {date, rest}
+  end
+
+  def do_decode(
         %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}},
         %Context{},
         data

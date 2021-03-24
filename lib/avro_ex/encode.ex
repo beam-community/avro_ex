@@ -81,6 +81,18 @@ defmodule AvroEx.Encode do
   end
 
   def do_encode(
+        %Primitive{type: :integer, metadata: %{"logicalType" => "date"}} = schema,
+        %Context{},
+        %Date{} = dt
+      ) do
+    {:ok, datetime, _} = DateTime.from_iso8601(Date.to_iso8601(dt) <> "T00:00:00+00:00")
+    seconds_in_day = 86_400
+
+    days = Kernel.trunc(DateTime.to_unix(datetime) / seconds_in_day)
+    encode_integer(days, schema)
+  end
+
+  def do_encode(
         %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = schema,
         %Context{},
         %Time{} = dt
