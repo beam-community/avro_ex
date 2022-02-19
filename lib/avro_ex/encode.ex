@@ -213,6 +213,10 @@ defmodule AvroEx.Encode do
     end
   end
 
+  def do_encode(%AvroEnum{} = enum, %Context{} = context, atom) when is_atom(atom) do
+    do_encode(enum, context, to_string(atom))
+  end
+
   def do_encode(%AvroEnum{symbols: symbols}, %Context{} = context, data) when is_binary(data) do
     if data in symbols do
       index = Enum.find_index(symbols, fn e -> e == data end)
