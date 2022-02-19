@@ -135,9 +135,19 @@ defmodule AvroEx.Encode do
         {k, v} when is_atom(k) -> {to_string(k), v}
       end)
 
-    fields
-    |> Enum.map(fn field -> do_encode(field, context, record[field.name]) end)
-    |> Enum.join()
+    encoded =
+      Enum.reduce_while(fields, [], fn field, acc ->
+        case do_encode(field, context, record[field.name]) do
+          {:error, _, _, _} = error -> {:halt, error}
+          {:error, _, _} = error -> {:halt, error}
+          encoded -> {:cont, [encoded | acc]}
+        end
+      end)
+
+    case encoded do
+      list when is_list(list) -> list |> Enum.reverse() |> Enum.join()
+      error -> error
+    end
   end
 
   def do_encode(%Field{type: type, default: default}, %Context{} = context, nil) do
