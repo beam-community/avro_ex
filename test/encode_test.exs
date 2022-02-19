@@ -54,6 +54,9 @@ defmodule AvroEx.Encode.Test do
 
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, "abcdefg")
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, :abcdefg)
+
+      assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
+               @test_module.encode(schema, nil)
     end
   end
 

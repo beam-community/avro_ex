@@ -101,7 +101,8 @@ defmodule AvroEx.Encode do
     encode_integer(integer, schema)
   end
 
-  def do_encode(%Primitive{type: :string} = primitive, %Context{} = context, atom) when is_atom(atom) do
+  def do_encode(%Primitive{type: :string} = primitive, %Context{} = context, atom)
+      when is_atom(atom) and not is_nil(atom) do
     do_encode(primitive, context, to_string(atom))
   end
 
