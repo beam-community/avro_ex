@@ -1,4 +1,6 @@
 defmodule AvroEx.Decode do
+  @moduledoc false
+
   require Bitwise
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
@@ -13,44 +15,28 @@ defmodule AvroEx.Decode do
     {:ok, value}
   end
 
-  @spec do_decode(
-          binary()
-          | %{
-              __struct__:
-                AvroEx.Schema.Array
-                | AvroEx.Schema.Enum
-                | AvroEx.Schema.Fixed
-                | AvroEx.Schema.Map
-                | AvroEx.Schema.Primitive
-                | AvroEx.Schema.Record
-                | AvroEx.Schema.Record.Field
-                | AvroEx.Schema.Union
-            },
-          AvroEx.Schema.Context.t(),
-          binary()
-        ) :: {any(), any()}
-  def do_decode(name, %Context{} = context, data) when is_binary(name) do
+  defp do_decode(name, %Context{} = context, data) when is_binary(name) do
     do_decode(Context.lookup(context, name), context, data)
   end
 
-  def do_decode(%Primitive{type: nil}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: nil}, %Context{}, data) when is_binary(data) do
     {nil, data}
   end
 
-  def do_decode(%Primitive{type: :boolean}, %Context{}, <<0::8, rest::binary>>) do
+  defp do_decode(%Primitive{type: :boolean}, %Context{}, <<0::8, rest::binary>>) do
     {false, rest}
   end
 
-  def do_decode(%Primitive{type: :boolean}, %Context{}, <<1::8, rest::binary>>) do
+  defp do_decode(%Primitive{type: :boolean}, %Context{}, <<1::8, rest::binary>>) do
     {true, rest}
   end
 
-  def do_decode(
-        %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}},
-        %Context{},
-        data
-      )
-      when is_binary(data) do
+  defp do_decode(
+         %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}},
+         %Context{},
+         data
+       )
+       when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 32)
     milliseconds = zigzag_decode(val)
 
@@ -60,17 +46,17 @@ defmodule AvroEx.Decode do
     {time, rest}
   end
 
-  def do_decode(%Primitive{type: :integer}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :integer}, %Context{}, data) when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 32)
     {zigzag_decode(val), rest}
   end
 
-  def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}},
-        %Context{},
-        data
-      )
-      when is_binary(data) do
+  defp do_decode(
+         %Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}},
+         %Context{},
+         data
+       )
+       when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     microseconds = zigzag_decode(val)
 
@@ -80,58 +66,58 @@ defmodule AvroEx.Decode do
     {time, rest}
   end
 
-  def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}},
-        %Context{},
-        data
-      )
-      when is_binary(data) do
+  defp do_decode(
+         %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}},
+         %Context{},
+         data
+       )
+       when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     nanoseconds = zigzag_decode(val)
     {:ok, date_time} = DateTime.from_unix(nanoseconds, :nanosecond)
     {date_time, rest}
   end
 
-  def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}},
-        %Context{},
-        data
-      )
-      when is_binary(data) do
+  defp do_decode(
+         %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}},
+         %Context{},
+         data
+       )
+       when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     microseconds = zigzag_decode(val)
     {:ok, date_time} = DateTime.from_unix(microseconds, :microsecond)
     {date_time, rest}
   end
 
-  def do_decode(
-        %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}},
-        %Context{},
-        data
-      )
-      when is_binary(data) do
+  defp do_decode(
+         %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}},
+         %Context{},
+         data
+       )
+       when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     milliseconds = zigzag_decode(val)
     {:ok, date_time} = DateTime.from_unix(milliseconds, :millisecond)
     {date_time, rest}
   end
 
-  def do_decode(%Primitive{type: :long}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :long}, %Context{}, data) when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     {zigzag_decode(val), rest}
   end
 
-  def do_decode(%Primitive{type: :float}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :float}, %Context{}, data) when is_binary(data) do
     <<float::little-float-size(32), rest::binary>> = data
     {float, rest}
   end
 
-  def do_decode(%Primitive{type: :double}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :double}, %Context{}, data) when is_binary(data) do
     <<float::little-float-size(64), rest::binary>> = data
     {float, rest}
   end
 
-  def do_decode(%Primitive{type: :bytes}, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :bytes}, %Context{} = context, data) when is_binary(data) do
     {byte_count, buffer} = do_decode(%Primitive{type: :long}, context, data)
     bit_count = byte_count * 8
 
@@ -140,7 +126,7 @@ defmodule AvroEx.Decode do
     {bytes, rest}
   end
 
-  def do_decode(%Primitive{type: :string}, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :string}, %Context{} = context, data) when is_binary(data) do
     {str, rest} = do_decode(%Primitive{type: :bytes}, context, data)
 
     if String.valid?(str) do
@@ -150,7 +136,7 @@ defmodule AvroEx.Decode do
     end
   end
 
-  def do_decode(%Record{} = record, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%Record{} = record, %Context{} = context, data) when is_binary(data) do
     {decoded, buffer} =
       Enum.reduce(record.fields, {[], data}, fn field, {decoded, buffer} ->
         {val, buff} = do_decode(field, context, buffer)
@@ -169,19 +155,19 @@ defmodule AvroEx.Decode do
     {decoded_map, buffer}
   end
 
-  def do_decode(%Field{type: type}, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%Field{type: type}, %Context{} = context, data) when is_binary(data) do
     do_decode(type, context, data)
   end
 
-  def do_decode(%Union{possibilities: possibilities}, %Context{} = context, data)
-      when is_binary(data) do
+  defp do_decode(%Union{possibilities: possibilities}, %Context{} = context, data)
+       when is_binary(data) do
     {index, rest} = do_decode(%Primitive{type: :long}, context, data)
     schema = :lists.nth(index + 1, possibilities)
 
     do_decode(schema, context, rest)
   end
 
-  def do_decode(%Array{items: item_schema}, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%Array{items: item_schema}, %Context{} = context, data) when is_binary(data) do
     {count, buffer} = do_decode(%Primitive{type: :long}, context, data)
 
     if count > 0 do
@@ -197,7 +183,7 @@ defmodule AvroEx.Decode do
     end
   end
 
-  def do_decode(%AvroEx.Schema.Map{values: value_schema}, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%AvroEx.Schema.Map{values: value_schema}, %Context{} = context, data) when is_binary(data) do
     {count, buffer} = do_decode(%Primitive{type: :long}, context, data)
     string_schema = %Primitive{type: :string}
 
@@ -215,12 +201,12 @@ defmodule AvroEx.Decode do
     end
   end
 
-  def do_decode(%AvroEx.Schema.Enum{symbols: symbols}, %Context{} = context, data) when is_binary(data) do
+  defp do_decode(%AvroEx.Schema.Enum{symbols: symbols}, %Context{} = context, data) when is_binary(data) do
     {index, rest} = do_decode(%Primitive{type: :long}, context, data)
     {:lists.nth(index + 1, symbols), rest}
   end
 
-  def do_decode(%Fixed{size: size}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Fixed{size: size}, %Context{}, data) when is_binary(data) do
     <<fixed::binary-size(size), rest::binary>> = data
     {fixed, rest}
   end

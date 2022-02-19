@@ -17,7 +17,7 @@ defmodule AvroEx.Schema.Union do
           possibilities: [Schema.schema_types()]
         }
 
-  @spec cast(maybe_improper_list()) :: {:error, any()} | {:ok, AvroEx.Schema.Union.t()}
+  @spec cast(maybe_improper_list()) :: {:ok, AvroEx.Schema.Union.t()} | {:error, any()}
   def cast(union) when is_list(union) do
     cs = changeset(%__MODULE__{}, %{possibilities: union})
 
@@ -31,18 +31,14 @@ defmodule AvroEx.Schema.Union do
     end
   end
 
-  @spec changeset(
-          AvroEx.Schema.Union.t(),
-          :invalid | %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}
-        ) :: any()
   def changeset(%__MODULE__{} = union, params) do
     union
     |> cast(params, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> cast_possibilities
+    |> cast_possibilities()
   end
 
-  @spec cast_possibilities(Ecto.Changeset.t()) :: any()
+  @spec cast_possibilities(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   def cast_possibilities(%Ecto.Changeset{} = cs) do
     possibilities =
       cs
