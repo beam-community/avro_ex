@@ -1,7 +1,7 @@
 defmodule AvroEx.Encode do
   require Bitwise
   alias AvroEx.Schema
-  alias AvroEx.Schema.{Array, Context, Fixed, Map, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Record.Field
 
@@ -101,6 +101,10 @@ defmodule AvroEx.Encode do
     encode_integer(integer, schema)
   end
 
+  def do_encode(%Primitive{type: :string} = primitive, %Context{} = context, atom) when is_atom(atom) do
+    do_encode(primitive, context, to_string(atom))
+  end
+
   def do_encode(%Primitive{type: :string}, %Context{} = context, str) when is_binary(str) do
     if String.valid?(str) do
       do_encode(%Primitive{type: :bytes}, context, str)
@@ -125,6 +129,12 @@ defmodule AvroEx.Encode do
   end
 
   def do_encode(%Record{fields: fields}, %Context{} = context, record) when is_map(record) do
+    record =
+      Map.new(record, fn
+        {k, v} when is_binary(k) -> {k, v}
+        {k, v} when is_atom(k) -> {to_string(k), v}
+      end)
+
     fields
     |> Enum.map(fn field -> do_encode(field, context, record[field.name]) end)
     |> Enum.join()
@@ -153,7 +163,7 @@ defmodule AvroEx.Encode do
     end
   end
 
-  def do_encode(%Map{values: values}, %Context{} = context, map) when is_map(map) do
+  def do_encode(%AvroEx.Schema.Map{values: values}, %Context{} = context, map) when is_map(map) do
     case map_size(map) do
       0 ->
         <<0>>

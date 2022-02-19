@@ -53,6 +53,7 @@ defmodule AvroEx.Encode.Test do
       {:ok, schema} = AvroEx.parse_schema(~S("string"))
 
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, "abcdefg")
+      assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, :abcdefg)
     end
   end
 
@@ -154,6 +155,26 @@ defmodule AvroEx.Encode.Test do
       ]}))
 
       assert {:ok, _encoded} = @test_module.encode(schema, %{})
+    end
+
+    test "can encode records with atom keys and string values" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+        {"type": "string", "name": "first"},
+        {"type": "string", "name": "last"},
+        {"name": "meta", "type": {
+          "name": "MetaRecord",
+          "type": "record",
+          "fields": [
+            {"type": "int", "name": "age"}
+          ]
+       }}]}))
+
+      assert {:ok, "\bDave\nLucia@"} =
+               @test_module.encode(schema, %{"first" => "Dave", "last" => "Lucia", "meta" => %{"age" => 32}})
+
+      assert {:ok, "\bDave\nLucia@"} = @test_module.encode(schema, %{first: "Dave", last: "Lucia", meta: %{age: 32}})
+
+      assert {:ok, "\bdave\nlucia@"} = @test_module.encode(schema, %{first: :dave, last: :lucia, meta: %{age: 32}})
     end
 
     test "works as expected with default of null on union type" do
