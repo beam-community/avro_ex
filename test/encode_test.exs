@@ -278,6 +278,11 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<2, 12, 118, 97, 108, 117, 101, 49, 2, 0>>} = @test_module.encode(schema, %{"value1" => 1})
     end
 
+    test "can encode atom keys" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+      assert {:ok, <<2, 12, 118, 97, 108, 117, 101, 49, 2, 0>>} = @test_module.encode(schema, %{value1: 1})
+    end
+
     test "encodes an empty map" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
       assert {:ok, <<0>>} = @test_module.encode(schema, %{})
@@ -335,8 +340,10 @@ defmodule AvroEx.Encode.Test do
 
       {:ok, heart} = @test_module.encode(enum_schema, "heart")
       {:ok, spade} = @test_module.encode(enum_schema, "spade")
-      {:ok, diamond} = @test_module.encode(enum_schema, "diamond")
-      {:ok, club} = @test_module.encode(enum_schema, "club")
+
+      # Can handle atoms
+      {:ok, diamond} = @test_module.encode(enum_schema, :diamond)
+      {:ok, club} = @test_module.encode(enum_schema, :club)
 
       assert heart_index == heart
       assert spade_index == spade
