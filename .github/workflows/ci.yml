@@ -32,3 +32,31 @@ jobs:
       run: mix format --check-formatted
     - name: Credo
       run: mix credo
+
+  dialyzer:
+    name: Run Dialyzer for type checking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set mix file hash
+        id: set_vars
+        run: |
+          mix_hash="${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}"
+          echo "::set-output name=mix_hash::$mix_hash"
+      - name: Cache PLT files
+        id: cache-plt
+        uses: actions/cache@v2
+        with:
+          path: |
+            _build/dev/*.plt
+            _build/dev/*.plt.hash
+          key: plt-cache-${{ steps.set_vars.outputs.mix_hash }}
+          restore-keys: |
+            plt-cache-
+      - name: Run Dialyzer
+        uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+        with:
+          elixir-version: '1.13.3' # Define the elixir version [required]
+          otp-version: '24.2.1' # Define the OTP version [required]
+      - run: mix deps.get
+      - run: mix dialyzer
