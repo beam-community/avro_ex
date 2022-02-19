@@ -54,6 +54,9 @@ defmodule AvroEx.Encode.Test do
 
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, "abcdefg")
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, :abcdefg)
+
+      assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
+               @test_module.encode(schema, nil)
     end
   end
 
@@ -184,6 +187,18 @@ defmodule AvroEx.Encode.Test do
 
       assert {:ok, <<0>>} = @test_module.encode(schema, %{})
       assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
+    end
+
+    test "returns an error if it doesn't match the schema" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
+        {"type": "string", "name": "first"},
+        {"type": "string", "name": "last"}
+        ]}))
+
+      assert {:ok, "\bDave\nLucia"} = @test_module.encode(schema, %{"first" => "Dave", "last" => "Lucia"})
+
+      assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
+               @test_module.encode(schema, %{})
     end
   end
 

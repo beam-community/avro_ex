@@ -101,7 +101,8 @@ defmodule AvroEx.Encode do
     encode_integer(integer, schema)
   end
 
-  def do_encode(%Primitive{type: :string} = primitive, %Context{} = context, atom) when is_atom(atom) do
+  def do_encode(%Primitive{type: :string} = primitive, %Context{} = context, atom)
+      when is_atom(atom) and not is_nil(atom) do
     do_encode(primitive, context, to_string(atom))
   end
 
@@ -135,9 +136,19 @@ defmodule AvroEx.Encode do
         {k, v} when is_atom(k) -> {to_string(k), v}
       end)
 
-    fields
-    |> Enum.map(fn field -> do_encode(field, context, record[field.name]) end)
-    |> Enum.join()
+    encoded =
+      Enum.reduce_while(fields, [], fn field, acc ->
+        case do_encode(field, context, record[field.name]) do
+          {:error, _, _, _} = error -> {:halt, error}
+          {:error, _, _} = error -> {:halt, error}
+          encoded -> {:cont, [encoded | acc]}
+        end
+      end)
+
+    case encoded do
+      list when is_list(list) -> list |> Enum.reverse() |> Enum.join()
+      error -> error
+    end
   end
 
   def do_encode(%Field{type: type, default: default}, %Context{} = context, nil) do
