@@ -52,5 +52,5 @@ defmodule AvroEx.Schema.Array do
     end)
   end
 
-  def match?(_, _, _), do: false
+  def match?(_array, _context, _data), do: false
 end

@@ -50,5 +50,5 @@ defmodule AvroEx.Schema.Enum do
     data in symbols
   end
 
-  def match?(_, _, _), do: false
+  def match?(_enum, _context, _data), do: false
 end

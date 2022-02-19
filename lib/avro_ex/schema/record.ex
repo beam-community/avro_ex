@@ -48,5 +48,5 @@ defmodule AvroEx.Schema.Record do
     end)
   end
 
-  def match?(_, _, _), do: false
+  def match?(_record, _context, _data), do: false
 end
