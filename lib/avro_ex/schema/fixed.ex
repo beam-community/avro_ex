@@ -43,5 +43,5 @@ defmodule AvroEx.Schema.Fixed do
     true
   end
 
-  def match?(_, _, _), do: false
+  def match?(_fixed, _context, _data), do: false
 end

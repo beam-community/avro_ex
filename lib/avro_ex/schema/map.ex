@@ -55,5 +55,5 @@ defmodule AvroEx.Schema.Map do
     end)
   end
 
-  def match?(_, _, _), do: false
+  def match?(_map, _context, _data), do: false
 end

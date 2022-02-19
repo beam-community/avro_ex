@@ -154,7 +154,7 @@ defmodule AvroEx.Schema do
   end
 
   @spec namespace(any(), any()) :: any()
-  def namespace(%Primitive{} = primitive, _), do: primitive
+  def namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
 
   def namespace(%Record{} = record, parent_namespace) do
     record = qualify_namespace(record)

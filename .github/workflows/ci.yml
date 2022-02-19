@@ -7,45 +7,28 @@ on:
     branches:
       - "master"
 jobs:
-  Test:
+  test:
+    name: Build and test
     runs-on: ubuntu-latest
 
-    container:
-      image: elixir:1.9-alpine
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v1
-
-      - name: Install Dependencies
-        run: |
-          apk add --no-cache gcc g++ git imagemagick libmcrypt-dev make musl-dev
-          mix local.rebar --force
-          mix local.hex --force
-          mix deps.get
-
-      - name: Run Tests
-        run: mix test
-
-  Linting:
-    runs-on: ubuntu-latest
-
-    container:
-      image: elixir:1.9-alpine
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v1
-
-      - name: Install Dependencies
-        run: |
-          apk add --no-cache gcc g++ git libmcrypt-dev make musl-dev
-          mix local.rebar --force
-          mix local.hex --force
-          mix deps.get
-
-      - name: Run Formatter
-        run: mix format --check-formatted
-
-      - name: Run Credo
-        run: mix credo
+    - uses: actions/checkout@v2
+    - name: Set up Elixir
+      uses: erlef/setup-beam@988e02bfe678367a02564f65ca2e37726dc0268f
+      with:
+        elixir-version: '1.13.3' # Define the elixir version [required]
+        otp-version: '24.2.1' # Define the OTP version [required]
+    - name: Restore dependencies cache
+      uses: actions/cache@v2
+      with:
+        path: deps
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: ${{ runner.os }}-mix-
+    - name: Install dependencies
+      run: mix deps.get
+    - name: Run tests
+      run: mix test
+    - name: Check formatting
+      run: mix format --check-formatted
+    - name: Credo
+      run: mix credo
