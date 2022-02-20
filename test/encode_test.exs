@@ -56,13 +56,13 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, :abcdefg)
 
       assert {:error, %AvroEx.EncodeError{message: message}} = @test_module.encode(schema, nil)
-      assert message == ""
+      assert message == "Schema Mismatch: Expected value of string, got nil"
 
       assert {:error, %AvroEx.EncodeError{message: message}} = @test_module.encode(schema, true)
-      assert message == ""
+      assert message == "Schema Mismatch: Expected value of string, got true"
 
       assert {:error, %AvroEx.EncodeError{message: message}} = @test_module.encode(schema, false)
-      assert message == ""
+      assert message == "Schema Mismatch: Expected value of string, got false"
     end
   end
 
@@ -203,7 +203,7 @@ defmodule AvroEx.Encode.Test do
 
       assert {:ok, "\bDave\nLucia"} = @test_module.encode(schema, %{"first" => "Dave", "last" => "Lucia"})
 
-      assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
+      assert {:error, %AvroEx.EncodeError{message: "Schema Mismatch: Expected value of string, got nil"}} =
                @test_module.encode(schema, %{})
     end
   end
@@ -274,7 +274,10 @@ defmodule AvroEx.Encode.Test do
     test "errors if the data doesn't match the schema" do
       {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
 
-      assert {:error, :data_does_not_match_schema, "wat", _schema} = @test_module.encode(schema, "wat")
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Union<possibilities=null|integer>, got \"wat\""
+              }} = @test_module.encode(schema, "wat")
     end
   end
 
@@ -319,7 +322,7 @@ defmodule AvroEx.Encode.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(39)
 
-      assert {:error, :incorrect_fixed_size, [expected: 40, got: 39, name: "sha"]} =
+      assert {:error, %AvroEx.EncodeError{message: "Fixed<name=sha, size=40> has incorrect size. Expected 40, got 39"}} =
                @test_module.encode(schema, bad_sha)
     end
 
@@ -327,7 +330,7 @@ defmodule AvroEx.Encode.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(41)
 
-      assert {:error, :incorrect_fixed_size, [expected: 40, got: 41, name: "sha"]} =
+      assert {:error, %AvroEx.EncodeError{message: "Fixed<name=sha, size=40> has incorrect size. Expected 40, got 41"}} =
                @test_module.encode(schema, bad_sha)
     end
   end
@@ -364,8 +367,7 @@ defmodule AvroEx.Encode.Test do
 
       assert {:error,
               %AvroEx.EncodeError{
-                message:
-                  "Schema Mismatch: Expected value to match %AvroEx.Schema.Primitive{metadata: %{}, type: nil}, got :wat"
+                message: "Schema Mismatch: Expected value of null, got :wat"
               }} = @test_module.encode(schema, :wat)
     end
 
@@ -378,7 +380,7 @@ defmodule AvroEx.Encode.Test do
 
       assert {:error,
               %AvroEx.EncodeError{
-                message: "Schema Mismatch: Expected value to match beam.community.Name, got :wat"
+                message: "Schema Mismatch: Expected value of Record<name=beam.community.Name>, got :wat"
               }} = @test_module.encode(schema, :wat)
     end
   end

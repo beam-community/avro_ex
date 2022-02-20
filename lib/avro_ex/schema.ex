@@ -270,14 +270,15 @@ defmodule AvroEx.Schema do
     end
   end
 
+  def type_name(%Primitive{type: nil}), do: "null"
   def type_name(%Primitive{type: type}), do: to_string(type)
 
-  def type_name(%Array{}), do: "array"
-  def type_name(%Union{}), do: "union"
-  def type_name(%Record{}), do: "record"
-  def type_name(%Fixed{}), do: "fixed"
-  def type_name(%AvroEnum{}), do: "enum"
-  def type_name(%AvroMap{}), do: "map"
+  def type_name(%Array{items: type}), do: "Array<items=#{type}>"
+  def type_name(%Union{possibilities: types}), do: "Union<possibilities=#{Enum.map_join(types, "|", &type_name/1)}>"
+  def type_name(%Record{} = record), do: "Record<name=#{full_name(record)}>"
+  def type_name(%Fixed{size: size} = fixed), do: "Fixed<name=#{full_name(fixed)}, size=#{size}>"
+  def type_name(%AvroEnum{} = enum), do: "Enum<name=#{full_name(enum)}"
+  def type_name(%AvroMap{values: values}), do: "Map<values=#{values}>"
 
   @spec cast_schema(atom(), map(), any()) :: {:error, any()} | {:ok, map()}
   def cast_schema(module, data, fields) do

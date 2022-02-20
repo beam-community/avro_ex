@@ -2,13 +2,9 @@ defmodule AvroEx.EncodeError do
   defexception [:message]
 
   def new({:schema_mismatch, schema, value, _context}) do
-    name =
-      case {schema, AvroEx.Schema.full_name(schema)} do
-        {schema, nil} -> AvroEx.Schema.type_name(schema)
-        {_schema, name} -> name
-      end
+    type = AvroEx.Schema.type_name(schema)
 
-    %__MODULE__{message: "Schema Mismatch: Expected value to match #{inspect(name)}, got #{inspect(value)}"}
+    %__MODULE__{message: "Schema Mismatch: Expected value of #{type}, got #{inspect(value)}"}
   end
 
   def new({:invalid_string, str, _context}) do
@@ -22,8 +18,10 @@ defmodule AvroEx.EncodeError do
   end
 
   def new({:incorrect_fixed_size, fixed, binary, _context}) do
+    type = AvroEx.Schema.type_name(fixed)
+
     %__MODULE__{
-      message: "Fixed has incorrect size #{inspect(fixed.name)}. Expected #{fixed.size}, got #{byte_size(binary)}"
+      message: "#{type} has incorrect size. Expected #{fixed.size}, got #{byte_size(binary)}"
     }
   end
 end
