@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.2.0
 
 ### Fixed
 * Fix exception when encoding bad Record data
