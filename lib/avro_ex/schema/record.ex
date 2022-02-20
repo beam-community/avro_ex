@@ -44,6 +44,12 @@ defmodule AvroEx.Schema.Record do
   def match?(%__MODULE__{fields: fields}, %Context{} = context, data)
       when is_map(data) and map_size(data) == length(fields) do
     Enum.all?(fields, fn %Field{name: name} = field ->
+      data =
+        Map.new(data, fn
+          {k, v} when is_binary(k) -> {k, v}
+          {k, v} when is_atom(k) -> {to_string(k), v}
+        end)
+
       Map.has_key?(data, name) and Schema.encodable?(field, context, data[name])
     end)
   end

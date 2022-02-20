@@ -100,7 +100,7 @@ defmodule AvroEx.Encode do
   end
 
   defp do_encode(%Primitive{type: :string} = primitive, %Context{} = context, atom)
-       when is_atom(atom) and not is_nil(atom) do
+       when is_atom(atom) and not (is_nil(atom) or is_boolean(atom)) do
     do_encode(primitive, context, to_string(atom))
   end
 

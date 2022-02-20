@@ -57,6 +57,12 @@ defmodule AvroEx.Encode.Test do
 
       assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
                @test_module.encode(schema, nil)
+
+      assert {:error, :data_does_not_match_schema, true, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
+               @test_module.encode(schema, true)
+
+      assert {:error, :data_does_not_match_schema, false, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
+               @test_module.encode(schema, false)
     end
   end
 
