@@ -53,4 +53,10 @@ defmodule AvroEx.Schema.Array do
   end
 
   def match?(_array, _context, _data), do: false
+
+  defimpl String.Chars do
+    def to_string(fixed) do
+      "Fixed#{fixed.size}(#{Schema.full_name(fixed.namespace, fixed.name)})"
+    end
+  end
 end

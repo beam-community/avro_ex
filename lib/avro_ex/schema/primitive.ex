@@ -62,4 +62,13 @@ defmodule AvroEx.Schema.Primitive do
   def type("double"), do: :double
   def type("bytes"), do: :bytes
   def type("string"), do: :string
+
+  defimpl String.Chars do
+    def to_string(%{metadata: %{"logicalType" => type}}) do
+      type
+    end
+
+    def to_string(%{type: nil}), do: "null"
+    def to_string(%{type: type}), do: Atom.to_string(type)
+  end
 end

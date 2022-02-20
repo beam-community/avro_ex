@@ -51,4 +51,10 @@ defmodule AvroEx.Schema.Enum do
   end
 
   def match?(_enum, _context, _data), do: false
+
+  defimpl String.Chars do
+    def to_string(%{name: name, namespace: namespace}) do
+      "Enum(#{Schema.full_name(namespace, name)})"
+    end
+  end
 end
