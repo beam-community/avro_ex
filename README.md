@@ -1,6 +1,6 @@
 # AvroEx
 
-A pure-elixir avro encoding/decoding library.
+An Avro encoding/decoding library written in pure Elixir
 
 ## Documentation
 

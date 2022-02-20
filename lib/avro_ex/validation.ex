@@ -1,6 +1,8 @@
 defmodule AvroEx.Validation do
+  @moduledoc false
   alias Ecto.Changeset
 
+  @doc false
   @spec validate_string(Ecto.Changeset.t(), atom()) :: Ecto.Changeset.t()
   def validate_string(changeset, field) do
     value = Changeset.get_field(changeset, field)
