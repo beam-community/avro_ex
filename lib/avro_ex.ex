@@ -1,7 +1,7 @@
 defmodule AvroEx do
   @moduledoc """
-  The main interface for the library. Supports parsing schemas, encoding data,
-  and decoding data.
+  AvroEx is a library for encoding and decoding data with Avro schemas.
+  Supports parsing schemas, encoding data, and decoding data.
 
   For encoding and decoding, the following type chart should be referenced:
 
@@ -13,10 +13,10 @@ defmodule AvroEx do
   | float | decimal |
   | double | decimal |
   | bytes | binary |
-  | string | String.t |
+  | string | String.t, atom |
   | null | nil |
   | Record | map |
-  | Enum | String (corresponding to the enum's symbol list) |
+  | Enum | String.t, atom (corresponding to the enum's symbol list) |
   """
   alias AvroEx.Schema
   alias AvroEx.Schema.Context
@@ -34,7 +34,7 @@ defmodule AvroEx do
           | {:error, :unnamed_record}
           | {:error, :invalid_json}
   @doc """
-  Given a JSON-formatted schema, parses the schema and returns a %Schema{} struct representing the schema.
+  Given a JSON-formatted schema, parses the schema and returns a `%AvroEx.Schema{}` struct representing the schema.
   Errors if the JSON is invalid, or if a named record is referenced that doesn't exist.
   """
   def parse_schema(json_schema) do
@@ -60,7 +60,7 @@ defmodule AvroEx do
   @spec encode(Schema.t(), term) ::
           {:ok, encoded_avro}
           | {:error, :unmatching_schema}
-          | {:error, AvroEx.Encode.reason(), term}
+          | {:error, term(), term}
   def encode(schema, data) do
     AvroEx.Encode.encode(schema, data)
   end
@@ -70,7 +70,7 @@ defmodule AvroEx do
   """
   @spec decode(Schema.t(), encoded_avro) ::
           {:ok, term}
-          | {:error, AvroEx.Decode.reason()}
+          | {:error, term()}
   def decode(schema, message) do
     AvroEx.Decode.decode(schema, message)
   end

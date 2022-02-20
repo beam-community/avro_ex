@@ -1,17 +1,22 @@
 defmodule AvroEx.Mixfile do
   use Mix.Project
 
+  @url "http://github.com/beam-community/avro_ex"
+  @version "1.1.0"
+
   def project do
     [
       app: :avro_ex,
-      version: "1.1.0",
+      version: @version,
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       package: package(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      description: "A pure-elixir avro encoding/decoding library",
+      name: "AvroEx",
+      description: "An Avro encoding/decoding library written in pure Elixir",
+      docs: docs(),
       deps: deps()
     ]
   end
@@ -34,11 +39,24 @@ defmodule AvroEx.Mixfile do
     ]
   end
 
+  defp docs do
+    [
+      main: "AvroEx",
+      source_url: @url,
+      source_ref: "v#{@version}",
+      groups_for_modules: [
+        Schema: ~r/Schema/,
+        Ecto: [AvroEx.Term]
+      ],
+      extras: []
+    ]
+  end
+
   defp package do
     [
       licenses: ["MIT"],
-      maintainers: ["doomspork", "cjpoll"],
-      links: %{"Github" => "http://github.com/beam-community/avro_ex"}
+      maintainers: ["doomspork", "cjpoll", "davydog187"],
+      links: %{"Github" => @url}
     ]
   end
 

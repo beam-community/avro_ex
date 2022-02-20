@@ -1,4 +1,6 @@
 defmodule AvroEx.Term do
+  @moduledoc "An Ecto type for Avro terms"
+
   use Ecto.Type
 
   @spec cast(any()) :: {:ok, any()}

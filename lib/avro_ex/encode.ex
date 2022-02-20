@@ -1,4 +1,6 @@
 defmodule AvroEx.Encode do
+  @moduledoc false
+
   require Bitwise
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
@@ -7,6 +9,7 @@ defmodule AvroEx.Encode do
 
   @type reason :: term
 
+  @doc false
   @spec encode(Schema.t(), term) ::
           {:ok, AvroEx.encoded_avro()}
           | {:error, :data_does_not_match_schema, term, Schema.t()}
@@ -225,6 +228,7 @@ defmodule AvroEx.Encode do
     {:error, :data_does_not_match_schema, data, schema}
   end
 
+  @doc false
   @spec zigzag_encode(Primitive.t(), integer) :: integer
   def zigzag_encode(%Primitive{type: :integer}, int) when is_integer(int) do
     int
@@ -238,6 +242,7 @@ defmodule AvroEx.Encode do
     |> Bitwise.bxor(Bitwise.bsr(long, 63))
   end
 
+  @doc false
   @spec variable_integer_encode(integer()) :: <<_::8, _::_*8>>
   def variable_integer_encode(value) when value <= 127, do: <<value>>
 

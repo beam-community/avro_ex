@@ -8,6 +8,7 @@ defmodule AvroEx.Decode do
 
   @type reason :: term
 
+  @doc false
   @spec decode(AvroEx.Schema.t(), binary()) :: {:ok, any()}
   def decode(%Schema{schema: schema, context: context}, avro_message)
       when is_binary(avro_message) do
@@ -211,6 +212,7 @@ defmodule AvroEx.Decode do
     {fixed, rest}
   end
 
+  @doc false
   @spec zigzag_decode(integer()) :: integer()
   def zigzag_decode(int) do
     int
@@ -218,6 +220,7 @@ defmodule AvroEx.Decode do
     |> Bitwise.bxor(-Bitwise.band(int, 1))
   end
 
+  @doc false
   @spec variable_integer_decode(bitstring(), integer(), integer(), integer()) :: {integer(), bitstring()}
   def variable_integer_decode(<<tag::1, value::7, tail::bitstring>>, acc, acc_bits, max_bits) do
     # assertion
