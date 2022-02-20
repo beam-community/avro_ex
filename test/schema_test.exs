@@ -306,6 +306,12 @@ defmodule AvroEx.Schema.Test do
       end
     end
 
+    test "accepts atoms as strings" do
+      {:ok, schema} = AvroEx.parse_schema(~S("string"))
+      assert @test_module.encodable?(schema, :dave)
+      refute @test_module.encodable?(schema, nil)
+    end
+
     test "does not accept non-utf8 strings as string" do
       {:ok, schema} = AvroEx.parse_schema(~S("string"))
       refute @test_module.encodable?(schema, <<128>>)
@@ -379,6 +385,10 @@ defmodule AvroEx.Schema.Test do
       refute @test_module.encodable?(schema, %{"first_name" => "Cody", "age" => "Cody"})
       refute @test_module.encodable?(schema, %{"first_name" => 30, "age" => 30})
       refute @test_module.encodable?(schema, %{"first_name" => "Cody", "ages" => 30})
+    end
+
+    test "records can have keys as atoms", %{schema: schema} do
+      assert @test_module.encodable?(schema, %{first_name: "Dave", age: 32})
     end
   end
 
@@ -504,6 +514,11 @@ defmodule AvroEx.Schema.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
       assert @test_module.encodable?(schema, %{})
     end
+
+    test "maps can have atom keys" do
+      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": "int"}))
+      assert @test_module.encodable?(schema, %{a: 1, b: 2})
+    end
   end
 
   describe "encodable? (array)" do
@@ -565,6 +580,13 @@ defmodule AvroEx.Schema.Test do
         AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
 
       refute @test_module.encodable?(schema, "kkjasdfkasdfj")
+    end
+
+    test "enums can have atoms" do
+      {:ok, schema} =
+        AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+
+      assert @test_module.encodable?(schema, :heart)
     end
   end
 end

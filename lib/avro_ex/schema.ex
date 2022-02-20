@@ -111,6 +111,14 @@ defmodule AvroEx.Schema do
   def encodable?(%Primitive{type: :bytes}, _, bytes) when is_binary(bytes), do: true
   def encodable?(%Primitive{type: :string}, _, str) when is_binary(str), do: String.valid?(str)
 
+  def encodable?(%Primitive{type: :string}, _, atom) when is_atom(atom) do
+    if is_nil(atom) or is_boolean(atom) do
+      false
+    else
+      atom |> to_string() |> String.valid?()
+    end
+  end
+
   def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}}, _, %DateTime{}), do: true
   def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}}, _, %DateTime{}), do: true
   def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}}, _, %DateTime{}), do: true
@@ -135,6 +143,10 @@ defmodule AvroEx.Schema do
 
   def encodable?(%Array{} = schema, %Context{} = context, data) when is_list(data) do
     Array.match?(schema, context, data)
+  end
+
+  def encodable?(%AvroEnum{} = schema, %Context{} = context, data) when is_atom(data) do
+    AvroEnum.match?(schema, context, to_string(data))
   end
 
   def encodable?(%AvroEnum{} = schema, %Context{} = context, data) when is_binary(data) do
