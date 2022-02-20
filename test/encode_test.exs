@@ -362,7 +362,24 @@ defmodule AvroEx.Encode.Test do
     test "returns the expected error tuple" do
       {:ok, schema} = AvroEx.parse_schema(~S("null"))
 
-      assert {:error, :data_does_not_match_schema, :wat, _schema} = @test_module.encode(schema, :wat)
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Schema Mismatch: Expected value to match %AvroEx.Schema.Primitive{metadata: %{}, type: nil}, got :wat"
+              }} = @test_module.encode(schema, :wat)
+    end
+
+    test "returns the expected error tuple for a complex type" do
+      assert schema =
+               AvroEx.parse_schema!(~S({"type": "record", "namespace": "beam.community", "name": "Name", "fields": [
+        {"type": "string", "name": "first"},
+        {"type": "string", "name": "last"}
+      ]}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value to match beam.community.Name, got :wat"
+              }} = @test_module.encode(schema, :wat)
     end
   end
 

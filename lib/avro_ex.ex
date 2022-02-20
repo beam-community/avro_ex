@@ -64,6 +64,16 @@ defmodule AvroEx do
   end
 
   @doc """
+  Same as `encode/2`, but returns the encoded value directly and raises on errors
+  """
+  def encode!(schema, data) do
+    case AvroEx.Encode.encode(schema, data) do
+      {:ok, data} -> data
+      {:error, error} -> raise error
+    end
+  end
+
+  @doc """
   Given an encoded message and its accompanying schema, decodes the message.
   """
   @spec decode(Schema.t(), encoded_avro) ::

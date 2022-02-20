@@ -2,7 +2,13 @@ defmodule AvroEx.EncodeError do
   defexception [:message]
 
   def new({:schema_mismatch, schema, value, _context}) do
-    %__MODULE__{message: "Schema Mismatch: Expected value to match #{inspect(schema)} , got #{inspect(value)}"}
+    name =
+      case {schema, AvroEx.Schema.full_name(schema)} do
+        {schema, nil} -> AvroEx.Schema.type_name(schema)
+        {_schema, name} -> name
+      end
+
+    %__MODULE__{message: "Schema Mismatch: Expected value to match #{inspect(name)}, got #{inspect(value)}"}
   end
 
   def new({:invalid_string, str, _context}) do
