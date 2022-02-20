@@ -1,7 +1,33 @@
+defmodule AvroEx.EncodeError do
+  defexception [:message]
+
+  def new({:schema_mismatch, schema, value, _context}) do
+    %__MODULE__{message: "Schema Mismatch: Expected value to match #{inspect(schema)} , got #{inspect(value)}"}
+  end
+
+  def new({:invalid_string, str, _context}) do
+    %__MODULE__{message: "Invalid string \"#{inspect(str)}\""}
+  end
+
+  def new({:invalid_symbol, enum, value, _context}) do
+    %__MODULE__{
+      message: "Invalid symbol for #{enum.name}. Expected value in #{inspect(enum.symbols)}, got #{inspect(value)}"
+    }
+  end
+
+  def new({:incorrect_fixed_size, fixed, binary, _context}) do
+    %__MODULE__{
+      message: "Fixed has incorrect size #{inspect(fixed.name)}. Expected #{fixed.size}, got #{byte_size(binary)}"
+    }
+  end
+end
+
 defmodule AvroEx.Encode do
   @moduledoc false
 
   require Bitwise
+
+  alias AvroEx.EncodeError
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
@@ -10,16 +36,12 @@ defmodule AvroEx.Encode do
   @type reason :: term
 
   @doc false
-  @spec encode(Schema.t(), term) ::
-          {:ok, AvroEx.encoded_avro()}
-          | {:error, :data_does_not_match_schema, term, Schema.t()}
-          | {:error, reason}
-          | {:error, reason, term}
+  @spec encode(Schema.t(), term) :: {:ok, AvroEx.encoded_avro()} | {:error, EncodeError.t() | Exception.t()}
   def encode(%Schema{context: %Context{} = context, schema: schema}, data) do
-    case do_encode(schema, context, data) do
-      {:error, :data_does_not_match_schema, _data, _schema} = err -> err
-      {:error, _reason, _value} = err -> err
-      val -> {:ok, val}
+    try do
+      {:ok, do_encode(schema, context, data)}
+    catch
+      :throw, %EncodeError{} = e -> {:error, e}
     end
   end
 
@@ -108,7 +130,7 @@ defmodule AvroEx.Encode do
     if String.valid?(str) do
       do_encode(%Primitive{type: :bytes}, context, str)
     else
-      {:error, :invalid_string, str}
+      error({:invalid_string, str, context})
     end
   end
 
@@ -123,8 +145,8 @@ defmodule AvroEx.Encode do
     bin
   end
 
-  defp do_encode(%Fixed{size: size, name: name}, %Context{}, bin) when is_binary(bin) do
-    {:error, :incorrect_fixed_size, [expected: size, got: byte_size(bin), name: name]}
+  defp do_encode(%Fixed{} = fixed, %Context{} = context, bin) when is_binary(bin) do
+    error({:incorrect_fixed_size, fixed, bin, context})
   end
 
   defp do_encode(%Record{fields: fields}, %Context{} = context, record) when is_map(record) do
@@ -134,19 +156,7 @@ defmodule AvroEx.Encode do
         {k, v} when is_atom(k) -> {to_string(k), v}
       end)
 
-    encoded =
-      Enum.reduce_while(fields, [], fn field, acc ->
-        case do_encode(field, context, record[field.name]) do
-          {:error, _, _, _} = error -> {:halt, error}
-          {:error, _, _} = error -> {:halt, error}
-          encoded -> {:cont, [encoded | acc]}
-        end
-      end)
-
-    case encoded do
-      list when is_list(list) -> list |> Enum.reverse() |> Enum.join()
-      error -> error
-    end
+    Enum.map_join(fields, &do_encode(&1, context, record[&1.name]))
   end
 
   defp do_encode(%Field{type: type, default: default}, %Context{} = context, nil) do
@@ -168,7 +178,7 @@ defmodule AvroEx.Encode do
 
       do_encode(%Primitive{type: :integer}, context, index) <> do_encode(schema, context, value)
     else
-      {:error, :data_does_not_match_schema, value, schema}
+      error({:schema_mismatch, schema, value, context})
     end
   end
 
@@ -215,17 +225,17 @@ defmodule AvroEx.Encode do
     do_encode(enum, context, to_string(atom))
   end
 
-  defp do_encode(%AvroEnum{symbols: symbols}, %Context{} = context, data) when is_binary(data) do
+  defp do_encode(%AvroEnum{symbols: symbols} = enum, %Context{} = context, data) when is_binary(data) do
     if data in symbols do
       index = Enum.find_index(symbols, fn e -> e == data end)
       do_encode(%Primitive{type: :long}, context, index)
     else
-      {:error, :invalid_symbol, {data, symbols}}
+      error({:invalid_symbol, enum, data, context})
     end
   end
 
-  defp do_encode(schema, _, data) do
-    {:error, :data_does_not_match_schema, data, schema}
+  defp do_encode(schema, context, data) do
+    error({:schema_mismatch, schema, data, context})
   end
 
   @doc false
@@ -254,5 +264,10 @@ defmodule AvroEx.Encode do
     schema
     |> zigzag_encode(int)
     |> variable_integer_encode
+  end
+
+  @compile {:inline, error: 1}
+  defp error(error) do
+    throw(AvroEx.EncodeError.new(error))
   end
 end
