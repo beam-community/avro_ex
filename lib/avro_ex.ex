@@ -66,6 +66,7 @@ defmodule AvroEx do
   @doc """
   Same as `encode/2`, but returns the encoded value directly and raises on errors
   """
+  @spec encode!(Schema.t(), term()) :: encoded_avro()
   def encode!(schema, data) do
     case AvroEx.Encode.encode(schema, data) do
       {:ok, data} -> data

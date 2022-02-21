@@ -1,6 +1,9 @@
 defmodule AvroEx.EncodeError do
   defexception [:message]
 
+  @type t :: %__MODULE__{}
+
+  @spec new(tuple()) :: t()
   def new({:schema_mismatch, schema, value, _context}) do
     type = AvroEx.Schema.type_name(schema)
 

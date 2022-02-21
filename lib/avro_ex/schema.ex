@@ -251,6 +251,16 @@ defmodule AvroEx.Schema do
     [full_name(namespace || parent_namespace, record.name) | full_aliases]
   end
 
+  @doc """
+  The fully-qualified name of the type
+
+  iex> full_name(%Primitive{type: "string"})
+  nil
+
+  iex> full_name(%Record{name: "foo", namespace: "beam.community"})
+  "beam.community.foo"
+  """
+  @spec full_name(schema_types()) :: nil | String.t()
   def full_name(%struct{}) when struct in [Array, AvroMap, Primitive, Union], do: nil
 
   def full_name(%struct{name: name, namespace: namespace}) when struct in [Fixed, Record, AvroEnum] do
@@ -271,6 +281,8 @@ defmodule AvroEx.Schema do
   end
 
   @doc """
+  The name of the schema type
+
   iex> type_name(%Primitive{type: "string"})
   "string"
 
@@ -292,6 +304,7 @@ defmodule AvroEx.Schema do
   iex> type_name(%Record{name: "foo"})
   "Record<name=foo>"
   """
+  @spec type_name(schema_types()) :: String.t()
   def type_name(%Primitive{type: nil}), do: "null"
   def type_name(%Primitive{metadata: %{"logicalType" => type}}), do: type
   def type_name(%Primitive{type: type}), do: to_string(type)
