@@ -322,16 +322,22 @@ defmodule AvroEx.Encode.Test do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(39)
 
-      assert {:error, %AvroEx.EncodeError{message: "Fixed<name=sha, size=40> has incorrect size. Expected 40, got 39"}} =
-               @test_module.encode(schema, bad_sha)
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Invalid size for Fixed<name=sha, size=40>. Size of 39 for \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""
+              }} = @test_module.encode(schema, bad_sha)
     end
 
     test "fails if the value is too large" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(41)
 
-      assert {:error, %AvroEx.EncodeError{message: "Fixed<name=sha, size=40> has incorrect size. Expected 40, got 41"}} =
-               @test_module.encode(schema, bad_sha)
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Invalid size for Fixed<name=sha, size=40>. Size of 41 for \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""
+              }} = @test_module.encode(schema, bad_sha)
     end
   end
 

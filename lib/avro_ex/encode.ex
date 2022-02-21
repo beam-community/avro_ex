@@ -26,7 +26,7 @@ defmodule AvroEx.EncodeError do
     type = AvroEx.Schema.type_name(fixed)
 
     %__MODULE__{
-      message: "#{type} has incorrect size. Expected #{fixed.size}, got #{byte_size(binary)}"
+      message: "Invalid size for #{type}. Size of #{byte_size(binary)} for #{inspect(binary)}"
     }
   end
 end
