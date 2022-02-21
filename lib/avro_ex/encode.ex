@@ -12,8 +12,10 @@ defmodule AvroEx.EncodeError do
   end
 
   def new({:invalid_symbol, enum, value, _context}) do
+    type = AvroEx.Schema.type_name(enum)
+
     %__MODULE__{
-      message: "Invalid symbol for #{enum.name}. Expected value in #{inspect(enum.symbols)}, got #{inspect(value)}"
+      message: "Invalid symbol for #{type}. Expected value in #{inspect(enum.symbols)}, got #{inspect(value)}"
     }
   end
 
