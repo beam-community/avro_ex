@@ -37,7 +37,7 @@ defmodule AvroEx.Schema do
   def parse(json_schema, %Context{} = context \\ %Context{}) do
     with {:ok, schema} <- Jason.decode(json_schema),
          {:ok, schema} <- cast(schema),
-         {:ok, schema} <- namespace(schema),
+         {:ok, schema} <- propagate_namespace(schema),
          {:ok, context} <- expand(schema, context) do
       {:ok, %__MODULE__{schema: schema, context: context}}
     end
@@ -160,20 +160,18 @@ defmodule AvroEx.Schema do
 
   def encodable?(_, _, _), do: false
 
-  @spec namespace(any()) :: {:ok, any()}
-  def namespace(schema) do
-    {:ok, namespace(schema, nil)}
+  defp propagate_namespace(schema) do
+    {:ok, propagate_namespace(schema, nil)}
   end
 
-  @spec namespace(any(), any()) :: any()
-  def namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
+  defp propagate_namespace(%Primitive{} = primitive, _parent_namespace), do: primitive
 
-  def namespace(%Record{} = record, parent_namespace) do
+  defp propagate_namespace(%Record{} = record, parent_namespace) do
     record = qualify_namespace(record)
 
     fields =
       Enum.map(record.fields, fn field ->
-        namespace(field, record.namespace || parent_namespace)
+        propagate_namespace(field, record.namespace || parent_namespace)
       end)
 
     full_names = full_names(record, parent_namespace)
@@ -181,40 +179,40 @@ defmodule AvroEx.Schema do
     %Record{record | fields: fields, qualified_names: full_names}
   end
 
-  def namespace(%Field{} = field, parent_namespace) do
-    type = namespace(field.type, parent_namespace)
+  defp propagate_namespace(%Field{} = field, parent_namespace) do
+    type = propagate_namespace(field.type, parent_namespace)
     %Field{field | type: type}
   end
 
-  def namespace(%Union{possibilities: possibilities} = union, parent_namespace) do
-    possibilities = Enum.map(possibilities, &namespace(&1, parent_namespace))
+  defp propagate_namespace(%Union{possibilities: possibilities} = union, parent_namespace) do
+    possibilities = Enum.map(possibilities, &propagate_namespace(&1, parent_namespace))
     %Union{union | possibilities: possibilities}
   end
 
-  def namespace(%Fixed{} = fixed, parent_namespace) do
+  defp propagate_namespace(%Fixed{} = fixed, parent_namespace) do
     fixed = qualify_namespace(fixed)
     %Fixed{fixed | qualified_names: full_names(fixed, parent_namespace)}
   end
 
-  def namespace(%AvroMap{} = map, parent_namespace) do
-    values = namespace(map.values, parent_namespace)
+  defp propagate_namespace(%AvroMap{} = map, parent_namespace) do
+    values = propagate_namespace(map.values, parent_namespace)
     %AvroMap{map | values: values}
   end
 
-  def namespace(%Array{} = array, parent_namespace) do
-    %Array{array | items: namespace(array.items, parent_namespace)}
+  defp propagate_namespace(%Array{} = array, parent_namespace) do
+    %Array{array | items: propagate_namespace(array.items, parent_namespace)}
   end
 
-  def namespace(%AvroEnum{} = enum, _) do
+  defp propagate_namespace(%AvroEnum{} = enum, _) do
     enum = qualify_namespace(enum)
     %AvroEnum{enum | qualified_names: full_names(enum, enum.namespace)}
   end
 
-  def namespace(name, nil) do
+  defp propagate_namespace(name, nil) do
     name
   end
 
-  def namespace(str, parent_namespace) when is_binary(str) do
+  defp propagate_namespace(str, parent_namespace) when is_binary(str) do
     if String.match?(str, ~r/\./) do
       str
     else
@@ -253,6 +251,22 @@ defmodule AvroEx.Schema do
     [full_name(namespace || parent_namespace, record.name) | full_aliases]
   end
 
+  @doc """
+  The fully-qualified name of the type
+
+  iex> full_name(%Primitive{type: "string"})
+  nil
+
+  iex> full_name(%Record{name: "foo", namespace: "beam.community"})
+  "beam.community.foo"
+  """
+  @spec full_name(schema_types()) :: nil | String.t()
+  def full_name(%struct{}) when struct in [Array, AvroMap, Primitive, Union], do: nil
+
+  def full_name(%struct{name: name, namespace: namespace}) when struct in [Fixed, Record, AvroEnum] do
+    full_name(namespace, name)
+  end
+
   @spec full_name(namespace, name) :: full_name
   def full_name(nil, name) when is_binary(name) do
     name
@@ -265,6 +279,42 @@ defmodule AvroEx.Schema do
       "#{namespace}.#{name}"
     end
   end
+
+  @doc """
+  The name of the schema type
+
+  iex> type_name(%Primitive{type: "string"})
+  "string"
+
+  iex> type_name(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}})
+  "timestamp-millis"
+
+  iex> type_name(%AvroEnum{name: "switch"})
+  "Enum<name=switch>"
+
+  iex> type_name(%Array{items: %Primitive{type: "integer"}})
+  "Array<items=integer>"
+
+  iex> type_name(%Fixed{size: 2, name: "double"})
+  "Fixed<name=double, size=2>"
+
+  iex> type_name(%Union{possibilities: [%Primitive{type: "string"}, %Primitive{type: "int"}]})
+  "Union<possibilities=string|int>"
+
+  iex> type_name(%Record{name: "foo"})
+  "Record<name=foo>"
+  """
+  @spec type_name(schema_types()) :: String.t()
+  def type_name(%Primitive{type: nil}), do: "null"
+  def type_name(%Primitive{metadata: %{"logicalType" => type}}), do: type
+  def type_name(%Primitive{type: type}), do: to_string(type)
+
+  def type_name(%Array{items: type}), do: "Array<items=#{type_name(type)}>"
+  def type_name(%Union{possibilities: types}), do: "Union<possibilities=#{Enum.map_join(types, "|", &type_name/1)}>"
+  def type_name(%Record{} = record), do: "Record<name=#{full_name(record)}>"
+  def type_name(%Fixed{size: size} = fixed), do: "Fixed<name=#{full_name(fixed)}, size=#{size}>"
+  def type_name(%AvroEnum{} = enum), do: "Enum<name=#{full_name(enum)}>"
+  def type_name(%AvroMap{values: values}), do: "Map<values=#{type_name(values)}>"
 
   @spec cast_schema(atom(), map(), any()) :: {:error, any()} | {:ok, map()}
   def cast_schema(module, data, fields) do

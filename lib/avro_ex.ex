@@ -58,11 +58,20 @@ defmodule AvroEx do
   Checks that the data is encodable before beginning encoding.
   """
   @spec encode(Schema.t(), term) ::
-          {:ok, encoded_avro}
-          | {:error, :unmatching_schema}
-          | {:error, term(), term}
+          {:ok, encoded_avro} | {:error, AvroEx.EncodeError.t() | Exception.t()}
   def encode(schema, data) do
     AvroEx.Encode.encode(schema, data)
+  end
+
+  @doc """
+  Same as `encode/2`, but returns the encoded value directly and raises on errors
+  """
+  @spec encode!(Schema.t(), term()) :: encoded_avro()
+  def encode!(schema, data) do
+    case AvroEx.Encode.encode(schema, data) do
+      {:ok, data} -> data
+      {:error, error} -> raise error
+    end
   end
 
   @doc """

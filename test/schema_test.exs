@@ -8,7 +8,9 @@ defmodule AvroEx.Schema.Test do
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
-  alias AvroEx.Schema.{Array, Context, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+
+  doctest AvroEx.Schema, import: true
 
   @test_module AvroEx.Schema
 

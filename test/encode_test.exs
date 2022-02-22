@@ -55,14 +55,14 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, "abcdefg")
       assert {:ok, <<14, 97, 98, 99, 100, 101, 102, 103>>} = @test_module.encode(schema, :abcdefg)
 
-      assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
-               @test_module.encode(schema, nil)
+      assert {:error, %AvroEx.EncodeError{message: message}} = @test_module.encode(schema, nil)
+      assert message == "Schema Mismatch: Expected value of string, got nil"
 
-      assert {:error, :data_does_not_match_schema, true, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
-               @test_module.encode(schema, true)
+      assert {:error, %AvroEx.EncodeError{message: message}} = @test_module.encode(schema, true)
+      assert message == "Schema Mismatch: Expected value of string, got true"
 
-      assert {:error, :data_does_not_match_schema, false, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
-               @test_module.encode(schema, false)
+      assert {:error, %AvroEx.EncodeError{message: message}} = @test_module.encode(schema, false)
+      assert message == "Schema Mismatch: Expected value of string, got false"
     end
   end
 
@@ -194,18 +194,6 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<0>>} = @test_module.encode(schema, %{})
       assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
     end
-
-    test "returns an error if it doesn't match the schema" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "Record", "fields": [
-        {"type": "string", "name": "first"},
-        {"type": "string", "name": "last"}
-        ]}))
-
-      assert {:ok, "\bDave\nLucia"} = @test_module.encode(schema, %{"first" => "Dave", "last" => "Lucia"})
-
-      assert {:error, :data_does_not_match_schema, nil, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}} =
-               @test_module.encode(schema, %{})
-    end
   end
 
   describe "encode (union)" do
@@ -274,7 +262,10 @@ defmodule AvroEx.Encode.Test do
     test "errors if the data doesn't match the schema" do
       {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
 
-      assert {:error, :data_does_not_match_schema, "wat", _schema} = @test_module.encode(schema, "wat")
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Union<possibilities=null|integer>, got \"wat\""
+              }} = @test_module.encode(schema, "wat")
     end
   end
 
@@ -315,20 +306,15 @@ defmodule AvroEx.Encode.Test do
       assert encoded == sha
     end
 
-    test "fails if the value is too small" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
-      bad_sha = binary_of_size(39)
-
-      assert {:error, :incorrect_fixed_size, [expected: 40, got: 39, name: "sha"]} =
-               @test_module.encode(schema, bad_sha)
-    end
-
     test "fails if the value is too large" do
       {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "sha", "size": 40}))
       bad_sha = binary_of_size(41)
 
-      assert {:error, :incorrect_fixed_size, [expected: 40, got: 41, name: "sha"]} =
-               @test_module.encode(schema, bad_sha)
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Invalid size for Fixed<name=sha, size=40>. Size of 41 for \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""
+              }} = @test_module.encode(schema, bad_sha)
     end
   end
 
@@ -358,11 +344,124 @@ defmodule AvroEx.Encode.Test do
     end
   end
 
-  describe "Doesn't match schema" do
-    test "returns the expected error tuple" do
+  describe "EncodingError - schema mismatch" do
+    test "(null)" do
       {:ok, schema} = AvroEx.parse_schema(~S("null"))
 
-      assert {:error, :data_does_not_match_schema, :wat, _schema} = @test_module.encode(schema, :wat)
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of null, got :wat"
+              }} = @test_module.encode(schema, :wat)
+    end
+
+    test "(integer)" do
+      {:ok, schema} = AvroEx.parse_schema(~S("int"))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of integer, got :wat"
+              }} = @test_module.encode(schema, :wat)
+    end
+
+    test "(array)" do
+      schema = AvroEx.parse_schema!(~S({"type": "array", "items": "int"}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Array<items=integer>, got :wat"
+              }} = @test_module.encode(schema, :wat)
+    end
+
+    test "(enum)" do
+      schema =
+        AvroEx.parse_schema!(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Enum<name=Suit>, got 12345"
+              }} = @test_module.encode(schema, 12_345)
+    end
+
+    test "(fixed)" do
+      schema = AvroEx.parse_schema!(~S({"type": "fixed", "name": "sha", "size": 40}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Fixed<name=sha, size=40>, got 12345"
+              }} = @test_module.encode(schema, 12_345)
+    end
+
+    test "(map)" do
+      schema = AvroEx.parse_schema!(~S({"type": "map", "values": "int"}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Map<values=integer>, got 12345"
+              }} = @test_module.encode(schema, 12_345)
+    end
+
+    test "(record)" do
+      assert schema =
+               AvroEx.parse_schema!(~S({"type": "record", "namespace": "beam.community", "name": "Name", "fields": [
+        {"type": "string", "name": "first"},
+        {"type": "string", "name": "last"}
+      ]}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Record<name=beam.community.Name>, got :wat"
+              }} = @test_module.encode(schema, :wat)
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of string, got nil"
+              }} = @test_module.encode(schema, %{})
+    end
+
+    test "(union)" do
+      schema = AvroEx.parse_schema!(~S(["null", "string"]))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Union<possibilities=null|string>, got 12345"
+              }} = @test_module.encode(schema, 12_345)
+    end
+  end
+
+  describe "EncodingError - Invalid Fixed size" do
+    test "(fixed)" do
+      schema = AvroEx.parse_schema!(~S({"type": "fixed", "name": "sha", "size": 40}))
+      bad_sha = binary_of_size(39)
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Invalid size for Fixed<name=sha, size=40>. Size of 39 for \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\""
+              }} = @test_module.encode(schema, bad_sha)
+    end
+  end
+
+  describe "EncodingError - Invalid Symbol" do
+    test "(enum)" do
+      schema =
+        AvroEx.parse_schema!(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Invalid symbol for Enum<name=Suit>. Expected value in [\"heart\", \"spade\", \"diamond\", \"club\"], got \"joker\""
+              }} = @test_module.encode(schema, "joker")
+    end
+  end
+
+  describe "EncodingError - Invalid string" do
+    test "(fixed)" do
+      schema = AvroEx.parse_schema!(~S("string"))
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Invalid string \"<<255, 255>>\""
+              }} = @test_module.encode(schema, <<0xFFFF::16>>)
     end
   end
 

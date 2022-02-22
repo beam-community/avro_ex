@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+* `AvroEx.encode/2` now returns `{:error, AvroEx.EncodeError.t()}` in the case of an error
+
+### Added
+* `AvroEx.encode!/2` - identical to `encode/2`, but raises
+
 ## v1.2.0
 
 ### Fixed
