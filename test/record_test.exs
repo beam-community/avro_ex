@@ -1,7 +1,7 @@
 defmodule AvroEx.Schema.Record.Test do
   use ExUnit.Case
 
-  import AvroEx.Error
+  import AvroEx.Schema, only: [error: 1]
 
   alias AvroEx.Schema
   alias AvroEx.Schema.Primitive

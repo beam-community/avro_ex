@@ -1,6 +1,5 @@
 defmodule AvroEx.Schema.Fixed.Test do
   use ExUnit.Case
-  # import AvroEx.Error
 
   @test_module AvroEx.Schema.Fixed
 

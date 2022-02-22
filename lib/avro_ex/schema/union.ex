@@ -2,7 +2,7 @@ defmodule AvroEx.Schema.Union do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias AvroEx.{Error, Schema, Term}
+  alias AvroEx.{Schema, Term}
   alias AvroEx.Schema.Context
 
   @primary_key false
@@ -27,7 +27,7 @@ defmodule AvroEx.Schema.Union do
          possibilities: get_field(cs, :possibilities)
        }}
     else
-      {:error, Error.errors(cs)}
+      {:error, Schema.errors(cs)}
     end
   end
 

@@ -1,6 +1,6 @@
 defmodule AvroEx.Schema.Record.Field.Test do
   use ExUnit.Case
-  import AvroEx.Error
+  import AvroEx.Schema, only: [errors: 2, error: 1]
   alias Ecto.Changeset
 
   @test_module AvroEx.Schema.Record.Field
