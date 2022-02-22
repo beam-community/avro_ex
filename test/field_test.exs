@@ -1,6 +1,6 @@
 defmodule AvroEx.Schema.Record.Field.Test do
   use ExUnit.Case
-  import AvroEx.Error
+  import AvroEx.Schema, only: [errors: 2]
   alias Ecto.Changeset
 
   @test_module AvroEx.Schema.Record.Field
@@ -17,14 +17,14 @@ defmodule AvroEx.Schema.Record.Field.Test do
       schema = Map.delete(@schema, "type")
       cs = @test_module.changeset(%@test_module{}, schema)
       refute cs.valid?
-      assert error("can't be blank") in errors(cs, :type)
+      assert "can't be blank" in errors(cs, :type)
     end
 
     test "Errors if a name is not specified" do
       schema = Map.delete(@schema, "name")
       cs = @test_module.changeset(%@test_module{}, schema)
       refute cs.valid?
-      assert error("can't be blank") in errors(cs, :name)
+      assert "can't be blank" in errors(cs, :name)
     end
 
     test "Looks at doc if given" do

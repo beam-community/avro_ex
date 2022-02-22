@@ -1,5 +1,5 @@
 defmodule AvroEx.Schema do
-  alias AvroEx.{Error, Schema}
+  alias AvroEx.{Schema}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
@@ -335,7 +335,26 @@ defmodule AvroEx.Schema do
     if cs.valid? do
       {:ok, Ecto.Changeset.apply_changes(cs)}
     else
-      {:error, Error.errors(cs)}
+      {:error, errors(cs)}
     end
+  end
+
+  @doc false
+  @spec errors(Ecto.Changeset.t(), atom()) :: [any()]
+  def errors(%Ecto.Changeset{} = cs, field) do
+    cs.errors
+    |> Keyword.get_values(field)
+    |> Enum.map(fn
+      {err, _} when is_binary(err) -> err
+      any -> any
+    end)
+  end
+
+  @doc false
+  @spec errors(Ecto.Changeset.t()) :: any()
+  def errors(%Ecto.Changeset{} = cs) do
+    Enum.reduce(cs.errors, %{}, fn {field, {value, _}}, acc ->
+      Map.update(acc, field, [value], fn tail -> [value | tail] end)
+    end)
   end
 end
