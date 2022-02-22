@@ -307,10 +307,4 @@ defmodule AvroEx.Schema do
       Map.update(acc, field, [value], fn tail -> [value | tail] end)
     end)
   end
-
-  @doc false
-  @spec error(any()) :: any()
-  def error(message) do
-    message
-  end
 end

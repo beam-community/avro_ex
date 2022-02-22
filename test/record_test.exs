@@ -1,8 +1,6 @@
 defmodule AvroEx.Schema.Record.Test do
   use ExUnit.Case
 
-  import AvroEx.Schema, only: [error: 1]
-
   alias AvroEx.Schema
   alias AvroEx.Schema.Primitive
   alias AvroEx.Schema.Record.Field
@@ -47,7 +45,7 @@ defmodule AvroEx.Schema.Record.Test do
       schema = Map.delete(@valid_record, "name")
 
       assert {:error, errors} = @test_module.cast(schema)
-      assert error("can't be blank") in errors.name
+      assert "can't be blank" in errors.name
     end
 
     test "returns a Record if successful" do
