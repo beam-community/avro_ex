@@ -292,8 +292,8 @@ defmodule AvroEx.Schema do
   iex> type_name(%AvroEnum{name: "switch"})
   "Enum<name=switch>"
 
-  iex> type_name(%Array{items: "int"})
-  "Array<items=int>"
+  iex> type_name(%Array{items: %Primitive{type: "integer"}})
+  "Array<items=integer>"
 
   iex> type_name(%Fixed{size: 2, name: "double"})
   "Fixed<name=double, size=2>"
@@ -309,12 +309,12 @@ defmodule AvroEx.Schema do
   def type_name(%Primitive{metadata: %{"logicalType" => type}}), do: type
   def type_name(%Primitive{type: type}), do: to_string(type)
 
-  def type_name(%Array{items: type}), do: "Array<items=#{type}>"
+  def type_name(%Array{items: type}), do: "Array<items=#{type_name(type)}>"
   def type_name(%Union{possibilities: types}), do: "Union<possibilities=#{Enum.map_join(types, "|", &type_name/1)}>"
   def type_name(%Record{} = record), do: "Record<name=#{full_name(record)}>"
   def type_name(%Fixed{size: size} = fixed), do: "Fixed<name=#{full_name(fixed)}, size=#{size}>"
   def type_name(%AvroEnum{} = enum), do: "Enum<name=#{full_name(enum)}>"
-  def type_name(%AvroMap{values: values}), do: "Map<values=#{values}>"
+  def type_name(%AvroMap{values: values}), do: "Map<values=#{type_name(values)}>"
 
   @spec cast_schema(atom(), map(), any()) :: {:error, any()} | {:ok, map()}
   def cast_schema(module, data, fields) do
