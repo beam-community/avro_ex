@@ -29,9 +29,14 @@ defmodule AvroEx do
   """
   defdelegate encodable?(schema, data), to: AvroEx.Schema
 
+  @spec parse_schema(Schema.json_schema()) ::
+          {:ok, Schema.t()}
+          | {:error, :unnamed_record}
+          | {:error, :invalid_json}
   @deprecated "Use AvroEx.decode_schema/1 instead"
   def parse_schema(json), do: decode_schema(json)
 
+  @spec parse_schema!(Schema.json_schema()) :: Schema.t() | no_return
   @deprecated "Use AvroEx.decode_schema!/1 instead"
   def parse_schema!(json), do: decode_schema!(json)
 
@@ -43,7 +48,6 @@ defmodule AvroEx do
           {:ok, Schema.t()}
           | {:error, :unnamed_record}
           | {:error, :invalid_json}
-
   def decode_schema(json) do
     Schema.parse(json)
   end
