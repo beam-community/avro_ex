@@ -29,25 +29,32 @@ defmodule AvroEx do
   """
   defdelegate encodable?(schema, data), to: AvroEx.Schema
 
-  @spec parse_schema(Schema.json_schema()) ::
-          {:ok, Schema.t()}
-          | {:error, :unnamed_record}
-          | {:error, :invalid_json}
+  @deprecated "Use AvroEx.decode_schema/1 instead"
+  def parse_schema(json), do: decode_schema(json)
+
+  @deprecated "Use AvroEx.decode_schema!/1 instead"
+  def parse_schema!(json), do: decode_schema!(json)
+
   @doc """
   Given a JSON-formatted schema, parses the schema and returns a `%AvroEx.Schema{}` struct representing the schema.
   Errors if the JSON is invalid, or if a named record is referenced that doesn't exist.
   """
-  def parse_schema(json_schema) do
-    Schema.parse(json_schema)
+  @spec decode_schema(Schema.json_schema()) ::
+          {:ok, Schema.t()}
+          | {:error, :unnamed_record}
+          | {:error, :invalid_json}
+
+  def decode_schema(json) do
+    Schema.parse(json)
   end
 
-  @spec parse_schema!(Schema.json_schema()) :: Schema.t() | no_return
   @doc """
-  Same as `AvroEx.parse_schema/1`, but raises an exception on failure instead of
+  Same as `AvroEx.decode_schema/1`, but raises an exception on failure instead of
   returning an error tuple.
   """
-  def parse_schema!(json_schema) do
-    case parse_schema(json_schema) do
+  @spec decode_schema!(Schema.json_schema()) :: Schema.t() | no_return
+  def decode_schema!(json) do
+    case decode_schema(json) do
       {:ok, schema} -> schema
       _ -> raise "Parsing schema failed"
     end

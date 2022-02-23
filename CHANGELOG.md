@@ -7,6 +7,11 @@
 
 ### Added
 * `AvroEx.encode!/2` - identical to `encode/2`, but raises
+* `AvroEx.decode_schema/1` and `AvroEx.decode_schema!/` in place of `AvroEx.parse_schema/1`
+
+### Deprecated
+* `AvroEx.parse_schema/1`
+* `AvroEx.parse_schema!/1`
 
 ## v1.2.0
 

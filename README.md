@@ -35,7 +35,7 @@ defmodule MyWorker do
     {:ok, decoded_message} =
       @schema_id
       |> SchemaRepository.fetch_schema
-      |> AvroEx.parse_schema!
+      |> AvroEx.decode_schema!
       |> AvroEx.decode(message)
 
     # And do things with the message

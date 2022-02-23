@@ -5,13 +5,13 @@ defmodule AvroEx.Decode.Test do
 
   describe "decode (primitive)" do
     test "null" do
-      {:ok, schema} = AvroEx.parse_schema(~S("null"))
+      {:ok, schema} = AvroEx.decode_schema(~S("null"))
       {:ok, avro_message} = AvroEx.encode(schema, nil)
       assert {:ok, nil} = @test_module.decode(schema, avro_message)
     end
 
     test "boolean" do
-      {:ok, schema} = AvroEx.parse_schema(~S("boolean"))
+      {:ok, schema} = AvroEx.decode_schema(~S("boolean"))
       {:ok, true_message} = AvroEx.encode(schema, true)
       {:ok, false_message} = AvroEx.encode(schema, false)
 
@@ -20,7 +20,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "integer" do
-      {:ok, schema} = AvroEx.parse_schema(~S("int"))
+      {:ok, schema} = AvroEx.decode_schema(~S("int"))
       {:ok, zero} = AvroEx.encode(schema, 0)
       {:ok, neg_ten} = AvroEx.encode(schema, -10)
       {:ok, ten} = AvroEx.encode(schema, 10)
@@ -39,7 +39,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "long" do
-      {:ok, schema} = AvroEx.parse_schema(~S("long"))
+      {:ok, schema} = AvroEx.decode_schema(~S("long"))
       {:ok, zero} = AvroEx.encode(schema, 0)
       {:ok, neg_ten} = AvroEx.encode(schema, -10)
       {:ok, ten} = AvroEx.encode(schema, 10)
@@ -58,7 +58,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "float" do
-      {:ok, schema} = AvroEx.parse_schema(~S("float"))
+      {:ok, schema} = AvroEx.decode_schema(~S("float"))
       {:ok, zero} = AvroEx.encode(schema, 0.0)
       {:ok, big} = AvroEx.encode(schema, 256.25)
 
@@ -67,7 +67,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "double" do
-      {:ok, schema} = AvroEx.parse_schema(~S("double"))
+      {:ok, schema} = AvroEx.decode_schema(~S("double"))
       {:ok, zero} = AvroEx.encode(schema, 0.0)
       {:ok, big} = AvroEx.encode(schema, 256.25)
 
@@ -76,14 +76,14 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "bytes" do
-      {:ok, schema} = AvroEx.parse_schema(~S("bytes"))
+      {:ok, schema} = AvroEx.decode_schema(~S("bytes"))
       {:ok, bytes} = AvroEx.encode(schema, <<222, 213, 194, 34, 58, 92, 95, 62>>)
 
       assert {:ok, <<222, 213, 194, 34, 58, 92, 95, 62>>} = @test_module.decode(schema, bytes)
     end
 
     test "string" do
-      {:ok, schema} = AvroEx.parse_schema(~S("string"))
+      {:ok, schema} = AvroEx.decode_schema(~S("string"))
       {:ok, bytes} = AvroEx.encode(schema, "Hello there 🕶")
 
       assert {:ok, "Hello there 🕶"} = @test_module.decode(schema, bytes)
@@ -92,7 +92,7 @@ defmodule AvroEx.Decode.Test do
 
   describe "complex types" do
     test "record" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "record", "name": "MyRecord", "fields": [
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "record", "name": "MyRecord", "fields": [
         {"type": "int", "name": "a"},
         {"type": "int", "name": "b", "aliases": ["c", "d"]},
         {"type": "string", "name": "e"}
@@ -104,7 +104,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "union" do
-      {:ok, schema} = AvroEx.parse_schema(~S(["null", "int"]))
+      {:ok, schema} = AvroEx.decode_schema(~S(["null", "int"]))
 
       {:ok, encoded_null} = AvroEx.encode(schema, nil)
       {:ok, encoded_int} = AvroEx.encode(schema, 25)
@@ -114,7 +114,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "union with DateTime" do
-      {:ok, schema} = AvroEx.parse_schema(~S(["null", {"type": "long", "logicalType":"timestamp-micros"}]))
+      {:ok, schema} = AvroEx.decode_schema(~S(["null", {"type": "long", "logicalType":"timestamp-micros"}]))
       datetime = DateTime.utc_now()
 
       {:ok, encoded_null} = AvroEx.encode(schema, nil)
@@ -125,7 +125,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "union with Time" do
-      {:ok, schema} = AvroEx.parse_schema(~S(["null", {"type": "long", "logicalType":"time-micros"}]))
+      {:ok, schema} = AvroEx.decode_schema(~S(["null", {"type": "long", "logicalType":"time-micros"}]))
       time = Time.utc_now()
 
       {:ok, encoded_null} = AvroEx.encode(schema, nil)
@@ -136,7 +136,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "array" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": ["null", "int"]}))
 
       {:ok, encoded_array} = AvroEx.encode(schema, [1, 2, 3, nil, 4, 5, nil])
 
@@ -144,7 +144,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "empty array" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "array", "items": ["null", "int"]}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": ["null", "int"]}))
 
       {:ok, encoded_array} = AvroEx.encode(schema, [])
 
@@ -152,7 +152,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "map" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "map", "values": ["null", "int"]}))
 
       {:ok, encoded_array} = AvroEx.encode(schema, %{"a" => 1, "b" => nil, "c" => 3})
 
@@ -160,7 +160,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "empty map" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "map", "values": ["null", "int"]}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "map", "values": ["null", "int"]}))
 
       {:ok, encoded_map} = AvroEx.encode(schema, %{})
 
@@ -169,7 +169,7 @@ defmodule AvroEx.Decode.Test do
 
     test "enum" do
       {:ok, schema} =
-        AvroEx.parse_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
+        AvroEx.decode_schema(~S({"type": "enum", "name": "Suit", "symbols": ["heart", "spade", "diamond", "club"]}))
 
       {:ok, club} = AvroEx.encode(schema, "club")
       {:ok, heart} = AvroEx.encode(schema, "heart")
@@ -183,14 +183,14 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "fixed" do
-      {:ok, schema} = AvroEx.parse_schema(~S({"type": "fixed", "name": "SHA", "size": "40"}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "name": "SHA", "size": "40"}))
       sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       {:ok, encoded_sha} = AvroEx.encode(schema, sha)
       assert {:ok, ^sha} = @test_module.decode(schema, encoded_sha)
     end
 
     test "record with empty array of records" do
-      {:ok, schema} = AvroEx.parse_schema(~S(
+      {:ok, schema} = AvroEx.decode_schema(~S(
         {
           "type": "record",
           "name": "User",
@@ -229,7 +229,7 @@ defmodule AvroEx.Decode.Test do
     test "datetime micros" do
       now = DateTime.utc_now()
 
-      {:ok, micro_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-micros"}))
+      {:ok, micro_schema} = AvroEx.decode_schema(~S({"type": "long", "logicalType":"timestamp-micros"}))
 
       {:ok, micro_encode} = AvroEx.encode(micro_schema, now)
       assert {:ok, ^now} = @test_module.decode(micro_schema, micro_encode)
@@ -238,7 +238,7 @@ defmodule AvroEx.Decode.Test do
     test "datetime millis" do
       now = DateTime.truncate(DateTime.utc_now(), :millisecond)
 
-      {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-millis"}))
+      {:ok, milli_schema} = AvroEx.decode_schema(~S({"type": "long", "logicalType":"timestamp-millis"}))
 
       {:ok, milli_encode} = AvroEx.encode(milli_schema, now)
       assert {:ok, ^now} = @test_module.decode(milli_schema, milli_encode)
@@ -247,7 +247,7 @@ defmodule AvroEx.Decode.Test do
     test "datetime nanos" do
       now = DateTime.utc_now()
 
-      {:ok, nano_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"timestamp-nanos"}))
+      {:ok, nano_schema} = AvroEx.decode_schema(~S({"type": "long", "logicalType":"timestamp-nanos"}))
 
       {:ok, nano_encode} = AvroEx.encode(nano_schema, now)
       assert {:ok, ^now} = @test_module.decode(nano_schema, nano_encode)
@@ -256,7 +256,7 @@ defmodule AvroEx.Decode.Test do
     test "time micros" do
       now = Time.truncate(Time.utc_now(), :microsecond)
 
-      {:ok, micro_schema} = AvroEx.parse_schema(~S({"type": "long", "logicalType":"time-micros"}))
+      {:ok, micro_schema} = AvroEx.decode_schema(~S({"type": "long", "logicalType":"time-micros"}))
       {:ok, micro_encode} = AvroEx.encode(micro_schema, now)
       assert {:ok, ^now} = @test_module.decode(micro_schema, micro_encode)
     end
@@ -264,7 +264,7 @@ defmodule AvroEx.Decode.Test do
     test "time millis" do
       now = Time.truncate(Time.utc_now(), :millisecond)
 
-      {:ok, milli_schema} = AvroEx.parse_schema(~S({"type": "int", "logicalType":"time-millis"}))
+      {:ok, milli_schema} = AvroEx.decode_schema(~S({"type": "int", "logicalType":"time-millis"}))
       {:ok, milli_encode} = AvroEx.encode(milli_schema, now)
       {:ok, time} = @test_module.decode(milli_schema, milli_encode)
 
