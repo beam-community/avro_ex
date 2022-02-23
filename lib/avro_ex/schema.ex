@@ -1,5 +1,4 @@
 defmodule AvroEx.Schema do
-  alias AvroEx.{Schema}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
@@ -95,70 +94,6 @@ defmodule AvroEx.Schema do
   def expand(schema, context) do
     {:ok, Context.add_schema(context, schema)}
   end
-
-  @spec encodable?(AvroEx.Schema.t(), any()) :: boolean()
-  def encodable?(%Schema{schema: schema, context: context}, data) do
-    encodable?(schema, context, data)
-  end
-
-  @spec encodable?(any(), any(), any()) :: boolean()
-  def encodable?(%Primitive{type: nil}, _, nil), do: true
-  def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
-  def encodable?(%Primitive{type: :integer}, _, n) when is_integer(n), do: true
-  def encodable?(%Primitive{type: :long}, _, n) when is_integer(n), do: true
-  def encodable?(%Primitive{type: :float}, _, n) when is_float(n), do: true
-  def encodable?(%Primitive{type: :double}, _, n) when is_float(n), do: true
-  def encodable?(%Primitive{type: :bytes}, _, bytes) when is_binary(bytes), do: true
-  def encodable?(%Primitive{type: :string}, _, str) when is_binary(str), do: String.valid?(str)
-
-  def encodable?(%Primitive{type: :string}, _, atom) when is_atom(atom) do
-    if is_nil(atom) or is_boolean(atom) do
-      false
-    else
-      atom |> to_string() |> String.valid?()
-    end
-  end
-
-  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}}, _, %DateTime{}), do: true
-  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-micros"}}, _, %DateTime{}), do: true
-  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}}, _, %DateTime{}), do: true
-  def encodable?(%Primitive{type: :long, metadata: %{"logicalType" => "time-micros"}}, _, %Time{}), do: true
-  def encodable?(%Primitive{type: :int, metadata: %{"logicalType" => "time-millis"}}, _, %Time{}), do: true
-
-  def encodable?(%Record{} = record, %Context{} = context, data) when is_map(data),
-    do: Record.match?(record, context, data)
-
-  def encodable?(%Field{} = field, %Context{} = context, data),
-    do: Field.match?(field, context, data)
-
-  def encodable?(%Union{} = union, %Context{} = context, data),
-    do: Union.match?(union, context, data)
-
-  def encodable?(%Fixed{} = fixed, %Context{} = context, data),
-    do: Fixed.match?(fixed, context, data)
-
-  def encodable?(%AvroMap{} = schema, %Context{} = context, data) when is_map(data) do
-    AvroMap.match?(schema, context, data)
-  end
-
-  def encodable?(%Array{} = schema, %Context{} = context, data) when is_list(data) do
-    Array.match?(schema, context, data)
-  end
-
-  def encodable?(%AvroEnum{} = schema, %Context{} = context, data) when is_atom(data) do
-    AvroEnum.match?(schema, context, to_string(data))
-  end
-
-  def encodable?(%AvroEnum{} = schema, %Context{} = context, data) when is_binary(data) do
-    AvroEnum.match?(schema, context, data)
-  end
-
-  def encodable?(name, %Context{} = context, data) when is_binary(name) do
-    schema = Context.lookup(context, name)
-    encodable?(schema, context, data)
-  end
-
-  def encodable?(_, _, _), do: false
 
   defp propagate_namespace(schema) do
     {:ok, propagate_namespace(schema, nil)}

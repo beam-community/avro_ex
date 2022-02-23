@@ -2,7 +2,6 @@ defmodule AvroEx.Schema.Array do
   use Ecto.Schema
   require AvroEx.Schema.Macros, as: SchemaMacros
   alias AvroEx.{Schema, Term}
-  alias AvroEx.Schema.Context
   alias Ecto.Changeset
   import Ecto.Changeset
 
@@ -44,13 +43,4 @@ defmodule AvroEx.Schema.Array do
       {:error, reason} -> add_error(cs, :items, reason)
     end
   end
-
-  @spec match?(any(), any(), any()) :: boolean()
-  def match?(%__MODULE__{items: item_type}, %Context{} = context, data) when is_list(data) do
-    Enum.all?(data, fn item ->
-      Schema.encodable?(item_type, context, item)
-    end)
-  end
-
-  def match?(_array, _context, _data), do: false
 end

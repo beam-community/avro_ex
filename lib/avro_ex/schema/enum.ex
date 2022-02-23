@@ -6,7 +6,6 @@ defmodule AvroEx.Schema.Enum do
   import Ecto.Changeset
 
   alias AvroEx.Schema
-  alias AvroEx.Schema.Context
 
   @optional_fields [:aliases, :doc, :metadata, :namespace]
   @primary_key false
@@ -44,11 +43,4 @@ defmodule AvroEx.Schema.Enum do
     |> cast(params, @optional_fields ++ @required_fields)
     |> validate_required(@required_fields)
   end
-
-  @spec match?(any(), any(), any()) :: boolean()
-  def match?(%__MODULE__{symbols: symbols}, %Context{}, data) when is_binary(data) do
-    data in symbols
-  end
-
-  def match?(_enum, _context, _data), do: false
 end

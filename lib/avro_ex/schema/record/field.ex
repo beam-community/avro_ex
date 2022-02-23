@@ -4,7 +4,6 @@ defmodule AvroEx.Schema.Record.Field do
 
   alias Ecto.Changeset
   alias AvroEx.{Schema, Term}
-  alias AvroEx.Schema.Context
 
   @type t() :: %__MODULE__{}
 
@@ -28,11 +27,6 @@ defmodule AvroEx.Schema.Record.Field do
     |> cast(params, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> encode_type
-  end
-
-  @spec match?(AvroEx.Schema.Record.Field.t(), AvroEx.Schema.Context.t(), any()) :: boolean()
-  def match?(%__MODULE__{type: type}, %Context{} = context, data) do
-    Schema.encodable?(type, context, data)
   end
 
   defp encode_type(%Changeset{} = cs) do

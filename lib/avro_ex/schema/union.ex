@@ -3,7 +3,6 @@ defmodule AvroEx.Schema.Union do
   import Ecto.Changeset
 
   alias AvroEx.{Schema, Term}
-  alias AvroEx.Schema.Context
 
   @primary_key false
   @required_fields [:possibilities]
@@ -66,12 +65,5 @@ defmodule AvroEx.Schema.Union do
         add_error(cs, :possibilities, error)
       end)
     end
-  end
-
-  @spec match?(AvroEx.Schema.Union.t(), AvroEx.Schema.Context.t(), any()) :: boolean()
-  def match?(%__MODULE__{} = union, %Context{} = context, data) do
-    Enum.any?(union.possibilities, fn schema ->
-      Schema.encodable?(schema, context, data)
-    end)
   end
 end

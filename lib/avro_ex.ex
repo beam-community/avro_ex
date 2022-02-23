@@ -24,10 +24,19 @@ defmodule AvroEx do
   @type encoded_avro :: binary
 
   @doc """
-  Checks to see if the given data is encodable using the given schema. Great in
-  unit tests.
+  Checks to see if the given data is encodable using the given schema.
+
+  Note that this function fully encodes the data to validate, and should
+  only be used in testing scenarios or in situations where performance is not
+  critical.
   """
-  defdelegate encodable?(schema, data), to: AvroEx.Schema
+  @spec encodable?(Schema.t(), term()) :: boolean()
+  def encodable?(schema, data) do
+    case encode(schema, data) do
+      {:ok, _encoded} -> true
+      {:error, _reason} -> false
+    end
+  end
 
   @spec parse_schema(Schema.json_schema()) ::
           {:ok, Schema.t()}

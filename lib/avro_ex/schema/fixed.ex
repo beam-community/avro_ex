@@ -5,7 +5,6 @@ defmodule AvroEx.Schema.Fixed do
   import Ecto.Changeset
 
   alias AvroEx.Schema
-  alias AvroEx.Schema.Context
 
   embedded_schema do
     field(:aliases, {:array, :string}, default: [])
@@ -36,12 +35,4 @@ defmodule AvroEx.Schema.Fixed do
     |> cast(params, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
   end
-
-  @spec match?(t, Context.t(), term) :: boolean
-  def match?(%__MODULE__{size: size}, %Context{}, data)
-      when is_binary(data) and byte_size(data) == size do
-    true
-  end
-
-  def match?(_fixed, _context, _data), do: false
 end

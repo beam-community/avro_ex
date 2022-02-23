@@ -6,7 +6,6 @@ defmodule AvroEx.Schema.Map do
   import Ecto.Changeset
 
   alias AvroEx.{Schema, Term}
-  alias AvroEx.Schema.{Context, Primitive}
   alias Ecto.Changeset
 
   @primary_key false
@@ -46,14 +45,4 @@ defmodule AvroEx.Schema.Map do
       {:error, reason} -> add_error(cs, :values, reason)
     end
   end
-
-  @spec match?(any(), any(), any()) :: boolean()
-  def match?(%__MODULE__{values: value_type}, %Context{} = context, data) when is_map(data) do
-    Enum.all?(data, fn {key, value} ->
-      Schema.encodable?(%Primitive{type: :string}, context, key) and
-        Schema.encodable?(value_type, context, value)
-    end)
-  end
-
-  def match?(_map, _context, _data), do: false
 end

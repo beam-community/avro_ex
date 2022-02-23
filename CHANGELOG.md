@@ -4,6 +4,7 @@
 
 ### Changed
 * `AvroEx.encode/2` now returns `{:error, AvroEx.EncodeError.t()}` in the case of an error
+* `AvroEx.encodeable?/2` implementation changed to use `AvroEx.encode/2` rather than a separate implementation
 
 ### Added
 * `AvroEx.encode!/2` - identical to `encode/2`, but raises

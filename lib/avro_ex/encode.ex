@@ -144,6 +144,7 @@ defmodule AvroEx.Encode do
   end
 
   defp do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, value) do
+    # TODO fix this?
     index =
       Enum.find_index(possibilities, fn possible_schema ->
         Schema.encodable?(possible_schema, context, value)
