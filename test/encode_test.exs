@@ -194,6 +194,16 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<0>>} = @test_module.encode(schema, %{})
       assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
     end
+
+    test "works with logicalType field values" do
+      schema = AvroEx.parse_schema!(~S({"type": "record", "name": "Record", "fields": [
+          {"type": "long", "name": "timestamp", "logicalType": "timestamp-millis"}
+        ]}))
+
+      timestamp = ~U[2022-02-23 20:28:13.498428Z]
+
+      assert {:ok, <<0>>} = @test_module.encode(schema, %{timestamp: timestamp})
+    end
   end
 
   describe "encode (union)" do
@@ -226,6 +236,8 @@ defmodule AvroEx.Encode.Test do
 
       {:ok, schema} = AvroEx.decode_schema(~s(["null", #{datetime_json}]))
       {:ok, datetime_schema} = AvroEx.decode_schema(datetime_json)
+
+      IO.inspect(datetime_schema)
 
       {:ok, index} = @test_module.encode(datetime_schema, 1)
       {:ok, encoded_datetime} = @test_module.encode(datetime_schema, datetime_value)
