@@ -26,13 +26,14 @@ defmodule AvroEx.Mixfile do
   end
 
   defp aliases do
-    [compile: ["compile --warnings-as-errors"]]
+    []
   end
 
   defp deps do
     [
       {:ecto, "~> 3.0"},
       {:jason, "~> 1.1"},
+      {:typed_struct, "~> 0.3.0"},
       {:credo, "~> 1.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:ex_doc, "~> 0.20", only: :dev, runtime: false}
