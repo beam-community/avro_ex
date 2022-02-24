@@ -14,6 +14,7 @@ defmodule AvroEx.Schema.Record.Field do
     field(:type, Term)
     field(:default, Term)
     field(:aliases, {:array, :string}, default: [])
+    field(:metadata, :map, default: %{})
   end
 
   @required_fields [:name, :type]
