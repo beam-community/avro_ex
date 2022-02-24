@@ -123,7 +123,7 @@ defmodule AvroEx.Schema.Primitive.Test do
                     } = record
                   ]
                 }
-              } = schema} = AvroEx.parse_schema(schema_json)
+              } = schema} = AvroEx.decode_schema(schema_json)
 
       assert AvroEx.named_type(type, schema) == record
     end
@@ -158,7 +158,7 @@ defmodule AvroEx.Schema.Primitive.Test do
                     }
                   ]
                 }
-              } = schema} = AvroEx.parse_schema(schema_json)
+              } = schema} = AvroEx.decode_schema(schema_json)
 
       data = %{
         "value" => 25,
