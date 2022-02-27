@@ -1,6 +1,7 @@
 defmodule AvroEx.Schema.Parser do
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+  alias AvroEx.Schema.Enum, as: AvroEnum
 
   @primitives [
     "null",
@@ -42,12 +43,57 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp do_parse(list) when is_list(list) do
+    {possibilities, _} =
+      Enum.map_reduce(list, MapSet.new(), fn type, seen ->
+        %struct{} = parsed = do_parse(type)
+
+        if match?(%Union{}, parsed) do
+          error({:nested_union, parsed, list})
+        end
+
+        set_key =
+          if struct in [AvroEnum, Fixed, Record] do
+            {struct, parsed.name}
+          else
+            parsed.type
+          end
+
+        if MapSet.member?(seen, set_key) do
+          error({:duplicate_union_type, parsed, list})
+        end
+
+        {parsed, MapSet.put(seen, set_key)}
+      end)
+
+    struct!(Union, possibilities: possibilities)
   end
 
   defp do_parse(%{"type" => primitive} = type) when primitive in @primitives do
     {data, rest} = extract_keys(type, [], [], [:type])
 
     struct!(Primitive, data |> Map.put(:metadata, rest) |> Map.put(:type, String.to_existing_atom(primitive)))
+  end
+
+  defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum) when is_list(symbols) do
+    {data, rest} = extract_keys(enum, [:name, :symbols], [:namespace, :doc, :aliases], [:type])
+
+    if rest != %{} do
+      error({:unrecognized_fields, Map.keys(rest), AvroEnum, enum})
+    end
+
+    Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
+      if MapSet.member?(set, symbol) do
+        error({:duplicate_symbol, symbol, enum})
+      end
+
+      unless valid_name?(symbol) do
+        error({:invalid_name, {:symbols, symbol}, enum})
+      end
+
+      MapSet.put(set, symbol)
+    end)
+
+    struct!(AvroEnum, data)
   end
 
   defp do_parse(%{"type" => "record", "fields" => fields} = record) when is_list(fields) do
@@ -76,6 +122,24 @@ defmodule AvroEx.Schema.Parser do
     end
 
     struct!(Record.Field, Map.put(data, :type, inner_type))
+  end
+
+  defp cast(data, keys) do
+  end
+
+  defp validate_required(data, keys) do
+  end
+
+  defp extract_metadata({data, rest}) do
+    Map.put(data, :metadata, rest)
+  end
+
+  defp extract_data({data, rest}, type, raw) do
+    if rest != %{} do
+      error({:unrecognized_fields, Map.keys(rest), type, raw})
+    end
+
+    data
   end
 
   defp extract_keys(data, required, optional, drop) do
@@ -121,4 +185,10 @@ defmodule AvroEx.Schema.Parser do
   defp error(info) do
     info |> AvroEx.Schema.DecodeError.new() |> throw()
   end
+
+  defp valid_name?(name) when is_binary(name) do
+    Regex.match?(~r/^[A-Za-z_][A-Za-z0-9_]*$/, name)
+  end
+
+  defp valid_name?(_), do: false
 end
