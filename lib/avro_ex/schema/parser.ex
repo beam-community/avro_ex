@@ -45,34 +45,69 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp do_parse(%{"type" => primitive} = type) when primitive in @primitives do
-    data = type |> extract_keys([]) |> Map.put(:type, String.to_existing_atom(primitive))
-    struct(Primitive, data)
+    {data, rest} = extract_keys(type, [], [], [:type])
+
+    struct!(Primitive, data |> Map.put(:metadata, rest) |> Map.put(:type, String.to_existing_atom(primitive)))
   end
 
   defp do_parse(%{"type" => "record", "fields" => fields} = record) when is_list(fields) do
-    data =
-      record
-      |> extract_keys(["name", "namespace", "doc", "qualified_names"])
-      |> Map.put(:fields, parse_fields(fields))
+    {data, rest} = extract_keys(record, [:name, :fields], [:namespace, :doc, :aliases], [:type])
 
-    struct(Record, data)
+    if rest != %{} do
+      error({:unrecognized_fields, Map.keys(rest), Record, record})
+    end
+
+    data = update_in(data, [:fields], fn fields -> Enum.map(fields, &parse_fields/1) end)
+
+    struct!(Record, data)
   end
 
   defp do_parse(other) do
-    throw(AvroEx.Schema.DecodeError.new(reason: :invalid_format, data: other))
+    error({:invalid_format, other})
   end
 
-  defp parse_fields(%{"type" => type}) do
-    %{}
+  defp parse_fields(%{"type" => type} = field) do
+    inner_type = do_parse(type)
+
+    {data, rest} = extract_keys(field, [:name, :type], [:doc, :default, :namespace], [:type])
+
+    if rest != %{} do
+      error({:unrecognized_fields, Map.keys(rest), Record.Field, field})
+    end
+
+    struct!(Record.Field, Map.put(data, :type, inner_type))
   end
 
-  # TODO add required and optional
-  defp extract_keys(data, fields) do
-    {fields, metadata} = Map.split(data, fields)
+  defp extract_keys(data, required, optional, drop) do
+    {data, rest} = extract_required(data, required, %{})
+    {data, rest} = extract_optional(rest, optional, data)
+    rest = drop(rest, drop)
+    {data, rest}
+  end
 
-    fields
-    |> atom_keys()
-    |> Map.put(:metadata, metadata)
+  defp extract_required(data, required, into) do
+    Enum.reduce(required, {into, data}, fn k, {required, data} ->
+      case Map.pop(data, to_string(k)) do
+        {nil, data} ->
+          error({:missing_required, k, data})
+
+        {value, data} ->
+          {Map.put(required, k, value), data}
+      end
+    end)
+  end
+
+  defp extract_optional(data, optional, into) do
+    Enum.reduce(optional, {into, data}, fn k, {optional, data} ->
+      case Map.pop(data, to_string(k)) do
+        {nil, data} -> {optional, data}
+        {value, data} -> {Map.put(optional, k, value), data}
+      end
+    end)
+  end
+
+  defp drop(data, drop) do
+    Map.drop(data, Enum.map(drop, &to_string/1))
   end
 
   # convert maps keys to known atoms
@@ -81,5 +116,9 @@ defmodule AvroEx.Schema.Parser do
       {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
       {k, v} when is_atom(k) -> {k, v}
     end)
+  end
+
+  defp error(info) do
+    info |> AvroEx.Schema.DecodeError.new() |> throw()
   end
 end
