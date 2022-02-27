@@ -115,7 +115,7 @@ defmodule AvroEx.Schema.ParserTest do
 
     test "creating a record without a name will raise" do
       message =
-        "Schema missing required key `name` in %{\"fields\" => [%{\"name\" => \"key\", \"type\" => \"long\"}], \"type\" => \"record\"}"
+        "Schema missing required key `name` for AvroEx.Schema.Record in %{\"fields\" => [%{\"name\" => \"key\", \"type\" => \"long\"}], \"type\" => \"record\"}"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
@@ -127,8 +127,9 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
-    test "record names must be valid" do
-      message = ""
+    test "names must be valid" do
+      message =
+        "Invalid name `123` for `name` in %{\"fields\" => [%{\"name\" => \"key\", \"type\" => \"long\"}], \"name\" => \"123\", \"type\" => \"record\"}"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
@@ -142,7 +143,8 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "namespace must be valid" do
-      message = ""
+      message =
+        "Invalid name `1invalid` for `namespace` in %{\"fields\" => [%{\"name\" => \"key\", \"type\" => \"long\"}], \"name\" => \"valid\", \"namespace\" => \"1invalid\", \"type\" => \"record\"}"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
