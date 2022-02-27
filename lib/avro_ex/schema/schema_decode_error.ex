@@ -14,8 +14,8 @@ defmodule AvroEx.Schema.DecodeError do
     %__MODULE__{message: message}
   end
 
-  def new({:missing_required, key, data}) do
-    message = "Schema missing required key #{surround(key)} in #{inspect(data)}"
+  def new({:missing_required, key, type, data}) do
+    message = "Schema missing required key #{surround(key)} for #{inspect(type)} in #{inspect(data)}"
     %__MODULE__{message: message}
   end
 

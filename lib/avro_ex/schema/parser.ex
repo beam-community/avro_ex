@@ -97,13 +97,15 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp do_parse(%{"type" => "record", "fields" => fields} = record) when is_list(fields) do
-    {data, rest} = extract_keys(record, [:name, :fields], [:namespace, :doc, :aliases], [:type])
-
-    if rest != %{} do
-      error({:unrecognized_fields, Map.keys(rest), Record, record})
-    end
-
-    data = update_in(data, [:fields], fn fields -> Enum.map(fields, &parse_fields/1) end)
+    data =
+      record
+      |> cast(Record, [:aliases, :doc, :name, :namespace, :fields])
+      |> drop([:type])
+      |> validate_required([:name, :fields])
+      |> validate_name(:name)
+      |> validate_name(:namespace)
+      |> extract_data()
+      |> update_in([:fields], fn fields -> Enum.map(fields, &parse_fields/1) end)
 
     struct!(Record, data)
   end
@@ -124,17 +126,55 @@ defmodule AvroEx.Schema.Parser do
     struct!(Record.Field, Map.put(data, :type, inner_type))
   end
 
-  defp cast(data, keys) do
+  defp cast(data, type, keys) do
+    info = {type, data}
+
+    Enum.reduce(keys, {%{}, data, info}, fn key, {data, rest, info} ->
+      case Map.pop(rest, to_string(key)) do
+        {nil, rest} ->
+          {data, rest, info}
+
+        {value, rest} ->
+          {Map.put(data, key, value), rest, info}
+      end
+    end)
   end
 
-  defp validate_required(data, keys) do
+  defp validate_required({data, rest, {type, raw} = info}, keys) do
+    Enum.each(keys, fn k ->
+      unless data[k] do
+        error({:missing_required, k, type, raw})
+      end
+    end)
+
+    {data, rest, info}
   end
 
-  defp extract_metadata({data, rest}) do
+  defp validate_field({data, rest, info} = input, field, func) do
+    case Map.fetch(data, field) do
+      {:ok, value} ->
+        func.(data[field])
+
+      :error ->
+        :ok
+    end
+
+    input
+  end
+
+  defp validate_name({_data, _rest, {type, raw}} = input, field) do
+    validate_field(input, field, fn value ->
+      unless valid_name?(value) do
+        error({:invalid_name, {field, value}, raw})
+      end
+    end)
+  end
+
+  defp extract_metadata({data, rest, _info}) do
     Map.put(data, :metadata, rest)
   end
 
-  defp extract_data({data, rest}, type, raw) do
+  defp extract_data({data, rest, {type, raw}}) do
     if rest != %{} do
       error({:unrecognized_fields, Map.keys(rest), type, raw})
     end
@@ -168,6 +208,10 @@ defmodule AvroEx.Schema.Parser do
         {value, data} -> {Map.put(optional, k, value), data}
       end
     end)
+  end
+
+  defp drop({data, rest, info}, keys) do
+    {data, Map.drop(rest, Enum.map(keys, &to_string/1)), info}
   end
 
   defp drop(data, drop) do
