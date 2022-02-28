@@ -1,6 +1,9 @@
 defmodule AvroEx.Schema.DecodeError do
   defexception [:message]
 
+  @type t :: %__MODULE__{}
+
+  @spec new(tuple()) :: t()
   def new({:unrecognized_fields, keys, type, data}) do
     qualifier =
       case keys do
@@ -44,6 +47,12 @@ defmodule AvroEx.Schema.DecodeError do
   def new({:invalid_default, schema, reason}) do
     type = AvroEx.Schema.type_name(schema)
     message = "Invalid default in #{type} #{Exception.message(reason)}"
+    %__MODULE__{message: message}
+  end
+
+  def new({:invalid_type, {field, value}, type, context}) do
+    type = AvroEx.Schema.type_name(type)
+    message = "Expected #{surround(field)} to be #{type} got #{inspect(value)} in #{inspect(context)}"
     %__MODULE__{message: message}
   end
 

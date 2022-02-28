@@ -5,6 +5,7 @@
 ### Changed
 * `AvroEx.encode/2` now returns `{:error, AvroEx.EncodeError.t()}` in the case of an error
 * Primitive integer types now represented as `%Primitive{type: :int}` instead of `%Primitive{type: :integer}`
+* Primitive null types now represented as `%Primitive{type: :null}` instead of `%Primitive{type: nil}`
 * Schema parser now supports Elixir terms and will strictly validate the schema
 * Dropped Ecto as a dependency
 

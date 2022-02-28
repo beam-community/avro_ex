@@ -52,9 +52,9 @@ defmodule AvroEx.Schema.Primitive do
   @spec type() :: :primitive
   def type, do: :primitive
 
-  @spec type(nil | <<_::24, _::_*8>>) :: :boolean | :bytes | :double | :float | :int | :long | nil | :string
-  def type("null"), do: nil
-  def type(nil), do: nil
+  @spec type(nil | <<_::24, _::_*8>>) :: :boolean | :bytes | :double | :float | :int | :long | :null | :string
+  def type("null"), do: :null
+  def type(nil), do: :null
   def type("boolean"), do: :boolean
   def type("int"), do: :int
   def type("long"), do: :long

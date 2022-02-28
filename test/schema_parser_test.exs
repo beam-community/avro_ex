@@ -83,8 +83,7 @@ defmodule AvroEx.Schema.ParserTest do
                ]
              }
 
-      # TODO figure out context
-      # assert context == %Context{}
+      assert context == %Context{}
     end
 
     test "records can have fields that are logicalTypes" do
@@ -110,8 +109,7 @@ defmodule AvroEx.Schema.ParserTest do
                ]
              }
 
-      # TODO figure out context
-      # assert context == %Context{}
+      assert context == %Context{names: %{"analytics" => schema}}
     end
 
     test "fields defaults must be valid" do
@@ -410,12 +408,23 @@ defmodule AvroEx.Schema.ParserTest do
 
     test "must include size" do
       message =
-        "Schema missing required key `size` for AvroEx.Schema.Fixed in %{\"name\" => \"missing size\", \"type\" => \"fixed\"}"
+        "Schema missing required key `size` for AvroEx.Schema.Fixed in %{\"name\" => \"missing_size\", \"type\" => \"fixed\"}"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
           "type" => "fixed",
-          "name" => "missing size"
+          "name" => "missing_size"
+        })
+      end
+
+      message =
+        "Expected `size` to be integer got \"40\" in %{\"name\" => \"string_size\", \"size\" => \"40\", \"type\" => \"fixed\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "fixed",
+          "name" => "string_size",
+          "size" => "40"
         })
       end
     end

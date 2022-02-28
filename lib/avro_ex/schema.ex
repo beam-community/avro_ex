@@ -102,7 +102,7 @@ defmodule AvroEx.Schema do
   end
 
   @spec encodable?(any(), any(), any()) :: boolean()
-  def encodable?(%Primitive{type: nil}, _, nil), do: true
+  def encodable?(%Primitive{type: :null}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
   def encodable?(%Primitive{type: :int}, _, n) when is_integer(n), do: true
   def encodable?(%Primitive{type: :long}, _, n) when is_integer(n), do: true
@@ -305,7 +305,7 @@ defmodule AvroEx.Schema do
   "Record<name=foo>"
   """
   @spec type_name(schema_types()) :: String.t()
-  def type_name(%Primitive{type: nil}), do: "null"
+  def type_name(%Primitive{type: :null}), do: "null"
   def type_name(%Primitive{metadata: %{"logicalType" => type}}), do: type
   def type_name(%Primitive{type: type}), do: to_string(type)
 
