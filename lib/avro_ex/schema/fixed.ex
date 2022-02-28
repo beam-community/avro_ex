@@ -11,6 +11,7 @@ defmodule AvroEx.Schema.Fixed do
     field(:aliases, {:array, :string}, default: [])
     field(:metadata, {:map, :string}, default: %{})
     field(:name, :string)
+    field(:doc, :string, default: "")
     field(:namespace, :string)
     field(:qualified_names, {:array, :string}, default: [])
     field(:size, :integer)
@@ -25,9 +26,9 @@ defmodule AvroEx.Schema.Fixed do
         }
 
   @required_fields [:name, :size]
-  @optional_fields [:aliases, :metadata, :namespace]
+  @optional_fields [:aliases, :metadata, :namespace, :doc]
 
-  SchemaMacros.cast_schema(data_fields: [:aliases, :name, :namespace, :size, :qualified_names])
+  SchemaMacros.cast_schema(data_fields: [:aliases, :name, :namespace, :size, :qualified_names, :doc])
 
   @spec changeset(AvroEx.Schema.Fixed.t(), %{optional(:__struct__) => none(), optional(atom() | binary()) => any()}) ::
           Ecto.Changeset.t()

@@ -2,6 +2,7 @@ defmodule AvroEx.Schema.Parser do
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
+  alias AvroEx.Schema.Map, as: AvroMap
 
   @primitives [
     "null",
@@ -69,17 +70,34 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp do_parse(%{"type" => primitive} = type) when primitive in @primitives do
-    {data, rest} = extract_keys(type, [], [], [:type])
+    data =
+      type
+      |> cast(Primitive, [])
+      |> drop([:type])
+      |> extract_metadata()
 
-    struct!(Primitive, data |> Map.put(:metadata, rest) |> Map.put(:type, String.to_existing_atom(primitive)))
+    struct!(Primitive, Map.put(data, :type, String.to_existing_atom(primitive)))
+  end
+
+  defp do_parse(%{"type" => "map"} = map) do
+    data =
+      map
+      |> cast(AvroMap, [:values, :default])
+      |> validate_required([:values])
+      |> drop([:type])
+      |> extract_data()
+      |> update_in([:values], &do_parse/1)
+
+    struct!(AvroMap, data)
   end
 
   defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum) when is_list(symbols) do
-    {data, rest} = extract_keys(enum, [:name, :symbols], [:namespace, :doc, :aliases], [:type])
-
-    if rest != %{} do
-      error({:unrecognized_fields, Map.keys(rest), AvroEnum, enum})
-    end
+    data =
+      enum
+      |> cast(AvroEnum, [:aliases, :doc, :name, :namespace, :symbols])
+      |> drop([:type])
+      |> validate_required([:name, :symbols])
+      |> extract_data()
 
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
       if MapSet.member?(set, symbol) do
@@ -96,14 +114,39 @@ defmodule AvroEx.Schema.Parser do
     struct!(AvroEnum, data)
   end
 
+  defp do_parse(%{"type" => "array"} = array) do
+    data =
+      array
+      |> cast(Array, [:items, :default])
+      |> drop([:type])
+      |> validate_required([:items])
+      |> extract_data()
+      |> update_in([:items], &do_parse/1)
+
+    struct!(Array, data)
+  end
+
+  defp do_parse(%{"type" => "fixed"} = fixed) do
+    data =
+      fixed
+      |> cast(Fixed, [:aliases, :doc, :name, :namespace, :size])
+      |> drop([:type])
+      |> validate_required([:name, :size])
+      |> validate_name()
+      |> validate_namespace()
+      |> extract_data()
+
+    struct!(Fixed, data)
+  end
+
   defp do_parse(%{"type" => "record", "fields" => fields} = record) when is_list(fields) do
     data =
       record
       |> cast(Record, [:aliases, :doc, :name, :namespace, :fields])
       |> drop([:type])
       |> validate_required([:name, :fields])
-      |> validate_name(:name)
-      |> validate_name(:namespace)
+      |> validate_name()
+      |> validate_namespace()
       |> extract_data()
       |> update_in([:fields], fn fields -> Enum.map(fields, &parse_fields/1) end)
 
@@ -115,15 +158,14 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp parse_fields(%{"type" => type} = field) do
-    inner_type = do_parse(type)
+    data =
+      field
+      |> cast(Record.Field, [:aliases, :doc, :default, :name, :namespace, :order, :type])
+      |> validate_required([:name, :type])
+      |> extract_data()
+      |> put_in([:type], do_parse(type))
 
-    {data, rest} = extract_keys(field, [:name, :type], [:doc, :default, :namespace], [:type])
-
-    if rest != %{} do
-      error({:unrecognized_fields, Map.keys(rest), Record.Field, field})
-    end
-
-    struct!(Record.Field, Map.put(data, :type, inner_type))
+    struct!(Record.Field, data)
   end
 
   defp cast(data, type, keys) do
@@ -150,9 +192,10 @@ defmodule AvroEx.Schema.Parser do
     {data, rest, info}
   end
 
-  defp validate_field({data, rest, info} = input, field, func) do
+  defp validate_field({data, _rest, _info} = input, field, func) do
     case Map.fetch(data, field) do
-      {:ok, value} ->
+      {:ok, _value} ->
+        # Only validate if it has the field
         func.(data[field])
 
       :error ->
@@ -162,10 +205,18 @@ defmodule AvroEx.Schema.Parser do
     input
   end
 
-  defp validate_name({_data, _rest, {type, raw}} = input, field) do
-    validate_field(input, field, fn value ->
+  defp validate_name({_data, _rest, {_type, raw}} = input) do
+    validate_field(input, :name, fn value ->
       unless valid_name?(value) do
-        error({:invalid_name, {field, value}, raw})
+        error({:invalid_name, {:name, value}, raw})
+      end
+    end)
+  end
+
+  defp validate_namespace({_data, _rest, {_type, raw}} = input) do
+    validate_field(input, :namespace, fn value ->
+      unless valid_namespace?(value) do
+        error({:invalid_name, {:namespace, value}, raw})
       end
     end)
   end
@@ -182,48 +233,8 @@ defmodule AvroEx.Schema.Parser do
     data
   end
 
-  defp extract_keys(data, required, optional, drop) do
-    {data, rest} = extract_required(data, required, %{})
-    {data, rest} = extract_optional(rest, optional, data)
-    rest = drop(rest, drop)
-    {data, rest}
-  end
-
-  defp extract_required(data, required, into) do
-    Enum.reduce(required, {into, data}, fn k, {required, data} ->
-      case Map.pop(data, to_string(k)) do
-        {nil, data} ->
-          error({:missing_required, k, data})
-
-        {value, data} ->
-          {Map.put(required, k, value), data}
-      end
-    end)
-  end
-
-  defp extract_optional(data, optional, into) do
-    Enum.reduce(optional, {into, data}, fn k, {optional, data} ->
-      case Map.pop(data, to_string(k)) do
-        {nil, data} -> {optional, data}
-        {value, data} -> {Map.put(optional, k, value), data}
-      end
-    end)
-  end
-
   defp drop({data, rest, info}, keys) do
     {data, Map.drop(rest, Enum.map(keys, &to_string/1)), info}
-  end
-
-  defp drop(data, drop) do
-    Map.drop(data, Enum.map(drop, &to_string/1))
-  end
-
-  # convert maps keys to known atoms
-  defp atom_keys(map) do
-    Map.new(map, fn
-      {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
-      {k, v} when is_atom(k) -> {k, v}
-    end)
   end
 
   defp error(info) do
@@ -235,4 +246,10 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp valid_name?(_), do: false
+
+  defp valid_namespace?(name) when is_binary(name) do
+    Regex.match?(~r/^[A-Za-z_](\.?[A-Za-z0-9_]+)*$/, name)
+  end
+
+  defp valid_namespace?(_), do: false
 end
