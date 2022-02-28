@@ -15,6 +15,7 @@ defmodule AvroEx.Schema.Map do
   embedded_schema do
     field(:metadata, :map, default: %{})
     field(:values, Term)
+    field(:default, :map, default: %{})
   end
 
   @type t :: %__MODULE__{
@@ -22,7 +23,7 @@ defmodule AvroEx.Schema.Map do
           values: Schema.schema_types()
         }
 
-  SchemaMacros.cast_schema(data_fields: [:values])
+  SchemaMacros.cast_schema(data_fields: [:values, :default])
 
   @spec changeset(
           AvroEx.Schema.Map.t(),

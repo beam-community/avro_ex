@@ -8,10 +8,11 @@ defmodule AvroEx.Schema.Array do
 
   @primary_key false
   @required_fields [:items]
-  @optional_fields [:metadata]
+  @optional_fields [:metadata, :default]
 
   embedded_schema do
     field(:items, Term)
+    field(:default, Term, default: [])
     field(:metadata, :map, default: %{})
   end
 

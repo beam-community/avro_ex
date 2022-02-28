@@ -4,6 +4,7 @@ defmodule AvroEx.Schema.ParserTest do
   alias AvroEx.{Schema}
   alias AvroEx.Schema.{Array, Context, Fixed, Parser, Primitive, Record, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
+  alias AvroEx.Schema.Map, as: AvroMap
 
   describe "primitives" do
     test "it can parse primitives" do
@@ -286,6 +287,143 @@ defmodule AvroEx.Schema.ParserTest do
           "symbols" => ["1a"]
         })
       end
+    end
+  end
+
+  describe "arrays" do
+    test "can parse basic arrays" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!(%{
+                 "type" => "array",
+                 "items" => "string"
+               })
+
+      assert schema == %Array{items: %Primitive{type: :string}, default: []}
+    end
+
+    test "can have defaults" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!(%{
+                 "type" => "array",
+                 "items" => "int",
+                 "default" => [1, 2, 3]
+               })
+
+      assert schema == %Array{items: %Primitive{type: :int}, default: [1, 2, 3]}
+    end
+
+    test "default must be a valid array of that type" do
+      message = ""
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "array",
+          "items" => "int",
+          "default" => ["one", "two", "three"]
+        })
+
+        message = ""
+
+        assert_raise AvroEx.Schema.DecodeError, message, fn ->
+          Parser.parse!(%{
+            "type" => "array",
+            "items" => "int",
+            "default" => 1
+          })
+        end
+      end
+    end
+  end
+
+  describe "fixed" do
+    test "can parse basic fixed" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!(%{
+                 "name" => "two",
+                 "namespace" => "one.two.three",
+                 "doc" => "two numbers",
+                 "aliases" => ["dos nums"],
+                 "type" => "fixed",
+                 "size" => 2
+               })
+
+      assert schema == %Fixed{
+               name: "two",
+               namespace: "one.two.three",
+               size: 2,
+               doc: "two numbers",
+               aliases: ["dos nums"]
+             }
+
+      assert context == %Context{}
+    end
+
+    test "must include size" do
+      message =
+        "Schema missing required key `size` for AvroEx.Schema.Fixed in %{\"name\" => \"missing size\", \"type\" => \"fixed\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "fixed",
+          "name" => "missing size"
+        })
+      end
+    end
+
+    test "must have a valid name" do
+      message = "Invalid name `1bad` for `name` in %{\"name\" => \"1bad\", \"size\" => 2, \"type\" => \"fixed\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "fixed",
+          "name" => "1bad",
+          "size" => 2
+        })
+      end
+    end
+
+    test "must have a valid namespace" do
+      message =
+        "Invalid name `namespace..` for `namespace` in %{\"name\" => \"bad_namespace\", \"namespace\" => \"namespace..\", \"size\" => 2, \"type\" => \"fixed\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "fixed",
+          "name" => "bad_namespace",
+          "namespace" => "namespace..",
+          "size" => 2
+        })
+
+        message =
+          "Invalid name `namespace.` for `namespace` in %{\"name\" => \"bad_namespace\", \"namespace\" => \"namespace..\", \"size\" => 2, \"type\" => \"fixed\"}"
+
+        assert_raise AvroEx.Schema.DecodeError, message, fn ->
+          Parser.parse!(%{
+            "type" => "fixed",
+            "name" => "bad_namespace",
+            "namespace" => "namespace.",
+            "size" => 2
+          })
+        end
+      end
+    end
+  end
+
+  describe "maps" do
+    test "can parse simple maps" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!(%{
+                 "type" => "map",
+                 "values" => "string",
+                 "default" => %{"a" => 1}
+               })
+
+      assert schema == %AvroMap{
+               values: %Primitive{type: :string},
+               default: %{"a" => 1}
+             }
+
+      assert context == %Context{}
     end
   end
 end
