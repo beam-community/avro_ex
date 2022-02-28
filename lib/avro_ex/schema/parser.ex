@@ -88,7 +88,7 @@ defmodule AvroEx.Schema.Parser do
       |> extract_data()
       |> update_in([:values], &do_parse/1)
 
-    struct!(AvroMap, data)
+    struct!(AvroMap, data) |> validate_default()
   end
 
   defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum) when is_list(symbols) do
@@ -97,6 +97,8 @@ defmodule AvroEx.Schema.Parser do
       |> cast(AvroEnum, [:aliases, :doc, :name, :namespace, :symbols])
       |> drop([:type])
       |> validate_required([:name, :symbols])
+      |> validate_name()
+      |> validate_namespace()
       |> extract_data()
 
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
@@ -111,7 +113,7 @@ defmodule AvroEx.Schema.Parser do
       MapSet.put(set, symbol)
     end)
 
-    struct!(AvroEnum, data)
+    struct!(AvroEnum, data) |> validate_default()
   end
 
   defp do_parse(%{"type" => "array"} = array) do
@@ -123,7 +125,7 @@ defmodule AvroEx.Schema.Parser do
       |> extract_data()
       |> update_in([:items], &do_parse/1)
 
-    struct!(Array, data)
+    struct!(Array, data) |> validate_default()
   end
 
   defp do_parse(%{"type" => "fixed"} = fixed) do
@@ -165,7 +167,7 @@ defmodule AvroEx.Schema.Parser do
       |> extract_data()
       |> put_in([:type], do_parse(type))
 
-    struct!(Record.Field, data)
+    struct!(Record.Field, data) |> validate_default()
   end
 
   defp cast(data, type, keys) do
@@ -220,6 +222,17 @@ defmodule AvroEx.Schema.Parser do
       end
     end)
   end
+
+  defp validate_default(%{default: default} = schema) when not is_nil(default) do
+    case AvroEx.encode(%Schema{schema: schema, context: %Context{}}, schema.default) do
+      {:ok, _data} -> :ok
+      {:error, reason} -> error({:invalid_default, schema, reason})
+    end
+
+    schema
+  end
+
+  defp validate_default(schema), do: schema
 
   defp extract_metadata({data, rest, _info}) do
     Map.put(data, :metadata, rest)

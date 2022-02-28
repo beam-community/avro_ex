@@ -104,7 +104,7 @@ defmodule AvroEx.Schema do
   @spec encodable?(any(), any(), any()) :: boolean()
   def encodable?(%Primitive{type: nil}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
-  def encodable?(%Primitive{type: :integer}, _, n) when is_integer(n), do: true
+  def encodable?(%Primitive{type: :int}, _, n) when is_integer(n), do: true
   def encodable?(%Primitive{type: :long}, _, n) when is_integer(n), do: true
   def encodable?(%Primitive{type: :float}, _, n) when is_float(n), do: true
   def encodable?(%Primitive{type: :double}, _, n) when is_float(n), do: true

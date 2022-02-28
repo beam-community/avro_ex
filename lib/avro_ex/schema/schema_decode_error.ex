@@ -20,22 +20,30 @@ defmodule AvroEx.Schema.DecodeError do
   end
 
   def new({:nested_union, nested, union}) do
-    message = "Union contains nested union #{inspect(nested)} as immediate child in #{inspect(union)}"
+    nested = AvroEx.Schema.type_name(nested)
+    message = "Union contains nested union #{nested} as immediate child in #{inspect(union)}"
     %__MODULE__{message: message}
   end
 
-  def new({:duplicate_union_type, type, union}) do
-    message = "Union conains duplicated #{inspect(type)} in #{inspect(union)}"
+  def new({:duplicate_union_type, schema, union}) do
+    type = AvroEx.Schema.type_name(schema)
+    message = "Union contains duplicated #{type} in #{inspect(union)}"
     %__MODULE__{message: message}
   end
 
   def new({:duplicate_symbol, symbol, enum}) do
-    message = "Enum conains duplicated symbol #{surround(symbol)} in #{inspect(enum)}"
+    message = "Enum contains duplicated symbol #{surround(symbol)} in #{inspect(enum)}"
     %__MODULE__{message: message}
   end
 
   def new({:invalid_name, {field, name}, context}) do
     message = "Invalid name #{surround(name)} for #{surround(field)} in #{inspect(context)}"
+    %__MODULE__{message: message}
+  end
+
+  def new({:invalid_default, schema, reason}) do
+    type = AvroEx.Schema.type_name(schema)
+    message = "Invalid default in #{type} #{Exception.message(reason)}"
     %__MODULE__{message: message}
   end
 

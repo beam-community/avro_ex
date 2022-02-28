@@ -18,7 +18,7 @@ defmodule AvroEx.Schema.Test do
     cast(nil, nil)
     cast("null", nil)
     cast("boolean", :boolean)
-    cast("int", :integer)
+    cast("int", :int)
     cast("long", :long)
     cast("float", :float)
     cast("double", :double)
@@ -29,7 +29,7 @@ defmodule AvroEx.Schema.Test do
   describe "parse primitives" do
     parse_primitive("null", nil)
     parse_primitive("boolean", :boolean)
-    parse_primitive("int", :integer)
+    parse_primitive("int", :int)
     parse_primitive("long", :long)
     parse_primitive("float", :float)
     parse_primitive("double", :double)
@@ -146,7 +146,7 @@ defmodule AvroEx.Schema.Test do
                 schema: %Union{
                   possibilities: [
                     %Primitive{type: nil},
-                    %Primitive{type: :integer}
+                    %Primitive{type: :int}
                   ]
                 }
               }} = @test_module.parse(~S(["null", "int"]))
@@ -229,7 +229,7 @@ defmodule AvroEx.Schema.Test do
                       type: %Union{
                         possibilities: [
                           %Primitive{type: nil},
-                          %Primitive{type: :integer}
+                          %Primitive{type: :int}
                         ]
                       }
                     }
@@ -253,7 +253,7 @@ defmodule AvroEx.Schema.Test do
     end
 
     test "matches the given type" do
-      assert {:ok, %@test_module{schema: %@schema{values: %Primitive{type: :integer}}}} = AvroEx.decode_schema(@json)
+      assert {:ok, %@test_module{schema: %@schema{values: %Primitive{type: :int}}}} = AvroEx.decode_schema(@json)
     end
 
     test "works with a union" do
@@ -263,7 +263,7 @@ defmodule AvroEx.Schema.Test do
                   values: %Union{
                     possibilities: [
                       %Primitive{type: nil},
-                      %Primitive{type: :integer}
+                      %Primitive{type: :int}
                     ]
                   }
                 }
