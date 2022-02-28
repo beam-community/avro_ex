@@ -33,7 +33,7 @@ defmodule AvroEx.Decode do
   end
 
   defp do_decode(
-         %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}},
+         %Primitive{type: :int, metadata: %{"logicalType" => "time-millis"}},
          %Context{},
          data
        )
@@ -47,7 +47,7 @@ defmodule AvroEx.Decode do
     {time, rest}
   end
 
-  defp do_decode(%Primitive{type: :integer}, %Context{}, data) when is_binary(data) do
+  defp do_decode(%Primitive{type: :int}, %Context{}, data) when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 32)
     {zigzag_decode(val), rest}
   end

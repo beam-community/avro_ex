@@ -237,8 +237,6 @@ defmodule AvroEx.Encode.Test do
       {:ok, schema} = AvroEx.decode_schema(~s(["null", #{datetime_json}]))
       {:ok, datetime_schema} = AvroEx.decode_schema(datetime_json)
 
-      IO.inspect(datetime_schema)
-
       {:ok, index} = @test_module.encode(datetime_schema, 1)
       {:ok, encoded_datetime} = @test_module.encode(datetime_schema, datetime_value)
       {:ok, encoded_union} = @test_module.encode(schema, datetime_value)
@@ -276,7 +274,7 @@ defmodule AvroEx.Encode.Test do
 
       assert {:error,
               %AvroEx.EncodeError{
-                message: "Schema Mismatch: Expected value of Union<possibilities=null|integer>, got \"wat\""
+                message: "Schema Mismatch: Expected value of Union<possibilities=null|int>, got \"wat\""
               }} = @test_module.encode(schema, "wat")
     end
   end
@@ -366,12 +364,12 @@ defmodule AvroEx.Encode.Test do
               }} = @test_module.encode(schema, :wat)
     end
 
-    test "(integer)" do
+    test "(int)" do
       {:ok, schema} = AvroEx.decode_schema(~S("int"))
 
       assert {:error,
               %AvroEx.EncodeError{
-                message: "Schema Mismatch: Expected value of integer, got :wat"
+                message: "Schema Mismatch: Expected value of int, got :wat"
               }} = @test_module.encode(schema, :wat)
     end
 
@@ -380,7 +378,7 @@ defmodule AvroEx.Encode.Test do
 
       assert {:error,
               %AvroEx.EncodeError{
-                message: "Schema Mismatch: Expected value of Array<items=integer>, got :wat"
+                message: "Schema Mismatch: Expected value of Array<items=int>, got :wat"
               }} = @test_module.encode(schema, :wat)
     end
 
@@ -408,7 +406,7 @@ defmodule AvroEx.Encode.Test do
 
       assert {:error,
               %AvroEx.EncodeError{
-                message: "Schema Mismatch: Expected value of Map<values=integer>, got 12345"
+                message: "Schema Mismatch: Expected value of Map<values=int>, got 12345"
               }} = @test_module.encode(schema, 12_345)
     end
 

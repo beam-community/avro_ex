@@ -64,13 +64,13 @@ defmodule AvroEx.Schema.ParserTest do
   end
 
   describe "records" do
-    test "it can decode simple records" do
+    test "can decode simple records" do
       assert %Schema{schema: schema, context: context} =
                Parser.parse!(%{
                  "type" => "record",
                  "name" => "kyc",
                  "fields" => [
-                   %{"name" => "first", "type" => "string"},
+                   %{"name" => "first", "type" => "string", "default" => "bob"},
                    %{"name" => "last", "type" => "string"}
                  ]
                })
@@ -78,7 +78,7 @@ defmodule AvroEx.Schema.ParserTest do
       assert schema == %Record{
                name: "kyc",
                fields: [
-                 %Record.Field{name: "first", type: %Primitive{type: :string}},
+                 %Record.Field{name: "first", type: %Primitive{type: :string}, default: "bob"},
                  %Record.Field{name: "last", type: %Primitive{type: :string}}
                ]
              }
@@ -112,6 +112,10 @@ defmodule AvroEx.Schema.ParserTest do
 
       # TODO figure out context
       # assert context == %Context{}
+    end
+
+    test "fields defaults must be valid" do
+      flunk()
     end
 
     test "creating a record without a name will raise" do
@@ -193,16 +197,15 @@ defmodule AvroEx.Schema.ParserTest do
       assert context == %Context{}
     end
 
-    test "unions cannot have duplicated unnamed types" do
-      message =
-        "Union conains duplicated %AvroEx.Schema.Primitive{metadata: %{}, type: :string} in [\"string\", \"int\", \"string\"]"
+    test "cannot have duplicated unnamed types" do
+      message = "Union contains duplicated string in [\"string\", \"int\", \"string\"]"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(["string", "int", "string"])
       end
     end
 
-    test "unions can contain duplicated types if they are named" do
+    test "can contain duplicated types if they are named" do
       assert %Schema{schema: schema, context: context} =
                Parser.parse!([
                  %{"type" => "enum", "name" => "directions", "symbols" => ["east", "north", "south", "west"]},
@@ -219,9 +222,29 @@ defmodule AvroEx.Schema.ParserTest do
       assert context == %Context{}
     end
 
-    test "unions cannot have unions as direct children" do
+    test "cannot have duplicated named types" do
       message =
-        "Union contains nested union %AvroEx.Schema.Union{possibilities: [%AvroEx.Schema.Primitive{metadata: %{}, type: :null}, %AvroEx.Schema.Primitive{metadata: %{}, type: :string}]} as immediate child in [\"string\", [\"null\", \"string\"]]"
+        "Union contains duplicated Enum<name=directions> in [%{\"name\" => \"directions\", \"symbols\" => [\"east\", \"north\", \"south\", \"west\"], \"type\" => \"enum\"}, %{\"name\" => \"directions\", \"symbols\" => [\"blue\", \"red\", \"yellow\"], \"type\" => \"enum\"}]"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!([
+          %{"type" => "enum", "name" => "directions", "symbols" => ["east", "north", "south", "west"]},
+          %{"type" => "enum", "name" => "directions", "symbols" => ["blue", "red", "yellow"]}
+        ])
+      end
+    end
+
+    test "cannot be named at the top-level" do
+      message = "Invalid schema format %{\"name\" => \"maybe_null\", \"type\" => [\"null\", \"string\"]}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{"name" => "maybe_null", "type" => ["null", "string"]})
+      end
+    end
+
+    test "cannot have unions as direct children" do
+      message =
+        "Union contains nested union Union<possibilities=null|string> as immediate child in [\"string\", [\"null\", \"string\"]]"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(["string", ["null", "string"]])
@@ -243,13 +266,40 @@ defmodule AvroEx.Schema.ParserTest do
 
     test "cannot have duplicate symbols" do
       message =
-        "Enum conains duplicated symbol `yes` in %{\"name\" => \"duplicate\", \"symbols\" => [\"yes\", \"no\", \"yes\"], \"type\" => \"enum\"}"
+        "Enum contains duplicated symbol `yes` in %{\"name\" => \"duplicate\", \"symbols\" => [\"yes\", \"no\", \"yes\"], \"type\" => \"enum\"}"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
           "type" => "enum",
           "name" => "duplicate",
           "symbols" => ["yes", "no", "yes"]
+        })
+      end
+    end
+
+    test "must have a valid name" do
+      message =
+        "Invalid name `bang!` for `name` in %{\"name\" => \"bang!\", \"symbols\" => [\"one\"], \"type\" => \"enum\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "enum",
+          "name" => "bang!",
+          "symbols" => ["one"]
+        })
+      end
+    end
+
+    test "must have a valid namespace" do
+      message =
+        "Invalid name `.namespace` for `namespace` in %{\"name\" => \"name\", \"namespace\" => \".namespace\", \"symbols\" => [\"one\"], \"type\" => \"enum\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "enum",
+          "name" => "name",
+          "namespace" => ".namespace",
+          "symbols" => ["one"]
         })
       end
     end
@@ -313,7 +363,7 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "default must be a valid array of that type" do
-      message = ""
+      message = "Invalid default in Array<items=int> Schema Mismatch: Expected value of int, got \"one\""
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
@@ -321,16 +371,16 @@ defmodule AvroEx.Schema.ParserTest do
           "items" => "int",
           "default" => ["one", "two", "three"]
         })
+      end
 
-        message = ""
+      message = "Invalid default in Array<items=int> Schema Mismatch: Expected value of Array<items=int>, got 1"
 
-        assert_raise AvroEx.Schema.DecodeError, message, fn ->
-          Parser.parse!(%{
-            "type" => "array",
-            "items" => "int",
-            "default" => 1
-          })
-        end
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "array",
+          "items" => "int",
+          "default" => 1
+        })
       end
     end
   end
@@ -415,15 +465,62 @@ defmodule AvroEx.Schema.ParserTest do
                Parser.parse!(%{
                  "type" => "map",
                  "values" => "string",
-                 "default" => %{"a" => 1}
+                 "default" => %{"a" => "b"}
                })
 
       assert schema == %AvroMap{
                values: %Primitive{type: :string},
-               default: %{"a" => 1}
+               default: %{"a" => "b"}
              }
 
       assert context == %Context{}
+    end
+
+    test "default must be encodeable" do
+      message = "Invalid default in Map<values=string> Schema Mismatch: Expected value of string, got 1"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "map",
+          "values" => "string",
+          "default" => %{"a" => 1}
+        })
+      end
+
+      message = "Invalid default in Map<values=string> Schema Mismatch: Expected value of Map<values=string>, got []"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "map",
+          "values" => "string",
+          "default" => []
+        })
+      end
+    end
+
+    test "values must be a valid type" do
+      message = "Invalid schema format \"nope\""
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "map",
+          "values" => "nope"
+        })
+      end
+    end
+  end
+
+  describe "name references" do
+    test "types can be referred by an alias" do
+      flunk()
+    end
+
+    test "types can be referred to by an previously defined type" do
+      flunk()
+    end
+
+    test "refs must refer to types previously defined" do
+      flunk()
     end
   end
 end

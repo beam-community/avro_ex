@@ -77,7 +77,7 @@ defmodule AvroEx.Encode do
   end
 
   defp do_encode(
-         %Primitive{type: :integer, metadata: %{"logicalType" => "time-millis"}} = schema,
+         %Primitive{type: :int, metadata: %{"logicalType" => "time-millis"}} = schema,
          %Context{},
          %Time{} = dt
        ) do
@@ -92,7 +92,7 @@ defmodule AvroEx.Encode do
     encode_integer(long, schema)
   end
 
-  defp do_encode(%Primitive{type: :integer} = schema, %Context{}, integer)
+  defp do_encode(%Primitive{type: :int} = schema, %Context{}, integer)
        when is_integer(integer) do
     encode_integer(integer, schema)
   end
@@ -152,7 +152,7 @@ defmodule AvroEx.Encode do
     if index do
       schema = Enum.at(possibilities, index)
 
-      do_encode(%Primitive{type: :integer}, context, index) <> do_encode(schema, context, value)
+      do_encode(%Primitive{type: :int}, context, index) <> do_encode(schema, context, value)
     else
       error({:schema_mismatch, schema, value, context})
     end
@@ -216,7 +216,7 @@ defmodule AvroEx.Encode do
 
   @doc false
   @spec zigzag_encode(Primitive.t(), integer) :: integer
-  def zigzag_encode(%Primitive{type: :integer}, int) when is_integer(int) do
+  def zigzag_encode(%Primitive{type: :int}, int) when is_integer(int) do
     int
     |> Bitwise.bsl(1)
     |> Bitwise.bxor(Bitwise.bsr(int, 31))

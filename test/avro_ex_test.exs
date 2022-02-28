@@ -38,11 +38,11 @@ defmodule AvroEx.Schema.Primitive.Test do
 
   describe "int" do
     test "simple integer" do
-      assert {:ok, %@test_module{type: :integer}} = @test_module.cast("int")
+      assert {:ok, %@test_module{type: :int}} = @test_module.cast("int")
     end
 
     test "complex integer" do
-      assert {:ok, %@test_module{type: :integer, metadata: %{"some" => "metadata"}}} =
+      assert {:ok, %@test_module{type: :int, metadata: %{"some" => "metadata"}}} =
                @test_module.cast(%{"type" => "int", "some" => "metadata"})
     end
   end
@@ -109,7 +109,7 @@ defmodule AvroEx.Schema.Primitive.Test do
                     %Record{
                       name: "LinkedList",
                       fields: [
-                        %Field{name: "value", type: %Primitive{type: :integer}},
+                        %Field{name: "value", type: %Primitive{type: :int}},
                         %Field{
                           name: "next",
                           type: %Union{
@@ -144,7 +144,7 @@ defmodule AvroEx.Schema.Primitive.Test do
                     %Record{
                       name: "LinkedList",
                       fields: [
-                        %Field{name: "value", type: %Primitive{type: :integer}},
+                        %Field{name: "value", type: %Primitive{type: :int}},
                         %Field{
                           name: "next",
                           type: %Union{
