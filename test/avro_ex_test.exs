@@ -16,11 +16,11 @@ defmodule AvroEx.Schema.Primitive.Test do
 
   describe "null" do
     test "simple null" do
-      assert {:ok, %@test_module{type: nil}} = @test_module.cast("null")
+      assert {:ok, %@test_module{type: :null}} = @test_module.cast("null")
     end
 
     test "complex null" do
-      assert {:ok, %@test_module{type: nil, metadata: %{"some" => "metadata"}}} =
+      assert {:ok, %@test_module{type: :null, metadata: %{"some" => "metadata"}}} =
                @test_module.cast(%{"type" => "null", "some" => "metadata"})
     end
   end
@@ -105,7 +105,7 @@ defmodule AvroEx.Schema.Primitive.Test do
               %Schema{
                 schema: %Union{
                   possibilities: [
-                    %Primitive{type: nil},
+                    %Primitive{type: :null},
                     %Record{
                       name: "LinkedList",
                       fields: [
@@ -114,7 +114,7 @@ defmodule AvroEx.Schema.Primitive.Test do
                           name: "next",
                           type: %Union{
                             possibilities: [
-                              %Primitive{type: nil},
+                              %Primitive{type: :null},
                               "me.cjpoll.LinkedList" = type
                             ]
                           }
@@ -140,7 +140,7 @@ defmodule AvroEx.Schema.Primitive.Test do
               %Schema{
                 schema: %Union{
                   possibilities: [
-                    %Primitive{type: nil},
+                    %Primitive{type: :null},
                     %Record{
                       name: "LinkedList",
                       fields: [
@@ -149,7 +149,7 @@ defmodule AvroEx.Schema.Primitive.Test do
                           name: "next",
                           type: %Union{
                             possibilities: [
-                              %Primitive{type: nil},
+                              %Primitive{type: :null},
                               "me.cjpoll.LinkedList"
                             ]
                           }

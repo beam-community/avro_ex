@@ -196,13 +196,18 @@ defmodule AvroEx.Encode.Test do
     end
 
     test "works with logicalType field values" do
-      schema = AvroEx.parse_schema!(~S({"type": "record", "name": "Record", "fields": [
-          {"type": "long", "name": "timestamp", "logicalType": "timestamp-millis"}
-        ]}))
+      schema =
+        AvroEx.parse_schema!(%{
+          "type" => "record",
+          "name" => "Record",
+          "fields" => [
+            %{"name" => "timestamp", "type" => %{"type" => "long", "logicalType" => "timestamp-millis"}}
+          ]
+        })
 
       timestamp = ~U[2022-02-23 20:28:13.498428Z]
 
-      assert {:ok, <<0>>} = @test_module.encode(schema, %{timestamp: timestamp})
+      assert {:ok, <<244, 132, 169, 132, 229, 95>>} = @test_module.encode(schema, %{timestamp: timestamp})
     end
   end
 

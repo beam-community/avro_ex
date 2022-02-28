@@ -183,7 +183,7 @@ defmodule AvroEx.Decode.Test do
     end
 
     test "fixed" do
-      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "name": "SHA", "size": "40"}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "name": "SHA", "size": 40}))
       sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       {:ok, encoded_sha} = AvroEx.encode(schema, sha)
       assert {:ok, ^sha} = @test_module.decode(schema, encoded_sha)

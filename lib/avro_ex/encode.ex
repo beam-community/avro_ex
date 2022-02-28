@@ -26,7 +26,7 @@ defmodule AvroEx.Encode do
 
   defp do_encode(%Primitive{type: :boolean}, %Context{}, true), do: <<1::8>>
   defp do_encode(%Primitive{type: :boolean}, %Context{}, false), do: <<0::8>>
-  defp do_encode(%Primitive{type: nil}, %Context{}, nil), do: <<>>
+  defp do_encode(%Primitive{type: :null}, %Context{}, nil), do: <<>>
 
   defp do_encode(%Primitive{type: :float}, %Context{}, float) when is_float(float),
     do: <<float::little-float-size(32)>>

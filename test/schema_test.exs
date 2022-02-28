@@ -15,8 +15,8 @@ defmodule AvroEx.Schema.Test do
   @test_module AvroEx.Schema
 
   describe "cast" do
-    cast(nil, nil)
-    cast("null", nil)
+    cast(nil, :null)
+    cast("null", :null)
     cast("boolean", :boolean)
     cast("int", :int)
     cast("long", :long)
@@ -27,7 +27,7 @@ defmodule AvroEx.Schema.Test do
   end
 
   describe "parse primitives" do
-    parse_primitive("null", nil)
+    parse_primitive("null", :null)
     parse_primitive("boolean", :boolean)
     parse_primitive("int", :int)
     parse_primitive("long", :long)
@@ -145,7 +145,7 @@ defmodule AvroEx.Schema.Test do
               %AvroEx.Schema{
                 schema: %Union{
                   possibilities: [
-                    %Primitive{type: nil},
+                    %Primitive{type: :null},
                     %Primitive{type: :int}
                   ]
                 }
@@ -207,7 +207,7 @@ defmodule AvroEx.Schema.Test do
 
       assert %Union{
                possibilities: [
-                 %Primitive{type: nil},
+                 %Primitive{type: :null},
                  ^parent
                ]
              } = schema.schema
@@ -228,7 +228,7 @@ defmodule AvroEx.Schema.Test do
                       name: "a",
                       type: %Union{
                         possibilities: [
-                          %Primitive{type: nil},
+                          %Primitive{type: :null},
                           %Primitive{type: :int}
                         ]
                       }
@@ -262,7 +262,7 @@ defmodule AvroEx.Schema.Test do
                 schema: %@schema{
                   values: %Union{
                     possibilities: [
-                      %Primitive{type: nil},
+                      %Primitive{type: :null},
                       %Primitive{type: :int}
                     ]
                   }
@@ -554,17 +554,17 @@ defmodule AvroEx.Schema.Test do
 
   describe "encodable? (fixed)" do
     test "works as expected" do
-      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "name": "SHA", "size": "40"}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "name": "SHA", "size": 40}))
       assert @test_module.encodable?(schema, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     end
 
     test "fails if size is too small" do
-      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "size": "40", "name": "SHA"}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "size": 40, "name": "SHA"}))
       refute @test_module.encodable?(schema, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     end
 
     test "fails if size is too large" do
-      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "size": "40", "name": "SHA"}))
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "fixed", "size": 40, "name": "SHA"}))
       refute @test_module.encodable?(schema, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     end
   end

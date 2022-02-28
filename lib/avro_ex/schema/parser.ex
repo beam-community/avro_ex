@@ -37,6 +37,8 @@ defmodule AvroEx.Schema.Parser do
     end
   end
 
+  defp do_parse(nil), do: %Primitive{type: :null}
+
   for p <- @primitives do
     defp do_parse(unquote(p)) do
       %Primitive{type: unquote(String.to_atom(p))}
@@ -134,6 +136,7 @@ defmodule AvroEx.Schema.Parser do
       |> cast(Fixed, [:aliases, :doc, :name, :namespace, :size])
       |> drop([:type])
       |> validate_required([:name, :size])
+      |> validate_integer(:size)
       |> validate_name()
       |> validate_namespace()
       |> extract_data()
@@ -205,6 +208,14 @@ defmodule AvroEx.Schema.Parser do
     end
 
     input
+  end
+
+  defp validate_integer({_data, _rest, {_type, raw}} = input, field) do
+    validate_field(input, field, fn value ->
+      unless is_integer(value) do
+        error({:invalid_type, {field, value}, %Primitive{type: :integer}, raw})
+      end
+    end)
   end
 
   defp validate_name({_data, _rest, {_type, raw}} = input) do
