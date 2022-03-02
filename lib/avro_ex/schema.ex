@@ -3,7 +3,7 @@ defmodule AvroEx.Schema do
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
 
   defstruct [:context, :schema]
 
@@ -153,7 +153,7 @@ defmodule AvroEx.Schema do
     AvroEnum.match?(schema, context, data)
   end
 
-  def encodable?(name, %Context{} = context, data) when is_binary(name) do
+  def encodable?(%Reference{type: name}, %Context{} = context, data) do
     schema = Context.lookup(context, name)
     encodable?(schema, context, data)
   end
@@ -263,7 +263,11 @@ defmodule AvroEx.Schema do
   @spec full_name(schema_types()) :: nil | String.t()
   def full_name(%struct{}) when struct in [Array, AvroMap, Primitive, Union], do: nil
 
-  def full_name(%struct{name: name, namespace: namespace}) when struct in [Fixed, Record, AvroEnum] do
+  def full_name(%Record.Field{name: name}) do
+    name
+  end
+
+  def full_name(%struct{name: name, namespace: namespace}) when struct in [AvroEnum, Fixed, Record] do
     full_name(namespace, name)
   end
 
@@ -312,6 +316,7 @@ defmodule AvroEx.Schema do
   def type_name(%Array{items: type}), do: "Array<items=#{type_name(type)}>"
   def type_name(%Union{possibilities: types}), do: "Union<possibilities=#{Enum.map_join(types, "|", &type_name/1)}>"
   def type_name(%Record{} = record), do: "Record<name=#{full_name(record)}>"
+  def type_name(%Record.Field{} = field), do: "Field<name=#{full_name(field)}>"
   def type_name(%Fixed{size: size} = fixed), do: "Fixed<name=#{full_name(fixed)}, size=#{size}>"
   def type_name(%AvroEnum{} = enum), do: "Enum<name=#{full_name(enum)}>"
   def type_name(%AvroMap{values: values}), do: "Map<values=#{type_name(values)}>"

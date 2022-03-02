@@ -5,7 +5,7 @@ defmodule AvroEx.Encode do
 
   alias AvroEx.EncodeError
   alias AvroEx.{Schema}
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Record.Field
 
@@ -21,8 +21,9 @@ defmodule AvroEx.Encode do
     end
   end
 
-  defp do_encode(name, %Context{} = context, data) when is_binary(name),
-    do: do_encode(Context.lookup(context, name), context, data)
+  defp do_encode(%Reference{type: type}, %Context{} = context, data) do
+    do_encode(Context.lookup(context, type), context, data)
+  end
 
   defp do_encode(%Primitive{type: :boolean}, %Context{}, true), do: <<1::8>>
   defp do_encode(%Primitive{type: :boolean}, %Context{}, false), do: <<0::8>>

@@ -2,7 +2,7 @@ defmodule AvroEx.Schema.ParserTest do
   use ExUnit.Case
 
   alias AvroEx.{Schema}
-  alias AvroEx.Schema.{Array, Context, Fixed, Parser, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Parser, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
 
@@ -69,6 +69,8 @@ defmodule AvroEx.Schema.ParserTest do
                Parser.parse!(%{
                  "type" => "record",
                  "name" => "kyc",
+                 "aliases" => ["first_last"],
+                 "namespace" => "beam.community",
                  "fields" => [
                    %{"name" => "first", "type" => "string", "default" => "bob"},
                    %{"name" => "last", "type" => "string"}
@@ -77,13 +79,20 @@ defmodule AvroEx.Schema.ParserTest do
 
       assert schema == %Record{
                name: "kyc",
+               namespace: "beam.community",
+               aliases: ["first_last"],
                fields: [
                  %Record.Field{name: "first", type: %Primitive{type: :string}, default: "bob"},
                  %Record.Field{name: "last", type: %Primitive{type: :string}}
                ]
              }
 
-      assert context == %Context{}
+      assert context == %Context{
+               names: %{
+                 "beam.community.first_last" => schema,
+                 "beam.community.kyc" => schema
+               }
+             }
     end
 
     test "records can have fields that are logicalTypes" do
@@ -113,7 +122,17 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "fields defaults must be valid" do
-      flunk()
+      message = "Invalid default in Field<name=key> Schema Mismatch: Expected value of long, got \"wrong\""
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "bad_default",
+          "fields" => [
+            %{"name" => "key", "type" => "long", "default" => "wrong"}
+          ]
+        })
+      end
     end
 
     test "creating a record without a name will raise" do
@@ -139,6 +158,21 @@ defmodule AvroEx.Schema.ParserTest do
           "type" => "record",
           "name" => "123",
           "fields" => [
+            %{"name" => "key", "type" => "long"}
+          ]
+        })
+      end
+    end
+
+    test "field names must be unique" do
+      message = "Duplicate name `key` found in Field<name=key>"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "duplicate_names",
+          "fields" => [
+            %{"name" => "key", "type" => "long"},
             %{"name" => "key", "type" => "long"}
           ]
         })
@@ -177,7 +211,6 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "aliases" do
-      flunk()
     end
   end
 
@@ -217,7 +250,18 @@ defmodule AvroEx.Schema.ParserTest do
                ]
              }
 
-      assert context == %Context{}
+      assert context == %Context{
+               names: %{
+                 "directions" => %AvroEx.Schema.Enum{
+                   name: "directions",
+                   symbols: ["east", "north", "south", "west"]
+                 },
+                 "primary_colors" => %AvroEx.Schema.Enum{
+                   name: "primary_colors",
+                   symbols: ["blue", "red", "yellow"]
+                 }
+               }
+             }
     end
 
     test "cannot have duplicated named types" do
@@ -256,10 +300,17 @@ defmodule AvroEx.Schema.ParserTest do
                Parser.parse!(%{
                  "type" => "enum",
                  "name" => "directions",
+                 "namespace" => "beam.community",
                  "symbols" => ["east", "north", "south", "west"]
                })
 
-      assert schema == %AvroEnum{name: "directions", symbols: ["east", "north", "south", "west"]}
+      assert schema == %AvroEnum{
+               name: "directions",
+               namespace: "beam.community",
+               symbols: ["east", "north", "south", "west"]
+             }
+
+      assert context == %Context{names: %{"beam.community.directions" => schema}}
     end
 
     test "cannot have duplicate symbols" do
@@ -347,6 +398,7 @@ defmodule AvroEx.Schema.ParserTest do
                })
 
       assert schema == %Array{items: %Primitive{type: :string}, default: []}
+      assert context == %Context{}
     end
 
     test "can have defaults" do
@@ -358,6 +410,7 @@ defmodule AvroEx.Schema.ParserTest do
                })
 
       assert schema == %Array{items: %Primitive{type: :int}, default: [1, 2, 3]}
+      assert context == %Context{}
     end
 
     test "default must be a valid array of that type" do
@@ -387,7 +440,7 @@ defmodule AvroEx.Schema.ParserTest do
     test "can parse basic fixed" do
       assert %Schema{schema: schema, context: context} =
                Parser.parse!(%{
-                 "name" => "two",
+                 "name" => "double",
                  "namespace" => "one.two.three",
                  "doc" => "two numbers",
                  "aliases" => ["dos nums"],
@@ -396,14 +449,24 @@ defmodule AvroEx.Schema.ParserTest do
                })
 
       assert schema == %Fixed{
-               name: "two",
+               name: "double",
                namespace: "one.two.three",
                size: 2,
                doc: "two numbers",
                aliases: ["dos nums"]
              }
 
-      assert context == %Context{}
+      assert context == %Context{
+               names: %{
+                 "one.two.three.double" => %AvroEx.Schema.Fixed{
+                   aliases: ["dos nums"],
+                   doc: "two numbers",
+                   name: "double",
+                   namespace: "one.two.three",
+                   size: 2
+                 }
+               }
+             }
     end
 
     test "must include size" do
@@ -508,7 +571,7 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "values must be a valid type" do
-      message = "Invalid schema format \"nope\""
+      message = "Found undeclared reference `nope`. Known references are empty"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
@@ -520,16 +583,143 @@ defmodule AvroEx.Schema.ParserTest do
   end
 
   describe "name references" do
-    test "types can be referred by an alias" do
-      flunk()
-    end
-
     test "types can be referred to by an previously defined type" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "pets",
+                 "fields" => [
+                   %{
+                     "name" => "favorite_pet",
+                     "type" => %{
+                       "type" => "record",
+                       "name" => "Pet",
+                       "fields" => [
+                         %{
+                           "name" => "type",
+                           "type" => %{"type" => "enum", "name" => "PetType", "symbols" => ["cat", "dog"]}
+                         },
+                         %{"name" => "name", "type" => "string"}
+                       ]
+                     }
+                   },
+                   %{"name" => "first_pet", "type" => "Pet"}
+                 ]
+               })
+
+      assert %Record{
+               name: "pets",
+               fields: [
+                 %Record.Field{
+                   name: "favorite_pet",
+                   type:
+                     %Record{
+                       name: "Pet",
+                       fields: [
+                         %Record.Field{
+                           name: "type",
+                           type: %AvroEnum{name: "PetType", symbols: ["cat", "dog"]} = pet_type
+                         },
+                         %Record.Field{name: "name", type: %Primitive{type: :string}}
+                       ]
+                     } = pet
+                 },
+                 %Record.Field{name: "first_pet", type: %Reference{type: "Pet"}}
+               ]
+             } = schema
+
+      assert %Context{names: %{"Pet" => pet, "PetType" => pet_type}}
+    end
+
+    test "types can be referred by an alias" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "top",
+                 "fields" => [
+                   %{
+                     "name" => "one",
+                     "type" => %{"type" => "enum", "symbols" => ["x"], "name" => "a", "aliases" => ["b", "c"]}
+                   },
+                   %{"name" => "two", "type" => "a"},
+                   %{"name" => "three", "type" => "b"},
+                   %{"name" => "four", "type" => "c"}
+                 ]
+               })
+
+      assert schema == %Record{
+               fields: [
+                 %AvroEx.Schema.Record.Field{
+                   name: "one",
+                   type: %AvroEx.Schema.Enum{
+                     aliases: ["b", "c"],
+                     name: "a",
+                     symbols: ["x"]
+                   }
+                 },
+                 %AvroEx.Schema.Record.Field{
+                   name: "two",
+                   type: %AvroEx.Schema.Reference{type: "a"}
+                 },
+                 %AvroEx.Schema.Record.Field{
+                   name: "three",
+                   type: %AvroEx.Schema.Reference{type: "b"}
+                 },
+                 %AvroEx.Schema.Record.Field{
+                   name: "four",
+                   type: %AvroEx.Schema.Reference{type: "c"}
+                 }
+               ],
+               name: "top"
+             }
+
+      assert context ==
+               %AvroEx.Schema.Context{
+                 names: %{
+                   "a" => %AvroEx.Schema.Enum{
+                     aliases: ["b", "c"],
+                     name: "a",
+                     symbols: ["x"]
+                   },
+                   "top" => %AvroEx.Schema.Record{
+                     fields: [
+                       %AvroEx.Schema.Record.Field{
+                         name: "one",
+                         type: %AvroEx.Schema.Enum{
+                           aliases: ["b", "c"],
+                           name: "a",
+                           symbols: ["x"]
+                         }
+                       },
+                       %AvroEx.Schema.Record.Field{
+                         name: "two",
+                         type: %AvroEx.Schema.Reference{type: "a"}
+                       },
+                       %AvroEx.Schema.Record.Field{
+                         name: "three",
+                         type: %AvroEx.Schema.Reference{type: "b"}
+                       },
+                       %AvroEx.Schema.Record.Field{
+                         name: "four",
+                         type: %AvroEx.Schema.Reference{type: "c"}
+                       }
+                     ],
+                     name: "top",
+                     qualified_names: []
+                   }
+                 }
+               }
+    end
+
+    test "can create recursive types" do
       flunk()
     end
 
-    test "refs must refer to types previously defined" do
+    test "must refer to types previously defined" do
       flunk()
+    end
+
+    test "namespaces are inherited" do
     end
   end
 end

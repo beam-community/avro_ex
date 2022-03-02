@@ -39,6 +39,12 @@ defmodule AvroEx.Schema.DecodeError do
     %__MODULE__{message: message}
   end
 
+  def new({:duplicate_name, name, schema}) do
+    type = AvroEx.Schema.type_name(schema)
+    message = "Duplicate name #{surround(name)} found in #{type}"
+    %__MODULE__{message: message}
+  end
+
   def new({:invalid_name, {field, name}, context}) do
     message = "Invalid name #{surround(name)} for #{surround(field)} in #{inspect(context)}"
     %__MODULE__{message: message}
@@ -58,6 +64,18 @@ defmodule AvroEx.Schema.DecodeError do
 
   def new({:invalid_format, data}) do
     message = "Invalid schema format #{inspect(data)}"
+    %__MODULE__{message: message}
+  end
+
+  def new({:missing_ref, ref, context}) do
+    known =
+      if context.names == %{} do
+        "empty"
+      else
+        context.names |> Map.keys() |> Enum.map_join(", ", &surround/1)
+      end
+
+    message = "Found undeclared reference #{surround(ref.type)}. Known references are #{known}"
     %__MODULE__{message: message}
   end
 
