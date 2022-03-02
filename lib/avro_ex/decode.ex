@@ -3,7 +3,7 @@ defmodule AvroEx.Decode do
 
   require Bitwise
   alias AvroEx.Schema
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Record.Field
 
   @type reason :: term
@@ -16,7 +16,7 @@ defmodule AvroEx.Decode do
     {:ok, value}
   end
 
-  defp do_decode(name, %Context{} = context, data) when is_binary(name) do
+  defp do_decode(%Reference{type: name}, %Context{} = context, data) do
     do_decode(Context.lookup(context, name), context, data)
   end
 

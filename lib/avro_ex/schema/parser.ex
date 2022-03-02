@@ -1,9 +1,11 @@
 defmodule AvroEx.Schema.Parser do
+  @doc false
   alias AvroEx.Schema
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Union}
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
 
+  # TODO convert to atom
   @primitives [
     "null",
     "boolean",
@@ -21,19 +23,24 @@ defmodule AvroEx.Schema.Parser do
 
   def primitive?(_), do: false
 
-  # Parses a schema from an elixir (string) map representation
-  #
-  # Will throw DecodeError on structural and type issues,
-  # but will not do any validation of semantic information,
-  # i.e. is this logicalType valid?
   @spec parse!(term()) :: AvroEx.Schema.t()
   def parse!(data) do
     try do
       type = do_parse(data)
+      context = build_context(type, %Context{})
 
-      %Schema{schema: type, context: %Context{}}
+      %Schema{schema: type, context: context}
     catch
       :throw, %AvroEx.Schema.DecodeError{} = err -> raise err
+    end
+  end
+
+  # do_parse_ref/1 handles types that might be a %Reference{}
+  defp do_parse_ref(term) do
+    if is_binary(term) and not primitive?(term) do
+      Reference.new(term)
+    else
+      do_parse(term)
     end
   end
 
@@ -48,7 +55,7 @@ defmodule AvroEx.Schema.Parser do
   defp do_parse(list) when is_list(list) do
     {possibilities, _} =
       Enum.map_reduce(list, MapSet.new(), fn type, seen ->
-        %struct{} = parsed = do_parse(type)
+        %struct{} = parsed = do_parse_ref(type)
 
         if match?(%Union{}, parsed) do
           error({:nested_union, parsed, list})
@@ -88,9 +95,9 @@ defmodule AvroEx.Schema.Parser do
       |> validate_required([:values])
       |> drop([:type])
       |> extract_data()
-      |> update_in([:values], &do_parse/1)
+      |> update_in([:values], &do_parse_ref/1)
 
-    struct!(AvroMap, data) |> validate_default()
+    struct!(AvroMap, data)
   end
 
   defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum) when is_list(symbols) do
@@ -115,7 +122,7 @@ defmodule AvroEx.Schema.Parser do
       MapSet.put(set, symbol)
     end)
 
-    struct!(AvroEnum, data) |> validate_default()
+    struct!(AvroEnum, data)
   end
 
   defp do_parse(%{"type" => "array"} = array) do
@@ -125,9 +132,9 @@ defmodule AvroEx.Schema.Parser do
       |> drop([:type])
       |> validate_required([:items])
       |> extract_data()
-      |> update_in([:items], &do_parse/1)
+      |> update_in([:items], &do_parse_ref/1)
 
-    struct!(Array, data) |> validate_default()
+    struct!(Array, data)
   end
 
   defp do_parse(%{"type" => "fixed"} = fixed) do
@@ -168,9 +175,9 @@ defmodule AvroEx.Schema.Parser do
       |> cast(Record.Field, [:aliases, :doc, :default, :name, :namespace, :order, :type])
       |> validate_required([:name, :type])
       |> extract_data()
-      |> put_in([:type], do_parse(type))
+      |> put_in([:type], do_parse_ref(type))
 
-    struct!(Record.Field, data) |> validate_default()
+    struct!(Record.Field, data)
   end
 
   defp cast(data, type, keys) do
@@ -260,6 +267,68 @@ defmodule AvroEx.Schema.Parser do
   defp drop({data, rest, info}, keys) do
     {data, Map.drop(rest, Enum.map(keys, &to_string/1)), info}
   end
+
+  defp build_context(type, context) do
+    context = capture_context(type, context)
+
+    type
+    |> validate_default()
+    |> do_build_context(context)
+  end
+
+  defp do_build_context(%Union{} = union, context) do
+    build_inner_context(union, :possibilities, context)
+  end
+
+  defp do_build_context(%Record{} = record, context) do
+    build_inner_context(record, :fields, context)
+  end
+
+  defp do_build_context(%Record.Field{} = field, context) do
+    build_inner_context(field, :type, context)
+  end
+
+  defp do_build_context(%Array{} = array, context) do
+    build_inner_context(array, :items, context)
+  end
+
+  defp do_build_context(%AvroMap{} = map, context) do
+    build_inner_context(map, :values, context)
+  end
+
+  defp do_build_context(%Reference{} = ref, context) do
+    unless Map.has_key?(context.names, ref.type) do
+      error({:missing_ref, ref, context})
+    end
+
+    context
+  end
+
+  defp do_build_context(_schema, context), do: context
+
+  defp build_inner_context(type, field, context) do
+    %{^field => inner} = type
+
+    if is_list(inner) do
+      Enum.reduce(inner, context, &build_context/2)
+    else
+      build_context(inner, context)
+    end
+  end
+
+  defp capture_context(%{name: name} = schema, context) do
+    name = AvroEx.Schema.full_name(schema)
+
+    if Map.has_key?(context.names, name) do
+      error({:duplicate_name, name, schema})
+    end
+
+    # TODO aliases and namespace propagation
+
+    put_in(context.names[name], schema)
+  end
+
+  defp capture_context(_type, context), do: context
 
   defp error(info) do
     info |> AvroEx.Schema.DecodeError.new() |> throw()
