@@ -108,6 +108,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_required([:name, :symbols])
       |> validate_name()
       |> validate_namespace()
+      |> validate_aliases()
       |> extract_data()
 
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
@@ -146,6 +147,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_integer(:size)
       |> validate_name()
       |> validate_namespace()
+      |> validate_aliases()
       |> extract_data()
 
     struct!(Fixed, data)
@@ -159,6 +161,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_required([:name, :fields])
       |> validate_name()
       |> validate_namespace()
+      |> validate_aliases()
       |> extract_data()
       |> update_in([:fields], fn fields -> Enum.map(fields, &parse_fields/1) end)
 
@@ -174,6 +177,7 @@ defmodule AvroEx.Schema.Parser do
       field
       |> cast(Record.Field, [:aliases, :doc, :default, :name, :namespace, :order, :type])
       |> validate_required([:name, :type])
+      |> validate_aliases()
       |> extract_data()
       |> put_in([:type], do_parse_ref(type))
 
@@ -233,6 +237,14 @@ defmodule AvroEx.Schema.Parser do
     end)
   end
 
+  defp validate_aliases({_data, _rest, {_type, raw}} = input) do
+    validate_field(input, :aliases, fn aliases ->
+      unless is_list(aliases) and Enum.all?(aliases, &valid_name?/1) do
+        error({:invalid_name, {:aliases, aliases}, raw})
+      end
+    end)
+  end
+
   defp validate_namespace({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :namespace, fn value ->
       unless valid_namespace?(value) do
@@ -258,6 +270,8 @@ defmodule AvroEx.Schema.Parser do
 
   defp extract_data({data, rest, {type, raw}}) do
     if rest != %{} do
+      # TODO this violates the spec
+      # where typeName is either a primitive or derived type name, as defined below. Attributes not defined in this document are permitted as metadata, but must not affect the format of serialized data.
       error({:unrecognized_fields, Map.keys(rest), type, raw})
     end
 
@@ -316,19 +330,55 @@ defmodule AvroEx.Schema.Parser do
     end
   end
 
-  defp capture_context(%{name: name} = schema, context) do
+  defp capture_context(%Record.Field{}, context), do: context
+
+  defp capture_context(%{name: _name} = schema, context) do
     name = AvroEx.Schema.full_name(schema)
 
     if Map.has_key?(context.names, name) do
       error({:duplicate_name, name, schema})
     end
 
-    # TODO aliases and namespace propagation
+    if match?(%Record{}, schema) do
+      Enum.reduce(schema.fields, MapSet.new(), fn field, set ->
+        if MapSet.member?(set, field.name) do
+          error({:duplicate_name, field.name, schema})
+        end
 
-    put_in(context.names[name], schema)
+        MapSet.put(set, field.name)
+      end)
+    end
+
+    # TODO needs to propagate
+    parent_namespace = nil
+
+    context =
+      schema
+      |> aliases(parent_namespace)
+      |> Enum.reduce(context, fn name, context ->
+        put_context(context, name, schema)
+      end)
+
+    put_context(context, name, schema)
   end
 
   defp capture_context(_type, context), do: context
+
+  defp put_context(context, name, schema) do
+    put_in(context.names[name], schema)
+  end
+
+  defp aliases(%{aliases: aliases, namespace: namespace} = record, parent_namespace)
+       when is_list(aliases) do
+    full_aliases =
+      Enum.map(aliases, fn name ->
+        AvroEx.Schema.full_name(namespace || parent_namespace, name)
+      end)
+
+    [AvroEx.Schema.full_name(namespace || parent_namespace, record.name) | full_aliases]
+  end
+
+  defp aliases(_schema, _parent_namespace), do: []
 
   defp error(info) do
     info |> AvroEx.Schema.DecodeError.new() |> throw()

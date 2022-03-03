@@ -165,7 +165,7 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "field names must be unique" do
-      message = "Duplicate name `key` found in Field<name=key>"
+      message = "Duplicate name `key` found in Record<name=duplicate_names>"
 
       assert_raise AvroEx.Schema.DecodeError, message, fn ->
         Parser.parse!(%{
@@ -443,7 +443,7 @@ defmodule AvroEx.Schema.ParserTest do
                  "name" => "double",
                  "namespace" => "one.two.three",
                  "doc" => "two numbers",
-                 "aliases" => ["dos nums"],
+                 "aliases" => ["dos_nums"],
                  "type" => "fixed",
                  "size" => 2
                })
@@ -453,18 +453,13 @@ defmodule AvroEx.Schema.ParserTest do
                namespace: "one.two.three",
                size: 2,
                doc: "two numbers",
-               aliases: ["dos nums"]
+               aliases: ["dos_nums"]
              }
 
       assert context == %Context{
                names: %{
-                 "one.two.three.double" => %AvroEx.Schema.Fixed{
-                   aliases: ["dos nums"],
-                   doc: "two numbers",
-                   name: "double",
-                   namespace: "one.two.three",
-                   size: 2
-                 }
+                 "one.two.three.double" => schema,
+                 "one.two.three.dos_nums" => schema
                }
              }
     end
@@ -612,23 +607,22 @@ defmodule AvroEx.Schema.ParserTest do
                fields: [
                  %Record.Field{
                    name: "favorite_pet",
-                   type:
-                     %Record{
-                       name: "Pet",
-                       fields: [
-                         %Record.Field{
-                           name: "type",
-                           type: %AvroEnum{name: "PetType", symbols: ["cat", "dog"]} = pet_type
-                         },
-                         %Record.Field{name: "name", type: %Primitive{type: :string}}
-                       ]
-                     } = pet
+                   type: %Record{
+                     name: "Pet",
+                     fields: [
+                       %Record.Field{
+                         name: "type",
+                         type: %AvroEnum{name: "PetType", symbols: ["cat", "dog"]}
+                       },
+                       %Record.Field{name: "name", type: %Primitive{type: :string}}
+                     ]
+                   }
                  },
                  %Record.Field{name: "first_pet", type: %Reference{type: "Pet"}}
                ]
              } = schema
 
-      assert %Context{names: %{"Pet" => pet, "PetType" => pet_type}}
+      assert Map.keys(context.names) == ["Pet", "PetType", "pets"]
     end
 
     test "types can be referred by an alias" do
@@ -673,53 +667,134 @@ defmodule AvroEx.Schema.ParserTest do
                name: "top"
              }
 
-      assert context ==
-               %AvroEx.Schema.Context{
-                 names: %{
-                   "a" => %AvroEx.Schema.Enum{
-                     aliases: ["b", "c"],
-                     name: "a",
-                     symbols: ["x"]
-                   },
-                   "top" => %AvroEx.Schema.Record{
-                     fields: [
-                       %AvroEx.Schema.Record.Field{
-                         name: "one",
-                         type: %AvroEx.Schema.Enum{
-                           aliases: ["b", "c"],
-                           name: "a",
-                           symbols: ["x"]
-                         }
-                       },
-                       %AvroEx.Schema.Record.Field{
-                         name: "two",
-                         type: %AvroEx.Schema.Reference{type: "a"}
-                       },
-                       %AvroEx.Schema.Record.Field{
-                         name: "three",
-                         type: %AvroEx.Schema.Reference{type: "b"}
-                       },
-                       %AvroEx.Schema.Record.Field{
-                         name: "four",
-                         type: %AvroEx.Schema.Reference{type: "c"}
-                       }
-                     ],
-                     name: "top",
-                     qualified_names: []
-                   }
-                 }
-               }
+      assert Map.keys(context.names) == ["a", "b", "c", "top"]
     end
 
     test "can create recursive types" do
-      flunk()
+      assert %Schema{schema: schema} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "recursive",
+                 "fields" => [
+                   %{"name" => "nested", "type" => ["null", "recursive"]}
+                 ]
+               })
+
+      assert schema == %Record{
+               name: "recursive",
+               fields: [
+                 %Record.Field{
+                   name: "nested",
+                   type: %Union{possibilities: [%Primitive{type: :null}, %Reference{type: "recursive"}]}
+                 }
+               ]
+             }
+    end
+
+    test "aliases must be valid" do
+      message =
+        "Invalid name `` for `aliases` in %{\"aliases\" => \"\", \"fields\" => [%{\"name\" => \"one\", \"type\" => \"string\"}], \"name\" => \"invalid_aliases\", \"type\" => \"record\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "invalid_aliases",
+          "aliases" => "",
+          "fields" => [%{"name" => "one", "type" => "string"}]
+        })
+      end
+
+      message =
+        "Invalid name `bad name` for `aliases` in %{\"aliases\" => [\"bad name\"], \"fields\" => [%{\"name\" => \"one\", \"type\" => \"string\"}], \"name\" => \"invalid_aliases\", \"type\" => \"record\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "invalid_aliases",
+          "aliases" => ["bad name"],
+          "fields" => [%{"name" => "one", "type" => "string"}]
+        })
+      end
     end
 
     test "must refer to types previously defined" do
-      flunk()
+      message = "Found undeclared reference `callback`. Known references are `invalid_ref`"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "invalid_ref",
+          "fields" => [
+            %{"name" => "one", "type" => "callback"},
+            %{"name" => "two", "type" => %{"name" => "callback", "type" => "fixed", "size" => 2}}
+          ]
+        })
+      end
     end
 
     test "namespaces are inherited" do
+      assert %Schema{schema: schema} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "inferred_reference",
+                 "namespace" => "beam.community",
+                 "fields" => [
+                   %{"name" => "one", "type" => %{"name" => "callback", "type" => "fixed", "size" => 2}},
+                   %{"name" => "two", "type" => "callback"}
+                 ]
+               })
+
+      assert schema == %Record{
+               name: "reference",
+               namespace: "beam.community",
+               fields: [
+                 %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2}},
+                 %Record.Field{name: "two", type: %Reference{type: "beam.community.callback"}}
+               ]
+             }
+
+      assert %Schema{schema: schema} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "qualified_reference",
+                 "namespace" => "beam.community",
+                 "fields" => [
+                   %{"name" => "one", "type" => %{"name" => "callback", "type" => "fixed", "size" => 2}},
+                   %{"name" => "two", "type" => "beam.comunity.callback"}
+                 ]
+               })
+
+      assert schema == %Record{
+               name: "reference",
+               namespace: "beam.community",
+               fields: [
+                 %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2}},
+                 %Record.Field{name: "two", type: %Reference{type: "beam.community.callback"}}
+               ]
+             }
+
+      assert %Schema{schema: schema} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "aliased_reference",
+                 "namespace" => "beam.community",
+                 "fields" => [
+                   %{
+                     "name" => "one",
+                     "type" => %{"name" => "callback", "aliases" => ["alias"], "type" => "fixed", "size" => 2}
+                   },
+                   %{"name" => "two", "type" => "beam.comunity.alias"}
+                 ]
+               })
+
+      assert schema == %Record{
+               name: "reference",
+               namespace: "beam.community",
+               fields: [
+                 %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2}},
+                 %Record.Field{name: "two", type: %Reference{type: "beam.community.alias"}}
+               ]
+             }
     end
   end
 end
