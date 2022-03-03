@@ -447,7 +447,7 @@ defmodule AvroEx.Schema.Test do
       }
       """
 
-      {:ok, parsed_schema} = AvroEx.parse_schema(schema)
+      {:ok, parsed_schema} = AvroEx.decode_schema(schema)
       {:ok, %{schema: parsed_schema}}
     end
 

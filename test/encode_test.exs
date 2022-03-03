@@ -197,7 +197,7 @@ defmodule AvroEx.Encode.Test do
 
     test "works with logicalType field values" do
       schema =
-        AvroEx.parse_schema!(%{
+        AvroEx.decode_schema!(%{
           "type" => "record",
           "name" => "Record",
           "fields" => [
