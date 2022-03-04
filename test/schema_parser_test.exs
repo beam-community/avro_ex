@@ -354,10 +354,10 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "symbols must by alphanumberic or underscores, and not start with a number" do
-      message =
+      message_1 =
         "Invalid name `1` for `symbols` in %{\"name\" => \"non_string\", \"symbols\" => [1], \"type\" => \"enum\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_1, fn ->
         Parser.parse!(%{
           "type" => "enum",
           "name" => "non_string",
@@ -365,10 +365,10 @@ defmodule AvroEx.Schema.ParserTest do
         })
       end
 
-      message =
+      message_2 =
         "Invalid name `abcABC!` for `symbols` in %{\"name\" => \"bad_name_1\", \"symbols\" => [\"abcABC!\"], \"type\" => \"enum\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_2, fn ->
         Parser.parse!(%{
           "type" => "enum",
           "name" => "bad_name_1",
@@ -376,10 +376,10 @@ defmodule AvroEx.Schema.ParserTest do
         })
       end
 
-      message =
+      message_3 =
         "Invalid name `1a` for `symbols` in %{\"name\" => \"bad_name_2\", \"symbols\" => [\"1a\"], \"type\" => \"enum\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_3, fn ->
         Parser.parse!(%{
           "type" => "enum",
           "name" => "bad_name_2",
@@ -414,9 +414,9 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "default must be a valid array of that type" do
-      message = "Invalid default in Array<items=int> Schema Mismatch: Expected value of int, got \"one\""
+      message_1 = "Invalid default in Array<items=int> Schema Mismatch: Expected value of int, got \"one\""
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_1, fn ->
         Parser.parse!(%{
           "type" => "array",
           "items" => "int",
@@ -424,9 +424,9 @@ defmodule AvroEx.Schema.ParserTest do
         })
       end
 
-      message = "Invalid default in Array<items=int> Schema Mismatch: Expected value of Array<items=int>, got 1"
+      message_2 = "Invalid default in Array<items=int> Schema Mismatch: Expected value of Array<items=int>, got 1"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_2, fn ->
         Parser.parse!(%{
           "type" => "array",
           "items" => "int",
@@ -465,20 +465,20 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "must include size" do
-      message =
+      message_1 =
         "Schema missing required key `size` for AvroEx.Schema.Fixed in %{\"name\" => \"missing_size\", \"type\" => \"fixed\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_1, fn ->
         Parser.parse!(%{
           "type" => "fixed",
           "name" => "missing_size"
         })
       end
 
-      message =
+      message_2 =
         "Expected `size` to be integer got \"40\" in %{\"name\" => \"string_size\", \"size\" => \"40\", \"type\" => \"fixed\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_2, fn ->
         Parser.parse!(%{
           "type" => "fixed",
           "name" => "string_size",
@@ -544,9 +544,9 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "default must be encodeable" do
-      message = "Invalid default in Map<values=string> Schema Mismatch: Expected value of string, got 1"
+      message_1 = "Invalid default in Map<values=string> Schema Mismatch: Expected value of string, got 1"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_1, fn ->
         Parser.parse!(%{
           "type" => "map",
           "values" => "string",
@@ -554,9 +554,9 @@ defmodule AvroEx.Schema.ParserTest do
         })
       end
 
-      message = "Invalid default in Map<values=string> Schema Mismatch: Expected value of Map<values=string>, got []"
+      message_2 = "Invalid default in Map<values=string> Schema Mismatch: Expected value of Map<values=string>, got []"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_2, fn ->
         Parser.parse!(%{
           "type" => "map",
           "values" => "string",
@@ -692,10 +692,10 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "aliases must be valid" do
-      message =
+      message_1 =
         "Invalid name `` for `aliases` in %{\"aliases\" => \"\", \"fields\" => [%{\"name\" => \"one\", \"type\" => \"string\"}], \"name\" => \"invalid_aliases\", \"type\" => \"record\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_1, fn ->
         Parser.parse!(%{
           "type" => "record",
           "name" => "invalid_aliases",
@@ -704,10 +704,10 @@ defmodule AvroEx.Schema.ParserTest do
         })
       end
 
-      message =
+      message_2 =
         "Invalid name `bad name` for `aliases` in %{\"aliases\" => [\"bad name\"], \"fields\" => [%{\"name\" => \"one\", \"type\" => \"string\"}], \"name\" => \"invalid_aliases\", \"type\" => \"record\"}"
 
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+      assert_raise AvroEx.Schema.DecodeError, message_2, fn ->
         Parser.parse!(%{
           "type" => "record",
           "name" => "invalid_aliases",

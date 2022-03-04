@@ -18,8 +18,10 @@ defmodule AvroEx.Schema.Parser do
 
   @str_primitives Enum.map(@primitives, &to_string/1)
 
+  @spec primitives :: list(atom())
   def primitives, do: @primitives
 
+  @spec primitive?(String.t() | atom()) :: boolean()
   for p <- @primitives do
     def primitive?(unquote(p)), do: true
     def primitive?(unquote(to_string(p))), do: true
@@ -119,6 +121,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_aliases()
       |> extract_data()
 
+    # credo:disable-for-lines:11 Credo.Check.Warning.UnusedEnumOperation
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
       if MapSet.member?(set, symbol) do
         error({:duplicate_symbol, symbol, enum})
@@ -174,9 +177,10 @@ defmodule AvroEx.Schema.Parser do
 
     parent_namespace = namespace(data, parent_namespace)
 
-    data = update_in(data[:fields], fn fields -> Enum.map(fields, &parse_fields(&1, parent_namespace)) end)
-
-    struct!(Record, data)
+    struct!(
+      Record,
+      update_in(data[:fields], fn fields -> Enum.map(fields, &parse_fields(&1, parent_namespace)) end)
+    )
   end
 
   defp do_parse(other, _parent_namespace) do
@@ -355,6 +359,7 @@ defmodule AvroEx.Schema.Parser do
     end
 
     if match?(%Record{}, schema) do
+      # credo:disable-for-lines:8 Credo.Check.Warning.UnusedEnumOperation
       Enum.reduce(schema.fields, MapSet.new(), fn field, set ->
         if MapSet.member?(set, field.name) do
           error({:duplicate_name, field.name, schema})
