@@ -29,14 +29,14 @@ defmodule AvroEx do
   """
   defdelegate encodable?(schema, data), to: AvroEx.Schema
 
-  @spec decode_schema(Schema.json_schema()) ::
+  @spec parse_schema(Schema.json_schema()) ::
           {:ok, Schema.t()}
           | {:error, :unnamed_record}
           | {:error, :invalid_json}
   @deprecated "Use AvroEx.decode_schema/1 instead"
   def parse_schema(json), do: decode_schema(json)
 
-  @spec decode_schema!(Schema.json_schema()) :: Schema.t() | no_return
+  @spec parse_schema!(Schema.json_schema()) :: Schema.t() | no_return
   @deprecated "Use AvroEx.decode_schema!/1 instead"
   def parse_schema!(json), do: decode_schema!(json)
 
@@ -44,6 +44,7 @@ defmodule AvroEx do
   Given a JSON-formatted schema, parses the schema and returns a `%AvroEx.Schema{}` struct representing the schema.
   Errors if the JSON is invalid, or if a named record is referenced that doesn't exist.
   """
+  @spec decode_schema(term()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
   def decode_schema(schema) do
     try do
       {:ok, decode_schema!(schema)}
@@ -56,6 +57,7 @@ defmodule AvroEx do
   Same as `AvroEx.decode_schema/1`, but raises an exception on failure instead of
   returning an error tuple.
   """
+  @spec decode_schema!(term()) :: Schema.t()
   def decode_schema!(schema) do
     if is_binary(schema) and not Schema.Parser.primitive?(schema) do
       schema
