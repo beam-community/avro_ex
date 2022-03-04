@@ -745,7 +745,7 @@ defmodule AvroEx.Schema.ParserTest do
                })
 
       assert schema == %Record{
-               name: "reference",
+               name: "inferred_reference",
                namespace: "beam.community",
                fields: [
                  %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2}},
@@ -760,12 +760,12 @@ defmodule AvroEx.Schema.ParserTest do
                  "namespace" => "beam.community",
                  "fields" => [
                    %{"name" => "one", "type" => %{"name" => "callback", "type" => "fixed", "size" => 2}},
-                   %{"name" => "two", "type" => "beam.comunity.callback"}
+                   %{"name" => "two", "type" => "beam.community.callback"}
                  ]
                })
 
       assert schema == %Record{
-               name: "reference",
+               name: "qualified_reference",
                namespace: "beam.community",
                fields: [
                  %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2}},
@@ -783,15 +783,38 @@ defmodule AvroEx.Schema.ParserTest do
                      "name" => "one",
                      "type" => %{"name" => "callback", "aliases" => ["alias"], "type" => "fixed", "size" => 2}
                    },
-                   %{"name" => "two", "type" => "beam.comunity.alias"}
+                   %{"name" => "two", "type" => "beam.community.alias"}
                  ]
                })
 
       assert schema == %Record{
-               name: "reference",
+               name: "aliased_reference",
                namespace: "beam.community",
                fields: [
-                 %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2}},
+                 %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2, aliases: ["alias"]}},
+                 %Record.Field{name: "two", type: %Reference{type: "beam.community.alias"}}
+               ]
+             }
+
+      assert %Schema{schema: schema} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "beam.community.from_name",
+                 "namespace" => "ignore",
+                 "fields" => [
+                   %{
+                     "name" => "one",
+                     "type" => %{"name" => "callback", "aliases" => ["alias"], "type" => "fixed", "size" => 2}
+                   },
+                   %{"name" => "two", "type" => "beam.community.alias"}
+                 ]
+               })
+
+      assert schema == %Record{
+               name: "beam.community.from_name",
+               namespace: "ignore",
+               fields: [
+                 %Record.Field{name: "one", type: %Fixed{name: "callback", size: 2, aliases: ["alias"]}},
                  %Record.Field{name: "two", type: %Reference{type: "beam.community.alias"}}
                ]
              }
