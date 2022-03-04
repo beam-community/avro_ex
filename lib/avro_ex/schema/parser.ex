@@ -283,12 +283,15 @@ defmodule AvroEx.Schema.Parser do
     Map.put(data, :metadata, rest)
   end
 
-  defp extract_data({data, rest, {type, raw}}) do
-    if rest != %{} do
-      # TODO this violates the spec
-      # where typeName is either a primitive or derived type name, as defined below. Attributes not defined in this document are permitted as metadata, but must not affect the format of serialized data.
-      error({:unrecognized_fields, Map.keys(rest), type, raw})
-    end
+  defp extract_data({data, _rest, {_type, _raw}}) do
+    # This violates the spec, in the future we can
+    # make this an optional strict check
+    #
+    # https://github.com/beam-community/avro_ex/issues/63
+    #
+    # if rest != %{} do
+    #   error({:unrecognized_fields, Map.keys(rest), type, raw})
+    # end
 
     data
   end
