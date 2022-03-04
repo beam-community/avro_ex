@@ -195,6 +195,9 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
+    # This will violate the spec, so instead we will add an optional strict parsing option in the future
+    # https://github.com/beam-community/avro_ex/issues/63
+    @tag skip: true
     test "trying to use a logicalType on a field will raise" do
       message =
         "Unrecognized schema key `logicalType` for AvroEx.Schema.Record.Field in %{\"logicalType\" => \"timestamp-millis\", \"name\" => \"timestamp\", \"type\" => \"long\"}"
