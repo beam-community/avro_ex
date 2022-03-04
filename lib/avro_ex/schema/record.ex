@@ -14,7 +14,6 @@ defmodule AvroEx.Schema.Record do
     field(:namespace, :string)
     # TODO remove all of these
     field(:qualified_names, {:array, :string}, default: [])
-    # TODO remove
     field(:metadata, :map, default: %{})
 
     embeds_many(:fields, Field)

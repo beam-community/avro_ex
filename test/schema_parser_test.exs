@@ -9,38 +9,38 @@ defmodule AvroEx.Schema.ParserTest do
   describe "primitives" do
     test "it can parse primitives" do
       for p <- Parser.primitives() do
-        p_atom = String.to_atom(p)
-        assert %Schema{schema: schema, context: context} = Parser.parse!(p)
+        p_string = to_string(p)
+        assert %Schema{schema: schema, context: context} = Parser.parse!(p_string)
 
-        assert %Primitive{type: ^p_atom} = schema
+        assert %Primitive{type: ^p} = schema
         assert context == %Context{names: %{}}
       end
     end
 
     test "it can parse complex primitives" do
       for p <- Parser.primitives() do
-        p_atom = String.to_atom(p)
-        assert %Schema{schema: schema, context: context} = Parser.parse!(%{"type" => p})
+        p_string = to_string(p)
+        assert %Schema{schema: schema, context: context} = Parser.parse!(%{"type" => p_string})
 
-        assert %Primitive{type: ^p_atom} = schema
+        assert %Primitive{type: ^p} = schema
         assert context == %Context{names: %{}}
       end
     end
 
     test "it can parse complex primitives with additional fields" do
       for p <- Parser.primitives() do
-        p_atom = String.to_atom(p)
+        p_string = to_string(p)
 
         assert %Schema{schema: schema, context: context} =
                  Parser.parse!(%{
-                   "type" => p,
+                   "type" => p_string,
                    "a" => 1,
                    "logicalType" => "timestamp-millis",
                    "name" => "complex"
                  })
 
         assert %Primitive{
-                 type: ^p_atom,
+                 type: ^p,
                  metadata: %{"a" => 1, "logicalType" => "timestamp-millis", "name" => "complex"}
                } = schema
 

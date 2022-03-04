@@ -5,21 +5,25 @@ defmodule AvroEx.Schema.Parser do
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
 
-  # TODO convert to atom
   @primitives [
-    "null",
-    "boolean",
-    "int",
-    "long",
-    "float",
-    "double",
-    "bytes",
-    "string"
+    :null,
+    :boolean,
+    :int,
+    :long,
+    :float,
+    :double,
+    :bytes,
+    :string
   ]
+
+  @str_primitives Enum.map(@primitives, &to_string/1)
 
   def primitives, do: @primitives
 
-  def primitive?(p) when p in @primitives, do: true
+  for p <- @primitives do
+    def primitive?(unquote(p)), do: true
+    def primitive?(unquote(to_string(p))), do: true
+  end
 
   def primitive?(_), do: false
 
@@ -51,8 +55,8 @@ defmodule AvroEx.Schema.Parser do
   defp do_parse(nil, _parent_namespace), do: %Primitive{type: :null}
 
   for p <- @primitives do
-    defp do_parse(unquote(p), _parent_namespace) do
-      %Primitive{type: unquote(String.to_atom(p))}
+    defp do_parse(unquote(to_string(p)), _parent_namespace) do
+      %Primitive{type: unquote(p)}
     end
   end
 
@@ -82,7 +86,7 @@ defmodule AvroEx.Schema.Parser do
     struct!(Union, possibilities: possibilities)
   end
 
-  defp do_parse(%{"type" => primitive} = type, _parent_namespace) when primitive in @primitives do
+  defp do_parse(%{"type" => primitive} = type, _parent_namespace) when primitive in @str_primitives do
     data =
       type
       |> cast(Primitive, [])
