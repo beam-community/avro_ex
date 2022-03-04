@@ -351,7 +351,6 @@ defmodule AvroEx.Schema.Parser do
     end
   end
 
-  # TODO need to traverse
   defp capture_context(%Record.Field{}, context, _namespace), do: context
 
   defp capture_context(%{name: _name} = schema, context, namespace) do
