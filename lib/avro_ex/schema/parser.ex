@@ -36,26 +36,30 @@ defmodule AvroEx.Schema.Parser do
   end
 
   # do_parse_ref/1 handles types that might be a %Reference{}
-  defp do_parse_ref(term) do
+  defp do_parse_ref(term, parent_namespace) do
     if is_binary(term) and not primitive?(term) do
-      Reference.new(term)
+      term
+      |> full_name(parent_namespace)
+      |> Reference.new()
     else
-      do_parse(term)
+      do_parse(term, parent_namespace)
     end
   end
 
-  defp do_parse(nil), do: %Primitive{type: :null}
+  defp do_parse(term, namespace \\ nil)
+
+  defp do_parse(nil, _parent_namespace), do: %Primitive{type: :null}
 
   for p <- @primitives do
-    defp do_parse(unquote(p)) do
+    defp do_parse(unquote(p), _parent_namespace) do
       %Primitive{type: unquote(String.to_atom(p))}
     end
   end
 
-  defp do_parse(list) when is_list(list) do
+  defp do_parse(list, parent_namespace) when is_list(list) do
     {possibilities, _} =
       Enum.map_reduce(list, MapSet.new(), fn type, seen ->
-        %struct{} = parsed = do_parse_ref(type)
+        %struct{} = parsed = do_parse_ref(type, parent_namespace)
 
         if match?(%Union{}, parsed) do
           error({:nested_union, parsed, list})
@@ -78,7 +82,7 @@ defmodule AvroEx.Schema.Parser do
     struct!(Union, possibilities: possibilities)
   end
 
-  defp do_parse(%{"type" => primitive} = type) when primitive in @primitives do
+  defp do_parse(%{"type" => primitive} = type, _parent_namespace) when primitive in @primitives do
     data =
       type
       |> cast(Primitive, [])
@@ -88,19 +92,19 @@ defmodule AvroEx.Schema.Parser do
     struct!(Primitive, Map.put(data, :type, String.to_existing_atom(primitive)))
   end
 
-  defp do_parse(%{"type" => "map"} = map) do
+  defp do_parse(%{"type" => "map"} = map, parent_namespace) do
     data =
       map
       |> cast(AvroMap, [:values, :default])
       |> validate_required([:values])
       |> drop([:type])
       |> extract_data()
-      |> update_in([:values], &do_parse_ref/1)
+      |> update_in([:values], &do_parse_ref(&1, parent_namespace))
 
     struct!(AvroMap, data)
   end
 
-  defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum) when is_list(symbols) do
+  defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum, _parent_namespace) when is_list(symbols) do
     data =
       enum
       |> cast(AvroEnum, [:aliases, :doc, :name, :namespace, :symbols])
@@ -126,19 +130,19 @@ defmodule AvroEx.Schema.Parser do
     struct!(AvroEnum, data)
   end
 
-  defp do_parse(%{"type" => "array"} = array) do
+  defp do_parse(%{"type" => "array"} = array, parent_namespace) do
     data =
       array
       |> cast(Array, [:items, :default])
       |> drop([:type])
       |> validate_required([:items])
       |> extract_data()
-      |> update_in([:items], &do_parse_ref/1)
+      |> update_in([:items], &do_parse_ref(&1, parent_namespace))
 
     struct!(Array, data)
   end
 
-  defp do_parse(%{"type" => "fixed"} = fixed) do
+  defp do_parse(%{"type" => "fixed"} = fixed, _parent_namespace) do
     data =
       fixed
       |> cast(Fixed, [:aliases, :doc, :name, :namespace, :size])
@@ -153,7 +157,7 @@ defmodule AvroEx.Schema.Parser do
     struct!(Fixed, data)
   end
 
-  defp do_parse(%{"type" => "record", "fields" => fields} = record) when is_list(fields) do
+  defp do_parse(%{"type" => "record", "fields" => fields} = record, parent_namespace) when is_list(fields) do
     data =
       record
       |> cast(Record, [:aliases, :doc, :name, :namespace, :fields])
@@ -163,23 +167,26 @@ defmodule AvroEx.Schema.Parser do
       |> validate_namespace()
       |> validate_aliases()
       |> extract_data()
-      |> update_in([:fields], fn fields -> Enum.map(fields, &parse_fields/1) end)
+
+    parent_namespace = namespace(data, parent_namespace)
+
+    data = update_in(data[:fields], fn fields -> Enum.map(fields, &parse_fields(&1, parent_namespace)) end)
 
     struct!(Record, data)
   end
 
-  defp do_parse(other) do
+  defp do_parse(other, _parent_namespace) do
     error({:invalid_format, other})
   end
 
-  defp parse_fields(%{"type" => type} = field) do
+  defp parse_fields(%{"type" => type} = field, parent_namespace) do
     data =
       field
       |> cast(Record.Field, [:aliases, :doc, :default, :name, :namespace, :order, :type])
       |> validate_required([:name, :type])
       |> validate_aliases()
       |> extract_data()
-      |> put_in([:type], do_parse_ref(type))
+      |> put_in([:type], do_parse_ref(type, parent_namespace))
 
     struct!(Record.Field, data)
   end
@@ -231,7 +238,7 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_name({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :name, fn value ->
-      unless valid_name?(value) do
+      unless valid_full_name?(value) do
         error({:invalid_name, {:name, value}, raw})
       end
     end)
@@ -247,7 +254,7 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_namespace({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :namespace, fn value ->
-      unless valid_namespace?(value) do
+      unless valid_full_name?(value) do
         error({:invalid_name, {:namespace, value}, raw})
       end
     end)
@@ -282,35 +289,38 @@ defmodule AvroEx.Schema.Parser do
     {data, Map.drop(rest, Enum.map(keys, &to_string/1)), info}
   end
 
-  defp build_context(type, context) do
-    context = capture_context(type, context)
+  defp build_context(type, context, namespace \\ nil)
+
+  defp build_context(type, context, namespace) do
+    namespace = namespace(type, namespace)
+    context = capture_context(type, context, namespace)
 
     type
     |> validate_default()
-    |> do_build_context(context)
+    |> do_build_context(context, namespace)
   end
 
-  defp do_build_context(%Union{} = union, context) do
-    build_inner_context(union, :possibilities, context)
+  defp do_build_context(%Union{} = union, context, namespace) do
+    build_inner_context(union, :possibilities, context, namespace)
   end
 
-  defp do_build_context(%Record{} = record, context) do
-    build_inner_context(record, :fields, context)
+  defp do_build_context(%Record{} = record, context, namespace) do
+    build_inner_context(record, :fields, context, namespace)
   end
 
-  defp do_build_context(%Record.Field{} = field, context) do
-    build_inner_context(field, :type, context)
+  defp do_build_context(%Record.Field{} = field, context, namespace) do
+    build_inner_context(field, :type, context, namespace)
   end
 
-  defp do_build_context(%Array{} = array, context) do
-    build_inner_context(array, :items, context)
+  defp do_build_context(%Array{} = array, context, namespace) do
+    build_inner_context(array, :items, context, namespace)
   end
 
-  defp do_build_context(%AvroMap{} = map, context) do
-    build_inner_context(map, :values, context)
+  defp do_build_context(%AvroMap{} = map, context, namespace) do
+    build_inner_context(map, :values, context, namespace)
   end
 
-  defp do_build_context(%Reference{} = ref, context) do
+  defp do_build_context(%Reference{} = ref, context, _namespace) do
     unless Map.has_key?(context.names, ref.type) do
       error({:missing_ref, ref, context})
     end
@@ -318,22 +328,23 @@ defmodule AvroEx.Schema.Parser do
     context
   end
 
-  defp do_build_context(_schema, context), do: context
+  defp do_build_context(_schema, context, _namespace), do: context
 
-  defp build_inner_context(type, field, context) do
+  defp build_inner_context(type, field, context, namespace) do
     %{^field => inner} = type
 
     if is_list(inner) do
-      Enum.reduce(inner, context, &build_context/2)
+      Enum.reduce(inner, context, &build_context(&1, &2, namespace))
     else
-      build_context(inner, context)
+      build_context(inner, context, namespace)
     end
   end
 
-  defp capture_context(%Record.Field{}, context), do: context
+  # TODO need to traverse
+  defp capture_context(%Record.Field{}, context, _namespace), do: context
 
-  defp capture_context(%{name: _name} = schema, context) do
-    name = AvroEx.Schema.full_name(schema)
+  defp capture_context(%{name: _name} = schema, context, namespace) do
+    name = full_name(schema, namespace)
 
     if Map.has_key?(context.names, name) do
       error({:duplicate_name, name, schema})
@@ -349,12 +360,9 @@ defmodule AvroEx.Schema.Parser do
       end)
     end
 
-    # TODO needs to propagate
-    parent_namespace = nil
-
     context =
       schema
-      |> aliases(parent_namespace)
+      |> aliases(namespace)
       |> Enum.reduce(context, fn name, context ->
         put_context(context, name, schema)
       end)
@@ -362,20 +370,17 @@ defmodule AvroEx.Schema.Parser do
     put_context(context, name, schema)
   end
 
-  defp capture_context(_type, context), do: context
+  defp capture_context(_type, context, _namespace), do: context
 
   defp put_context(context, name, schema) do
     put_in(context.names[name], schema)
   end
 
-  defp aliases(%{aliases: aliases, namespace: namespace} = record, parent_namespace)
+  defp aliases(%{aliases: aliases, namespace: namespace}, parent_namespace)
        when is_list(aliases) do
-    full_aliases =
-      Enum.map(aliases, fn name ->
-        AvroEx.Schema.full_name(namespace || parent_namespace, name)
-      end)
-
-    [AvroEx.Schema.full_name(namespace || parent_namespace, record.name) | full_aliases]
+    Enum.map(aliases, fn name ->
+      full_name(name, namespace || parent_namespace)
+    end)
   end
 
   defp aliases(_schema, _parent_namespace), do: []
@@ -390,9 +395,64 @@ defmodule AvroEx.Schema.Parser do
 
   defp valid_name?(_), do: false
 
-  defp valid_namespace?(name) when is_binary(name) do
+  defp valid_full_name?(name) when is_binary(name) do
     Regex.match?(~r/^[A-Za-z_](\.?[A-Za-z0-9_]+)*$/, name)
   end
 
-  defp valid_namespace?(_), do: false
+  defp valid_full_name?(_), do: false
+
+  # split a full name into its parts
+  defp split_name(string) do
+    pattern = :binary.compile_pattern(".")
+    String.split(string, pattern)
+  end
+
+  defp namespace(schema, parent_namespace)
+  defp namespace(%Record.Field{}, parent_namespace), do: parent_namespace
+
+  defp namespace(%{name: name, namespace: namespace}, parent_namespace) do
+    split_name = split_name(name)
+
+    cond do
+      # if it has at least two values, its a fullname
+      # e.g. "namespace.Name" would be `["namespace", "Name"]`
+      match?([_, _ | _], split_name) ->
+        split_name |> :lists.droplast() |> Enum.join(".")
+
+      is_nil(namespace) ->
+        parent_namespace
+
+      true ->
+        namespace
+    end
+  end
+
+  defp namespace(_schema, parent_namespace), do: parent_namespace
+
+  defp full_name(%{name: name, namespace: namespace}, parent_namespace) do
+    if is_nil(namespace) do
+      full_name(name, parent_namespace)
+    else
+      full_name(name, namespace)
+    end
+  end
+
+  defp full_name(%Record.Field{name: name}, _parent_namespace) do
+    name
+  end
+
+  defp full_name(name, namespace) when is_binary(name) do
+    cond do
+      is_nil(namespace) ->
+        name
+
+      String.contains?(name, ".") ->
+        name
+
+      true ->
+        "#{namespace}.#{name}"
+    end
+  end
+
+  defp full_name(_name, _namespace), do: nil
 end
