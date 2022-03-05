@@ -8,6 +8,8 @@ defmodule AvroEx.Decode do
 
   @type reason :: term
 
+  @seconds_in_day 24 * 60 * 60
+
   @doc false
   @spec decode(AvroEx.Schema.t(), binary()) :: {:ok, any()}
   def decode(%Schema{schema: schema, context: context}, avro_message)
@@ -30,6 +32,15 @@ defmodule AvroEx.Decode do
 
   defp do_decode(%Primitive{type: :boolean}, %Context{}, <<1::8, rest::binary>>) do
     {true, rest}
+  end
+
+  defp do_decode(%Primitive{type: :int, metadata: %{"logicalType" => "date"}}, %Context{}, data) do
+    {val, rest} = variable_integer_decode(data, 0, 0, 32)
+
+    {:ok, datetime} = DateTime.from_unix(@seconds_in_day * zigzag_decode(val))
+    date = DateTime.to_date(datetime)
+
+    {date, rest}
   end
 
   defp do_decode(
