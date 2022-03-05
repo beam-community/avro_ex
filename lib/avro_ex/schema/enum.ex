@@ -5,7 +5,7 @@ defmodule AvroEx.Schema.Enum do
   alias AvroEx.Schema.Context
 
   typedstruct do
-    field :aliases, [Schema.alias()]
+    field :aliases, [Schema.alias()], default: []
     field :doc, Schema.doc()
     field :metadata, Schema.metadata(), default: %{}
     field :name, Schema.name(), enforce: true

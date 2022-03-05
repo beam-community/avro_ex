@@ -7,6 +7,7 @@
 * Primitive integer types now represented as `%Primitive{type: :int}` instead of `%Primitive{type: :integer}`
 * Primitive null types now represented as `%Primitive{type: :null}` instead of `%Primitive{type: nil}`
 * Schema parser now supports Elixir terms and will strictly validate the schema
+* Removed `Ecto` as a dependency
 
 ### Added
 * `AvroEx.encode!/2` - identical to `encode/2`, but raises
