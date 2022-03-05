@@ -14,29 +14,6 @@ defmodule AvroEx.Schema.Test do
 
   @test_module AvroEx.Schema
 
-  describe "cast" do
-    cast(nil, :null)
-    cast("null", :null)
-    cast("boolean", :boolean)
-    cast("int", :int)
-    cast("long", :long)
-    cast("float", :float)
-    cast("double", :double)
-    cast("bytes", :bytes)
-    cast("string", :string)
-  end
-
-  describe "parse primitives" do
-    parse_primitive("null", :null)
-    parse_primitive("boolean", :boolean)
-    parse_primitive("int", :int)
-    parse_primitive("long", :long)
-    parse_primitive("float", :float)
-    parse_primitive("double", :double)
-    parse_primitive("bytes", :bytes)
-    parse_primitive("string", :string)
-  end
-
   @spec json_add_property(binary | map, atom | binary, any) :: map | binary
   def json_add_property(str, property, value) when is_binary(str) do
     str
@@ -71,7 +48,8 @@ defmodule AvroEx.Schema.Test do
           "type": {
             "type": "record",
             "name": "ChildRecord",
-            "aliases": ["InnerRecord"]
+            "aliases": ["InnerRecord"],
+            "fields": []
           },
           "name": "field6",
           "doc": "some field",
@@ -88,7 +66,7 @@ defmodule AvroEx.Schema.Test do
       child_record = %@schema{
         name: "ChildRecord",
         aliases: ["InnerRecord"],
-        qualified_names: ["me.cjpoll.avro_ex.ChildRecord", "me.cjpoll.avro_ex.InnerRecord"]
+        fields: []
       }
 
       parent = %@schema{
@@ -96,11 +74,6 @@ defmodule AvroEx.Schema.Test do
         doc: "A record for testing",
         name: "MyRecord",
         namespace: "me.cjpoll.avro_ex",
-        qualified_names: [
-          "me.cjpoll.avro_ex.MyRecord",
-          "me.cjpoll.avro_ex.OldRecord",
-          "me.cjpoll.avro_ex.SomeRecord"
-        ],
         fields: [
           %Field{
             type: %Primitive{
@@ -130,7 +103,7 @@ defmodule AvroEx.Schema.Test do
         }
       }
 
-      {:ok, %@test_module{} = schema} = @test_module.parse(@json)
+      {:ok, %@test_module{} = schema} = AvroEx.decode_schema(@json)
 
       assert parent == schema.schema
       assert context == schema.context
@@ -149,17 +122,13 @@ defmodule AvroEx.Schema.Test do
                     %Primitive{type: :int}
                   ]
                 }
-              }} = @test_module.parse(~S(["null", "int"]))
+              }} = AvroEx.decode_schema(~S(["null", "int"]))
     end
 
     test "record in union" do
       child_record = %Record{
         name: "ChildRecord",
-        aliases: ["InnerRecord"],
-        qualified_names: [
-          "me.cjpoll.avro_ex.ChildRecord",
-          "me.cjpoll.avro_ex.InnerRecord"
-        ]
+        aliases: ["InnerRecord"]
       }
 
       parent = %Record{
@@ -167,11 +136,6 @@ defmodule AvroEx.Schema.Test do
         doc: "A record for testing",
         name: "MyRecord",
         namespace: "me.cjpoll.avro_ex",
-        qualified_names: [
-          "me.cjpoll.avro_ex.MyRecord",
-          "me.cjpoll.avro_ex.OldRecord",
-          "me.cjpoll.avro_ex.SomeRecord"
-        ],
         fields: [
           %Field{
             type: %Primitive{
@@ -201,7 +165,7 @@ defmodule AvroEx.Schema.Test do
         }
       }
 
-      {:ok, %AvroEx.Schema{} = schema} = @test_module.parse(~s(["null", #{@json}]))
+      {:ok, %AvroEx.Schema{} = schema} = AvroEx.decode_schema(~s(["null", #{@json}]))
 
       assert ^context = schema.context
 
@@ -235,7 +199,7 @@ defmodule AvroEx.Schema.Test do
                     }
                   ]
                 }
-              }} = @test_module.parse(schema)
+              }} = AvroEx.decode_schema(schema)
     end
   end
 
@@ -278,7 +242,7 @@ defmodule AvroEx.Schema.Test do
     @json ~S({"type": "array", "items": "int"})
     @schema Array
     test "doesn't blow up" do
-      assert {:ok, %@test_module{schema: %@schema{}}} = @test_module.parse(@json)
+      assert {:ok, %@test_module{schema: %@schema{}}} = AvroEx.decode_schema(@json)
     end
 
     handles_metadata()
@@ -301,7 +265,7 @@ defmodule AvroEx.Schema.Test do
       test "#{inspect(a)} vs #{inspect(b)}" do
         {ka, va} = unquote(a)
         {_kb, vb} = unquote(b)
-        {:ok, schema} = @test_module.parse(~s(#{inspect(ka)}))
+        {:ok, schema} = AvroEx.decode_schema(~s(#{inspect(ka)}))
 
         assert @test_module.encodable?(schema, va)
         assert @test_module.encodable?(schema, vb) == (va === vb)
@@ -371,7 +335,7 @@ defmodule AvroEx.Schema.Test do
       }
       """
 
-      {:ok, parsed_schema} = @test_module.parse(schema)
+      {:ok, parsed_schema} = AvroEx.decode_schema(schema)
       {:ok, %{schema: parsed_schema}}
     end
 
@@ -417,7 +381,7 @@ defmodule AvroEx.Schema.Test do
       }
       """
 
-      {:ok, parsed_schema} = @test_module.parse(schema)
+      {:ok, parsed_schema} = AvroEx.decode_schema(schema)
       {:ok, %{schema: parsed_schema}}
     end
 
@@ -461,7 +425,7 @@ defmodule AvroEx.Schema.Test do
 
   describe "encodable? (union)" do
     test "works as expected" do
-      {:ok, schema} = @test_module.parse(~S(["null", "string", "int"]))
+      {:ok, schema} = AvroEx.decode_schema(~S(["null", "string", "int"]))
 
       assert @test_module.encodable?(schema, nil)
       assert @test_module.encodable?(schema, "hello")
@@ -473,7 +437,7 @@ defmodule AvroEx.Schema.Test do
     end
 
     test "works with logical types" do
-      {:ok, schema} = @test_module.parse(~S(["null", {"type": "long", "logicalType":"timestamp-millis"}]))
+      {:ok, schema} = AvroEx.decode_schema(~S(["null", {"type": "long", "logicalType":"timestamp-millis"}]))
 
       assert @test_module.encodable?(schema, nil)
       assert @test_module.encodable?(schema, DateTime.utc_now())

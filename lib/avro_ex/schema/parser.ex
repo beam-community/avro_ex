@@ -104,7 +104,7 @@ defmodule AvroEx.Schema.Parser do
       |> cast(AvroMap, [:values, :default])
       |> validate_required([:values])
       |> drop([:type])
-      |> extract_data()
+      |> extract_metadata()
       |> update_in([:values], &do_parse_ref(&1, parent_namespace))
 
     struct!(AvroMap, data)
@@ -143,7 +143,7 @@ defmodule AvroEx.Schema.Parser do
       |> cast(Array, [:items, :default])
       |> drop([:type])
       |> validate_required([:items])
-      |> extract_data()
+      |> extract_metadata()
       |> update_in([:items], &do_parse_ref(&1, parent_namespace))
 
     struct!(Array, data)
@@ -173,7 +173,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_name()
       |> validate_namespace()
       |> validate_aliases()
-      |> extract_data()
+      |> extract_metadata()
 
     parent_namespace = namespace(data, parent_namespace)
 
@@ -254,7 +254,7 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_aliases({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :aliases, fn aliases ->
-      unless is_list(aliases) and Enum.all?(aliases, &valid_name?/1) do
+      unless is_list(aliases) and Enum.all?(aliases, &valid_full_name?/1) do
         error({:invalid_name, {:aliases, aliases}, raw})
       end
     end)
