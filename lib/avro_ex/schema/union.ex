@@ -4,7 +4,7 @@ defmodule AvroEx.Schema.Union do
   alias AvroEx.{Schema, Schema.Context}
 
   typedstruct enforce: true do
-    field :possibilities, [Schema.schema_types()]
+    field :possibilities, [Schema.schema_types()], enforce: true
   end
 
   @spec match?(AvroEx.Schema.Union.t(), Context.t(), any()) :: boolean()
