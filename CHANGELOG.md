@@ -16,6 +16,7 @@
 ### Deprecated
 * `AvroEx.parse_schema/1`
 * `AvroEx.parse_schema!/1`
+* `AvroEx.named_type!/2`
 
 ## v1.2.0
 

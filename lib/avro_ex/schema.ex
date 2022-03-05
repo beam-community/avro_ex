@@ -1,11 +1,11 @@
 defmodule AvroEx.Schema do
+  use TypedStruct
+
   alias AvroEx.{Schema}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
-
-  defstruct [:context, :schema]
 
   @type schema_types ::
           Array.t()
@@ -15,11 +15,17 @@ defmodule AvroEx.Schema do
           | Record.t()
           | Primitive.t()
           | Union.t()
+          | Reference.t()
 
   @type named_type ::
           AvroEnum.t()
           | Fixed.t()
           | Record.t()
+
+  typedstruct do
+    field :context, Context.t(), default: %Context{}
+    field :schema, schema_types()
+  end
 
   @type name :: String.t()
   @type namespace :: nil | String.t()
@@ -28,10 +34,6 @@ defmodule AvroEx.Schema do
   @type metadata :: %{String.t() => String.t()}
   @type alias :: name
 
-  @type t :: %__MODULE__{
-          context: Context.t(),
-          schema: term
-        }
   @type json_schema :: String.t()
 
   @spec encodable?(AvroEx.Schema.t(), any()) :: boolean()

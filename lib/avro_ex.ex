@@ -24,15 +24,18 @@ defmodule AvroEx do
   @type encoded_avro :: binary
 
   @doc """
-  Checks to see if the given data is encodable using the given schema. Great in
-  unit tests.
+  Checks to see if the given data is encodable using the given schema. Helpful for unit testing.
+
+      iex> AvroEx.encodable?(%Schema{schema: %Primitive{type: :string}}, "wut")
+      true
+
+      iex> AvroEx.encodable?(%Schema{schema: %Primitive{type: :string}}, 12345)
+      false
   """
+  @spec encodable?(AvroEx.Schema.t(), any) :: boolean
   defdelegate encodable?(schema, data), to: AvroEx.Schema
 
-  @spec parse_schema(Schema.json_schema()) ::
-          {:ok, Schema.t()}
-          | {:error, :unnamed_record}
-          | {:error, :invalid_json}
+  @spec parse_schema(Schema.json_schema()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
   @deprecated "Use AvroEx.decode_schema/1 instead"
   def parse_schema(json), do: decode_schema(json)
 
@@ -41,8 +44,19 @@ defmodule AvroEx do
   def parse_schema!(json), do: decode_schema!(json)
 
   @doc """
-  Given a JSON-formatted schema, parses the schema and returns a `%AvroEx.Schema{}` struct representing the schema.
-  Errors if the JSON is invalid, or if a named record is referenced that doesn't exist.
+  Given an Elixir or JSON-encoded schema, parses the schema and returns a `t:AvroEx.Schema.t/0` struct representing the schema.
+
+  Errors for invalid JSON, invalid schemas, and bad name references.
+
+  ## Examples
+
+      iex> AvroEx.decode_schema("string")
+      {:ok, %AvroEx.Schema{schema: %AvroEx.Schema.Primitive{type: :string}}}
+
+      iex> json= ~S({\"fields\":[{\"name\":\"a\",\"type\":\"string\"}],\"name\":\"my_type\",\"type\":\"record\"})
+      iex> {:ok, %Schema{schema: record}} = AvroEx.decode_schema(json)
+      iex> match?(%Record{}, record)
+      true
   """
   @spec decode_schema(term()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
   def decode_schema(schema) do
@@ -56,6 +70,12 @@ defmodule AvroEx do
   @doc """
   Same as `AvroEx.decode_schema/1`, but raises an exception on failure instead of
   returning an error tuple.
+
+  ## Examples
+
+      iex> AvroEx.decode_schema!("int")
+      %AvroEx.Schema{schema: %AvroEx.Schema.Primitive{type: :int}}
+
   """
   @spec decode_schema!(term()) :: Schema.t()
   def decode_schema!(schema) do
@@ -69,8 +89,13 @@ defmodule AvroEx do
   end
 
   @doc """
-  Given a %Schema{} and some data, takes the data and encodes it according to the schema.
-  Checks that the data is encodable before beginning encoding.
+  Given `t:AvroEx.Schema.t/0` and `term()`, takes the data and encodes it according to the schema.
+
+  ## Examples
+
+      iex> schema = AvroEx.decode_schema!("int")
+      iex> AvroEx.encode(schema, 1234)
+      {:ok, <<164, 19>>}
   """
   @spec encode(Schema.t(), term) ::
           {:ok, encoded_avro} | {:error, AvroEx.EncodeError.t() | Exception.t()}
@@ -80,6 +105,12 @@ defmodule AvroEx do
 
   @doc """
   Same as `encode/2`, but returns the encoded value directly and raises on errors
+
+  ## Examples
+
+      iex> schema = AvroEx.decode_schema!("boolean")
+      iex> AvroEx.encode!(schema, true)
+      <<1>>
   """
   @spec encode!(Schema.t(), term()) :: encoded_avro()
   def encode!(schema, data) do
@@ -91,6 +122,11 @@ defmodule AvroEx do
 
   @doc """
   Given an encoded message and its accompanying schema, decodes the message.
+
+      iex> schema = AvroEx.decode_schema!("boolean")
+      iex> AvroEx.decode(schema, <<1>>)
+      {:ok, true}
+
   """
   @spec decode(Schema.t(), encoded_avro) ::
           {:ok, term}
@@ -99,6 +135,7 @@ defmodule AvroEx do
     AvroEx.Decode.decode(schema, message)
   end
 
+  @deprecated "Use AvroEx.Schema.Context.lookup/2"
   @spec named_type(Schema.full_name(), Schema.t() | Context.t()) :: nil | Schema.schema_types()
   def named_type(name, %Schema{context: %Context{} = context}) when is_binary(name) do
     named_type(name, context)

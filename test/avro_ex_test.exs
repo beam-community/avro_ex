@@ -4,6 +4,8 @@ defmodule AvroEx.Schema.Primitive.Test do
   alias AvroEx.Schema
   alias AvroEx.Schema.{Primitive, Record, Record.Field, Reference, Union}
 
+  doctest AvroEx
+
   describe "lookup" do
     test "looks up a named type" do
       schema_json = ~S(["null", {"type": "record", "namespace": "me.cjpoll", "name": "LinkedList", "fields": [
@@ -31,10 +33,11 @@ defmodule AvroEx.Schema.Primitive.Test do
                      ]
                    } = record
                  ]
-               }
-             } = schema = AvroEx.decode_schema!(schema_json)
+               },
+               context: context
+             } = AvroEx.decode_schema!(schema_json)
 
-      assert AvroEx.named_type(type, schema) == record
+      assert AvroEx.Schema.Context.lookup(context, type) == record
     end
   end
 
