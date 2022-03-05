@@ -226,6 +226,18 @@ defmodule AvroEx.Decode.Test do
   end
 
   describe "decode logical types" do
+    test "date" do
+      assert %AvroEx.Schema{} = schema = AvroEx.decode_schema!(%{"type" => "int", "logicalType" => "date"})
+
+      date1 = ~D[1970-01-01]
+      assert {:ok, encoded} = AvroEx.encode(schema, date1)
+      assert {:ok, ^date1} = AvroEx.decode(schema, encoded)
+
+      date2 = ~D[1970-03-01]
+      assert {:ok, encoded} = AvroEx.encode(schema, date2)
+      assert {:ok, ^date2} = AvroEx.decode(schema, encoded)
+    end
+
     test "datetime micros" do
       now = DateTime.utc_now()
 

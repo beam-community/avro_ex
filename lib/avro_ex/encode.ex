@@ -11,6 +11,8 @@ defmodule AvroEx.Encode do
 
   @type reason :: term
 
+  @seconds_in_day 24 * 60 * 60
+
   @doc false
   @spec encode(Schema.t(), term) :: {:ok, AvroEx.encoded_avro()} | {:error, EncodeError.t() | Exception.t()}
   def encode(%Schema{context: %Context{} = context, schema: schema}, data) do
@@ -34,6 +36,18 @@ defmodule AvroEx.Encode do
 
   defp do_encode(%Primitive{type: :double}, %Context{}, double) when is_float(double),
     do: <<double::little-float-size(64)>>
+
+  defp do_encode(
+         %Primitive{type: :int, metadata: %{"logicalType" => "date"}} = schema,
+         %Context{},
+         %Date{} = date
+       ) do
+    date
+    |> DateTime.new!(~T[00:00:00])
+    |> DateTime.to_unix(:second)
+    |> Kernel.div(@seconds_in_day)
+    |> encode_integer(schema)
+  end
 
   defp do_encode(
          %Primitive{type: :long, metadata: %{"logicalType" => "timestamp-nanos"}} = schema,

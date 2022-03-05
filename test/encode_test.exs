@@ -66,6 +66,17 @@ defmodule AvroEx.Encode.Test do
     end
   end
 
+  describe "encode (logical types)" do
+    test "date" do
+      assert %AvroEx.Schema{} = schema = AvroEx.decode_schema!(%{"type" => "int", "logicalType" => "date"})
+      date1 = ~D[1970-01-01]
+      assert {:ok, <<0>>} = AvroEx.encode(schema, date1)
+
+      date2 = ~D[1970-03-01]
+      assert {:ok, "v"} = AvroEx.encode(schema, date2)
+    end
+  end
+
   describe "variable_integer_encode" do
     Macros.assert_result(@test_module, :variable_integer_encode, [0], <<0>>)
 

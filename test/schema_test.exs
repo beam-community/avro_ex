@@ -446,6 +446,9 @@ defmodule AvroEx.Schema.Test do
       refute @test_module.encodable?(schema, 1.5)
       refute @test_module.encodable?(schema, "AvroEx")
       refute @test_module.encodable?(schema, Time.utc_now())
+
+      assert schema = AvroEx.decode_schema!(%{"type" => "int", "logicalType" => "date"})
+      assert @test_module.encodable?(schema, Date.utc_today())
     end
   end
 
