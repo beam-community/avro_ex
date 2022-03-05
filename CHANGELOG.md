@@ -12,6 +12,7 @@
 ### Added
 * `AvroEx.encode!/2` - identical to `encode/2`, but raises
 * `AvroEx.decode_schema/1` and `AvroEx.decode_schema!/` in place of `AvroEx.parse_schema/1`
+* Support for encoding and decoding `date` logical times to and from `Date.t()`
 
 ### Deprecated
 * `AvroEx.parse_schema/1`
