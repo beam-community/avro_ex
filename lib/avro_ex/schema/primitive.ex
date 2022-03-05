@@ -3,12 +3,12 @@ defmodule AvroEx.Schema.Primitive do
   Functions for handling primitive types in Avro schemas
   """
 
-  use Ecto.{Schema, Type}
+  use TypedStruct
 
-  @primary_key false
+  alias AvroEx.{Schema}
 
   @type primitive ::
-          nil
+          :null
           | :boolean
           | :int
           | :long
@@ -17,49 +17,8 @@ defmodule AvroEx.Schema.Primitive do
           | :bytes
           | :string
 
-  embedded_schema do
-    field(:metadata, :map, default: %{})
-    # Actually a primitive - placeholder until I create a custom ecto type
-    field(:type, :string)
+  typedstruct do
+    field :metadata, Schema.metadata(), default: %{}
+    field :type, primitive(), enforce: true
   end
-
-  @type t :: %__MODULE__{
-          metadata: %{String.t() => String.t()},
-          type: primitive
-        }
-
-  @spec cast(any()) :: :error | {:ok, AvroEx.Schema.Primitive.t()}
-  def cast(%{"type" => type} = data) do
-    {:ok, %__MODULE__{type: type(type), metadata: Map.delete(data, "type")}}
-  end
-
-  def cast(nil) do
-    {:ok, %__MODULE__{type: type(nil)}}
-  end
-
-  def cast(type) when is_binary(type) do
-    {:ok, %__MODULE__{type: type(type)}}
-  end
-
-  def cast(_), do: :error
-
-  @spec load(any()) :: {:ok, any()}
-  def load(data), do: {:ok, data}
-
-  @spec dump(any()) :: {:ok, any()}
-  def dump(data), do: {:ok, data}
-
-  @spec type() :: :primitive
-  def type, do: :primitive
-
-  @spec type(nil | <<_::24, _::_*8>>) :: :boolean | :bytes | :double | :float | :int | :long | :null | :string
-  def type("null"), do: :null
-  def type(nil), do: :null
-  def type("boolean"), do: :boolean
-  def type("int"), do: :int
-  def type("long"), do: :long
-  def type("float"), do: :float
-  def type("double"), do: :double
-  def type("bytes"), do: :bytes
-  def type("string"), do: :string
 end

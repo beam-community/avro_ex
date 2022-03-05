@@ -31,7 +31,7 @@ defmodule AvroEx.Mixfile do
 
   defp deps do
     [
-      {:ecto, "~> 3.0"},
+      {:typed_struct, "~> 0.3.0", runtime: false},
       {:jason, "~> 1.1"},
       {:credo, "~> 1.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
@@ -45,8 +45,7 @@ defmodule AvroEx.Mixfile do
       source_url: @url,
       source_ref: "v#{@version}",
       groups_for_modules: [
-        Schema: ~r/Schema/,
-        Ecto: [AvroEx.Term]
+        Schema: ~r/Schema/
       ],
       extras: []
     ]
