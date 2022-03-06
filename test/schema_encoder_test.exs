@@ -22,7 +22,20 @@ defmodule AvroEx.Schema.EncoderTest do
       assert schema = AvroEx.decode_schema!(input)
       assert AvroEx.encode_schema(schema) == ~S({"name":"cool","symbols":["a"],"type":"enum"})
 
-      # TODO all fields
+      all = %{
+        "type" => "enum",
+        "symbols" => ["a"],
+        "name" => "cool",
+        "aliases" => ["alias"],
+        "doc" => "docs",
+        "extra" => "val",
+        "namespace" => "namespace"
+      }
+
+      assert schema = AvroEx.decode_schema!(all)
+
+      assert AvroEx.encode_schema(schema) ==
+               ~S({"aliases":["alias"],"doc":"docs","name":"cool","namespace":"namespace","symbols":["a"],"type":"enum","extra":"val"})
     end
 
     test "map" do
@@ -80,12 +93,41 @@ defmodule AvroEx.Schema.EncoderTest do
     end
 
     test "reference" do
+      input = %{
+        "type" => "record",
+        "name" => "LinkedList",
+        "fields" => [
+          %{"name" => "value", "type" => "int"},
+          %{"name" => "next", "type" => ["null", "LinkedList"]}
+        ]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      assert AvroEx.encode_schema(schema) ==
+               "{\"fields\":[{\"name\":\"value\",\"type\":{\"type\":\"int\"}},{\"name\":\"next\",\"type\":[{\"type\":\"null\"},\"LinkedList\"]}],\"name\":\"LinkedList\",\"type\":\"record\"}"
     end
 
     test "union" do
+      input = ["null", "int"]
+      assert schema = AvroEx.decode_schema!(input)
+      assert AvroEx.encode_schema(schema) == ~S([{"type":"null"},{"type":"int"}])
     end
 
     test "complex" do
+      input = %{
+        "type" => "record",
+        "name" => "complex",
+        "fields" => [
+          %{"name" => "a", "type" => ["null", %{"type" => "fixed", "name" => "double", "size" => 2}]},
+          %{"name" => "b", "type" => %{"type" => "map", "values" => "string"}}
+        ]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      assert AvroEx.encode_schema(schema) ==
+               "{\"fields\":[{\"name\":\"a\",\"type\":[{\"type\":\"null\"},{\"name\":\"double\",\"size\":2,\"type\":\"fixed\"}]},{\"name\":\"b\",\"type\":{\"type\":\"map\",\"values\":{\"type\":\"string\"}}}],\"name\":\"complex\",\"type\":\"record\"}"
     end
   end
 

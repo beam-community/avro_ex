@@ -283,13 +283,15 @@ defmodule AvroEx.Schema.ParserTest do
                  "type" => "enum",
                  "name" => "directions",
                  "namespace" => "beam.community",
+                 "extra" => "val",
                  "symbols" => ["east", "north", "south", "west"]
                })
 
       assert schema == %AvroEnum{
                name: "directions",
                namespace: "beam.community",
-               symbols: ["east", "north", "south", "west"]
+               symbols: ["east", "north", "south", "west"],
+               metadata: %{"extra" => "val"}
              }
 
       assert context == %Context{names: %{"beam.community.directions" => schema}}
@@ -822,6 +824,8 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
+    # Resolve in https://github.com/beam-community/avro_ex/issues/68
+    @tag skip: true
     test "extra fields on enum will raise" do
       message =
         "Unrecognized schema key `extra` for AvroEx.Schema.Enum in %{\"extra\" => \"value\", \"name\" => \"extra_enum\", \"symbols\" => [\"one\", \"two\"], \"type\" => \"enum\"}"

@@ -88,12 +88,12 @@ defmodule AvroEx.Schema.Parser do
     struct!(Union, possibilities: possibilities)
   end
 
-  defp do_parse(%{"type" => primitive} = type, _config) when primitive in @str_primitives do
+  defp do_parse(%{"type" => primitive} = type, config) when primitive in @str_primitives do
     data =
       type
       |> cast(Primitive, [])
       |> drop([:type])
-      |> extract_metadata()
+      |> extract_metadata(config)
 
     struct!(Primitive, Map.put(data, :type, String.to_existing_atom(primitive)))
   end
@@ -104,7 +104,7 @@ defmodule AvroEx.Schema.Parser do
       |> cast(AvroMap, [:values, :default])
       |> validate_required([:values])
       |> drop([:type])
-      |> extract_metadata()
+      |> extract_metadata(config)
       |> update_in([:values], &do_parse_ref(&1, config))
 
     struct!(AvroMap, data)
@@ -119,7 +119,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_name()
       |> validate_namespace()
       |> validate_aliases()
-      |> extract_data(config)
+      |> extract_metadata(config)
 
     # credo:disable-for-lines:11 Credo.Check.Warning.UnusedEnumOperation
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
@@ -143,7 +143,7 @@ defmodule AvroEx.Schema.Parser do
       |> cast(Array, [:items, :default])
       |> drop([:type])
       |> validate_required([:items])
-      |> extract_metadata()
+      |> extract_metadata(config)
       |> update_in([:items], &do_parse_ref(&1, config))
 
     struct!(Array, data)
@@ -173,7 +173,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_name()
       |> validate_namespace()
       |> validate_aliases()
-      |> extract_metadata()
+      |> extract_metadata(config)
 
     config = Map.update!(config, :namespace, &namespace(data, &1))
 
@@ -279,7 +279,7 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_default(schema), do: schema
 
-  defp extract_metadata({data, rest, _info}) do
+  defp extract_metadata({data, rest, _info}, _config) do
     Map.put(data, :metadata, rest)
   end
 
