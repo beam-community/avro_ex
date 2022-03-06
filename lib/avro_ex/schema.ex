@@ -103,10 +103,11 @@ defmodule AvroEx.Schema do
 
   @doc """
   The fully-qualified name of the type
-  iex> full_name(%Primitive{type: "string"})
-  nil
-  iex> full_name(%Record{name: "foo", namespace: "beam.community"})
-  "beam.community.foo"
+
+      iex> full_name(%Primitive{type: "string"})
+      nil
+      iex> full_name(%Record{name: "foo", namespace: "beam.community"})
+      "beam.community.foo"
   """
   @spec full_name(schema_types()) :: nil | String.t()
   def full_name(%struct{}) when struct in [Array, AvroMap, Primitive, Union], do: nil
@@ -135,26 +136,26 @@ defmodule AvroEx.Schema do
   @doc """
   The name of the schema type
 
-  iex> type_name(%Primitive{type: "string"})
-  "string"
+      iex> type_name(%Primitive{type: "string"})
+      "string"
 
-  iex> type_name(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}})
-  "timestamp-millis"
+      iex> type_name(%Primitive{type: :long, metadata: %{"logicalType" => "timestamp-millis"}})
+      "timestamp-millis"
 
-  iex> type_name(%AvroEnum{name: "switch", symbols: []})
-  "Enum<name=switch>"
+      iex> type_name(%AvroEnum{name: "switch", symbols: []})
+      "Enum<name=switch>"
 
-  iex> type_name(%Array{items: %Primitive{type: "integer"}})
-  "Array<items=integer>"
+      iex> type_name(%Array{items: %Primitive{type: "integer"}})
+      "Array<items=integer>"
 
-  iex> type_name(%Fixed{size: 2, name: "double"})
-  "Fixed<name=double, size=2>"
+      iex> type_name(%Fixed{size: 2, name: "double"})
+      "Fixed<name=double, size=2>"
 
-  iex> type_name(%Union{possibilities: [%Primitive{type: "string"}, %Primitive{type: "int"}]})
-  "Union<possibilities=string|int>"
+      iex> type_name(%Union{possibilities: [%Primitive{type: "string"}, %Primitive{type: "int"}]})
+      "Union<possibilities=string|int>"
 
-  iex> type_name(%Record{name: "foo"})
-  "Record<name=foo>"
+      iex> type_name(%Record{name: "foo"})
+      "Record<name=foo>"
   """
   @spec type_name(schema_types()) :: String.t()
   def type_name(%Primitive{type: :null}), do: "null"

@@ -103,7 +103,7 @@ defmodule AvroEx do
       iex> AvroEx.encode_schema(schema)
       ~S({"type":"int","logicalType":"date"})
 
-      iex> schema = AvroEx.decode_schema!("int")
+      iex> schema = AvroEx.decode_schema!(%{"type" => "int", "logicalType" => "date"})
       iex> AvroEx.encode_schema(schema, canonical: true)
       ~S("int")
 

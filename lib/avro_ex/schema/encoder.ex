@@ -2,7 +2,9 @@ defmodule AvroEx.Schema.Encoder do
   @doc false
 
   alias AvroEx.Schema
-  alias AvroEx.Schema.{Primitive, Reference, Union}
+  alias AvroEx.Schema.Enum, as: AvroEnum
+  alias AvroEx.Schema.Map, as: AvroMap
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Record.Field, Reference, Union}
 
   @spec encode(Schema.t(), Keyword.t()) :: String.t()
   def encode(%Schema{schema: schema}, opts) do
@@ -11,12 +13,12 @@ defmodule AvroEx.Schema.Encoder do
     do_encode(schema, config) |> Jason.encode!()
   end
 
-  defp do_encode(%Primitive{} = primitive, %{canonical?: true}) do
-    primitive.type
-  end
-
-  defp do_encode(%Primitive{} = primitive, _config) do
-    Map.put(primitive.metadata, :type, primitive.type)
+  defp do_encode(%Primitive{} = primitive, config) do
+    if config.canonical? do
+      primitive.type
+    else
+      Map.put(primitive.metadata, :type, primitive.type)
+    end
   end
 
   defp do_encode(%Reference{type: type}, _config) do
@@ -27,13 +29,15 @@ defmodule AvroEx.Schema.Encoder do
     Enum.map(possibilities, &do_encode(&1, config))
   end
 
+  defp do_encode(binary, _config) when is_binary(binary), do: binary
+
   defp do_encode(struct, config) do
     process(struct, config)
   end
 
   defp process(struct, config) do
     data =
-      for {k, v} <- Map.from_struct(struct), not empty?(v), keep?(k, config), into: %{} do
+      for {k, v} <- extract(struct), not empty?(v), keep?(k, config), into: %{} do
         case k do
           k when k in [:values, :items, :type] -> {k, do_encode(v, config)}
           :fields -> {k, Enum.map(v, &do_encode(&1, config))}
@@ -66,4 +70,18 @@ defmodule AvroEx.Schema.Encoder do
   end
 
   defp merge_metadata(data), do: data
+
+  defp extract(%struct{} = data) do
+    type =
+      case struct do
+        AvroEnum -> "enum"
+        AvroMap -> "map"
+        Array -> "array"
+        Fixed -> "fixed"
+        Record -> "record"
+        Field -> data.type
+      end
+
+    data |> Map.from_struct() |> Map.put(:type, type)
+  end
 end

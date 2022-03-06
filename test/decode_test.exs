@@ -1,5 +1,5 @@
 defmodule AvroEx.Decode.Test do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   @test_module AvroEx.Decode
 

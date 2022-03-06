@@ -1,5 +1,5 @@
 defmodule AvroEx.Schema.Test do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   require __MODULE__.Macros
   import __MODULE__.Macros
