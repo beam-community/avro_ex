@@ -6,13 +6,14 @@
 * `AvroEx.encode/2` now returns `{:error, AvroEx.EncodeError.t()}` in the case of an error
 * Primitive integer types now represented as `%Primitive{type: :int}` instead of `%Primitive{type: :integer}`
 * Primitive null types now represented as `%Primitive{type: :null}` instead of `%Primitive{type: nil}`
-* Schema parser now supports Elixir terms and will strictly validate the schema
+* Schema decoding now supports directly passing Elixir terms, will strictly validate the schema, and produce helpful error messages
 * Removed `Ecto` as a dependency
 
 ### Added
 * `AvroEx.encode!/2` - identical to `encode/2`, but raises
 * `AvroEx.decode_schema/1` and `AvroEx.decode_schema!/` in place of `AvroEx.parse_schema/1`
 * Support for encoding and decoding `date` logical times to and from `Date.t()`
+* Schema decoding adds a `:strict` option that will strictly validate the schema for unrecognized fields
 
 ### Deprecated
 * `AvroEx.parse_schema/1`
