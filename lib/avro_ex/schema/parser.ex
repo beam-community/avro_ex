@@ -29,10 +29,12 @@ defmodule AvroEx.Schema.Parser do
 
   def primitive?(_), do: false
 
-  @spec parse!(term()) :: AvroEx.Schema.t()
-  def parse!(data) do
+  @spec parse!(term(), Keyword.t()) :: AvroEx.Schema.t()
+  def parse!(data, opts \\ []) do
+    config = %{namespace: nil, strict?: Keyword.get(opts, :strict, false)}
+
     try do
-      type = do_parse(data)
+      type = do_parse(data, config)
       context = build_context(type, %Context{})
 
       %Schema{schema: type, context: context}
@@ -42,30 +44,28 @@ defmodule AvroEx.Schema.Parser do
   end
 
   # do_parse_ref/1 handles types that might be a %Reference{}
-  defp do_parse_ref(term, parent_namespace) do
+  defp do_parse_ref(term, config) do
     if is_binary(term) and not primitive?(term) do
       term
-      |> full_name(parent_namespace)
+      |> full_name(config.namespace)
       |> Reference.new()
     else
-      do_parse(term, parent_namespace)
+      do_parse(term, config)
     end
   end
 
-  defp do_parse(term, namespace \\ nil)
-
-  defp do_parse(nil, _parent_namespace), do: %Primitive{type: :null}
+  defp do_parse(nil, _config), do: %Primitive{type: :null}
 
   for p <- @primitives do
-    defp do_parse(unquote(to_string(p)), _parent_namespace) do
+    defp do_parse(unquote(to_string(p)), _config) do
       %Primitive{type: unquote(p)}
     end
   end
 
-  defp do_parse(list, parent_namespace) when is_list(list) do
+  defp do_parse(list, config) when is_list(list) do
     {possibilities, _} =
       Enum.map_reduce(list, MapSet.new(), fn type, seen ->
-        %struct{} = parsed = do_parse_ref(type, parent_namespace)
+        %struct{} = parsed = do_parse_ref(type, config)
 
         if match?(%Union{}, parsed) do
           error({:nested_union, parsed, list})
@@ -88,7 +88,7 @@ defmodule AvroEx.Schema.Parser do
     struct!(Union, possibilities: possibilities)
   end
 
-  defp do_parse(%{"type" => primitive} = type, _parent_namespace) when primitive in @str_primitives do
+  defp do_parse(%{"type" => primitive} = type, _config) when primitive in @str_primitives do
     data =
       type
       |> cast(Primitive, [])
@@ -98,19 +98,19 @@ defmodule AvroEx.Schema.Parser do
     struct!(Primitive, Map.put(data, :type, String.to_existing_atom(primitive)))
   end
 
-  defp do_parse(%{"type" => "map"} = map, parent_namespace) do
+  defp do_parse(%{"type" => "map"} = map, config) do
     data =
       map
       |> cast(AvroMap, [:values, :default])
       |> validate_required([:values])
       |> drop([:type])
       |> extract_metadata()
-      |> update_in([:values], &do_parse_ref(&1, parent_namespace))
+      |> update_in([:values], &do_parse_ref(&1, config))
 
     struct!(AvroMap, data)
   end
 
-  defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum, _parent_namespace) when is_list(symbols) do
+  defp do_parse(%{"type" => "enum", "symbols" => symbols} = enum, config) when is_list(symbols) do
     data =
       enum
       |> cast(AvroEnum, [:aliases, :doc, :name, :namespace, :symbols])
@@ -119,7 +119,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_name()
       |> validate_namespace()
       |> validate_aliases()
-      |> extract_data()
+      |> extract_data(config)
 
     # credo:disable-for-lines:11 Credo.Check.Warning.UnusedEnumOperation
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
@@ -137,19 +137,19 @@ defmodule AvroEx.Schema.Parser do
     struct!(AvroEnum, data)
   end
 
-  defp do_parse(%{"type" => "array"} = array, parent_namespace) do
+  defp do_parse(%{"type" => "array"} = array, config) do
     data =
       array
       |> cast(Array, [:items, :default])
       |> drop([:type])
       |> validate_required([:items])
       |> extract_metadata()
-      |> update_in([:items], &do_parse_ref(&1, parent_namespace))
+      |> update_in([:items], &do_parse_ref(&1, config))
 
     struct!(Array, data)
   end
 
-  defp do_parse(%{"type" => "fixed"} = fixed, _parent_namespace) do
+  defp do_parse(%{"type" => "fixed"} = fixed, config) do
     data =
       fixed
       |> cast(Fixed, [:aliases, :doc, :name, :namespace, :size])
@@ -159,12 +159,12 @@ defmodule AvroEx.Schema.Parser do
       |> validate_name()
       |> validate_namespace()
       |> validate_aliases()
-      |> extract_data()
+      |> extract_data(config)
 
     struct!(Fixed, data)
   end
 
-  defp do_parse(%{"type" => "record", "fields" => fields} = record, parent_namespace) when is_list(fields) do
+  defp do_parse(%{"type" => "record", "fields" => fields} = record, config) when is_list(fields) do
     data =
       record
       |> cast(Record, [:aliases, :doc, :name, :namespace, :fields])
@@ -175,26 +175,26 @@ defmodule AvroEx.Schema.Parser do
       |> validate_aliases()
       |> extract_metadata()
 
-    parent_namespace = namespace(data, parent_namespace)
+    config = Map.update!(config, :namespace, &namespace(data, &1))
 
     struct!(
       Record,
-      update_in(data[:fields], fn fields -> Enum.map(fields, &parse_fields(&1, parent_namespace)) end)
+      update_in(data[:fields], fn fields -> Enum.map(fields, &parse_fields(&1, config)) end)
     )
   end
 
-  defp do_parse(other, _parent_namespace) do
+  defp do_parse(other, _config) do
     error({:invalid_format, other})
   end
 
-  defp parse_fields(%{"type" => type} = field, parent_namespace) do
+  defp parse_fields(%{"type" => type} = field, config) do
     data =
       field
       |> cast(Record.Field, [:aliases, :doc, :default, :name, :namespace, :order, :type])
       |> validate_required([:name, :type])
       |> validate_aliases()
-      |> extract_data()
-      |> put_in([:type], do_parse_ref(type, parent_namespace))
+      |> extract_data(config)
+      |> put_in([:type], do_parse_ref(type, config))
 
     struct!(Record.Field, data)
   end
@@ -283,15 +283,10 @@ defmodule AvroEx.Schema.Parser do
     Map.put(data, :metadata, rest)
   end
 
-  defp extract_data({data, _rest, {_type, _raw}}) do
-    # This violates the spec, in the future we can
-    # make this an optional strict check
-    #
-    # https://github.com/beam-community/avro_ex/issues/63
-    #
-    # if rest != %{} do
-    #   error({:unrecognized_fields, Map.keys(rest), type, raw})
-    # end
+  defp extract_data({data, rest, {type, raw}}, config) do
+    if config.strict? and rest != %{} do
+      error({:unrecognized_fields, Map.keys(rest), type, raw})
+    end
 
     data
   end
