@@ -37,16 +37,19 @@ defmodule AvroEx do
 
   @spec parse_schema(Schema.json_schema()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
   @deprecated "Use AvroEx.decode_schema/1 instead"
-  def parse_schema(json), do: decode_schema(json)
+  def parse_schema(json), do: decode_schema(json, [])
 
   @spec parse_schema!(Schema.json_schema()) :: Schema.t() | no_return
   @deprecated "Use AvroEx.decode_schema!/1 instead"
-  def parse_schema!(json), do: decode_schema!(json)
+  def parse_schema!(json), do: decode_schema!(json, [])
 
   @doc """
   Given an Elixir or JSON-encoded schema, parses the schema and returns a `t:AvroEx.Schema.t/0` struct representing the schema.
 
   Errors for invalid JSON, invalid schemas, and bad name references.
+
+  ## Options
+  * `:strict` - whether to strictly validate the schema, defaults to `false`. Recommended to turn this on for locally owned schemas, but not for interop with external schemas.
 
   ## Examples
 
@@ -58,10 +61,10 @@ defmodule AvroEx do
       iex> match?(%Record{}, record)
       true
   """
-  @spec decode_schema(term()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
-  def decode_schema(schema) do
+  @spec decode_schema(term(), Keyword.t()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
+  def decode_schema(schema, opts \\ []) do
     try do
-      {:ok, decode_schema!(schema)}
+      {:ok, decode_schema!(schema, opts)}
     rescue
       error -> {:error, error}
     end
@@ -77,14 +80,14 @@ defmodule AvroEx do
       %AvroEx.Schema{schema: %AvroEx.Schema.Primitive{type: :int}}
 
   """
-  @spec decode_schema!(term()) :: Schema.t()
-  def decode_schema!(schema) do
+  @spec decode_schema!(term(), Keyword.t()) :: Schema.t()
+  def decode_schema!(schema, opts \\ []) do
     if is_binary(schema) and not Schema.Parser.primitive?(schema) do
       schema
       |> Jason.decode!()
-      |> Schema.Parser.parse!()
+      |> Schema.Parser.parse!(opts)
     else
-      Schema.Parser.parse!(schema)
+      Schema.Parser.parse!(schema, opts)
     end
   end
 

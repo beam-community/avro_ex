@@ -194,27 +194,6 @@ defmodule AvroEx.Schema.ParserTest do
         })
       end
     end
-
-    # This will violate the spec, so instead we will add an optional strict parsing option in the future
-    # https://github.com/beam-community/avro_ex/issues/63
-    @tag skip: true
-    test "trying to use a logicalType on a field will raise" do
-      message =
-        "Unrecognized schema key `logicalType` for AvroEx.Schema.Record.Field in %{\"logicalType\" => \"timestamp-millis\", \"name\" => \"timestamp\", \"type\" => \"long\"}"
-
-      assert_raise AvroEx.Schema.DecodeError, message, fn ->
-        Parser.parse!(%{
-          "type" => "record",
-          "name" => "analytics",
-          "fields" => [
-            %{"name" => "timestamp", "type" => "long", "logicalType" => "timestamp-millis"}
-          ]
-        })
-      end
-    end
-
-    test "aliases" do
-    end
   end
 
   describe "unions" do
@@ -821,6 +800,60 @@ defmodule AvroEx.Schema.ParserTest do
                  %Record.Field{name: "two", type: %Reference{type: "beam.community.alias"}}
                ]
              }
+    end
+  end
+
+  describe "strict parsing" do
+    test "logicalType on a field will raise" do
+      message =
+        "Unrecognized schema key `logicalType` for AvroEx.Schema.Record.Field in %{\"logicalType\" => \"timestamp-millis\", \"name\" => \"timestamp\", \"type\" => \"long\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(
+          %{
+            "type" => "record",
+            "name" => "analytics",
+            "fields" => [
+              %{"name" => "timestamp", "type" => "long", "logicalType" => "timestamp-millis"}
+            ]
+          },
+          strict: true
+        )
+      end
+    end
+
+    test "extra fields on enum will raise" do
+      message =
+        "Unrecognized schema key `extra` for AvroEx.Schema.Enum in %{\"extra\" => \"value\", \"name\" => \"extra_enum\", \"symbols\" => [\"one\", \"two\"], \"type\" => \"enum\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(
+          %{
+            "type" => "enum",
+            "name" => "extra_enum",
+            "symbols" => ["one", "two"],
+            "extra" => "value"
+          },
+          strict: true
+        )
+      end
+    end
+
+    test "extra fields on fixed will raise" do
+      message =
+        "Unrecognized schema key `extra` for AvroEx.Schema.Fixed in %{\"extra\" => \"value\", \"name\" => \"double\", \"size\" => 2, \"type\" => \"fixed\"}"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!(
+          %{
+            "type" => "fixed",
+            "size" => 2,
+            "name" => "double",
+            "extra" => "value"
+          },
+          strict: true
+        )
+      end
     end
   end
 end
