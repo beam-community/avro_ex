@@ -72,7 +72,7 @@ defmodule AvroEx.Schema.ParserTest do
                  "aliases" => ["first_last"],
                  "namespace" => "beam.community",
                  "fields" => [
-                   %{"name" => "first", "type" => "string", "default" => "bob"},
+                   %{"name" => "first", "type" => "string", "default" => "bob", "extra" => "val"},
                    %{"name" => "last", "type" => "string"}
                  ]
                })
@@ -82,7 +82,12 @@ defmodule AvroEx.Schema.ParserTest do
                namespace: "beam.community",
                aliases: ["first_last"],
                fields: [
-                 %Record.Field{name: "first", type: %Primitive{type: :string}, default: "bob"},
+                 %Record.Field{
+                   name: "first",
+                   type: %Primitive{type: :string},
+                   default: "bob",
+                   metadata: %{"extra" => "val"}
+                 },
                  %Record.Field{name: "last", type: %Primitive{type: :string}}
                ]
              }
@@ -429,7 +434,8 @@ defmodule AvroEx.Schema.ParserTest do
                  "doc" => "two numbers",
                  "aliases" => ["dos_nums"],
                  "type" => "fixed",
-                 "size" => 2
+                 "size" => 2,
+                 "extra" => "val"
                })
 
       assert schema == %Fixed{
@@ -437,7 +443,8 @@ defmodule AvroEx.Schema.ParserTest do
                namespace: "one.two.three",
                size: 2,
                doc: "two numbers",
-               aliases: ["dos_nums"]
+               aliases: ["dos_nums"],
+               metadata: %{"extra" => "val"}
              }
 
       assert context == %Context{
@@ -806,6 +813,8 @@ defmodule AvroEx.Schema.ParserTest do
   end
 
   describe "strict parsing" do
+    # Resolve in https://github.com/beam-community/avro_ex/issues/68
+    @tag skip: true
     test "logicalType on a field will raise" do
       message =
         "Unrecognized schema key `logicalType` for AvroEx.Schema.Record.Field in %{\"logicalType\" => \"timestamp-millis\", \"name\" => \"timestamp\", \"type\" => \"long\"}"
@@ -843,6 +852,7 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
+    @tag skip: true
     test "extra fields on fixed will raise" do
       message =
         "Unrecognized schema key `extra` for AvroEx.Schema.Fixed in %{\"extra\" => \"value\", \"name\" => \"double\", \"size\" => 2, \"type\" => \"fixed\"}"

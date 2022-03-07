@@ -46,12 +46,15 @@ defmodule AvroEx.Schema.EncoderTest do
       assert AvroEx.encode_schema(schema) == ~S({"type":"map","values":{"type":"int"}})
 
       # complex map
-      input = %{"type" => "map", "values" => ["null", "int"]}
+      complex = %{"type" => "map", "values" => ["null", "int"]}
 
-      assert schema = AvroEx.decode_schema!(input)
+      assert schema = AvroEx.decode_schema!(complex)
       assert AvroEx.encode_schema(schema) == ~S({"type":"map","values":[{"type":"null"},{"type":"int"}]})
 
-      # TODO all fields
+      all = %{"type" => "map", "values" => "int", "default" => %{"a" => 1}, "extra" => "val"}
+
+      assert schema = AvroEx.decode_schema!(all)
+      assert AvroEx.encode_schema(schema) == ~S({"default":{"a":1},"type":"map","values":{"type":"int"},"extra":"val"})
     end
 
     test "record" do
@@ -64,14 +67,36 @@ defmodule AvroEx.Schema.EncoderTest do
                "{\"fields\":[{\"name\":\"a\",\"type\":{\"type\":\"string\"}}],\"name\":\"test\",\"type\":\"record\"}"
 
       # Complex record
-      input = %{"type" => "record", "name" => "test", "fields" => [%{"name" => "a", "type" => ["int", "string"]}]}
+      complex = %{"type" => "record", "name" => "test", "fields" => [%{"name" => "a", "type" => ["int", "string"]}]}
 
-      assert schema = AvroEx.decode_schema!(input)
+      assert schema = AvroEx.decode_schema!(complex)
 
       assert AvroEx.encode_schema(schema) ==
                "{\"fields\":[{\"name\":\"a\",\"type\":[{\"type\":\"int\"},{\"type\":\"string\"}]}],\"name\":\"test\",\"type\":\"record\"}"
 
-      # TODO all fields
+      all = %{
+        "type" => "record",
+        "name" => "all",
+        "namespace" => "beam.community",
+        "doc" => "docs!",
+        "aliases" => ["a_map"],
+        "extra" => "val",
+        "fields" => [
+          %{
+            "name" => "one",
+            "type" => "int",
+            "doc" => "field",
+            "default" => 1,
+            "aliases" => ["first"],
+            "meta" => "meta"
+          }
+        ]
+      }
+
+      assert schema = AvroEx.decode_schema!(all)
+
+      assert AvroEx.encode_schema(schema) ==
+               "{\"aliases\":[\"a_map\"],\"doc\":\"docs!\",\"fields\":[{\"aliases\":[\"first\"],\"default\":1,\"doc\":\"field\",\"name\":\"one\",\"type\":{\"type\":\"int\"},\"meta\":\"meta\"}],\"name\":\"all\",\"namespace\":\"beam.community\",\"type\":\"record\",\"extra\":\"val\"}"
     end
 
     test "array" do
@@ -81,7 +106,10 @@ defmodule AvroEx.Schema.EncoderTest do
       assert schema = AvroEx.decode_schema!(input)
       assert AvroEx.encode_schema(schema) == ~S({"items":{"type":"int"},"type":"array"})
 
-      # TODO all fields
+      all = %{"type" => "array", "items" => "int", "default" => [1, 2, 3]}
+
+      assert schema = AvroEx.decode_schema!(all)
+      assert AvroEx.encode_schema(schema) == ~S({"default":[1,2,3],"items":{"type":"int"},"type":"array"})
     end
 
     test "fixed" do
@@ -90,6 +118,21 @@ defmodule AvroEx.Schema.EncoderTest do
 
       assert schema = AvroEx.decode_schema!(input)
       assert AvroEx.encode_schema(schema) == ~S({"name":"double","size":2,"type":"fixed"})
+
+      all = %{
+        "type" => "fixed",
+        "name" => "double",
+        "namespace" => "beam.community",
+        "aliases" => ["two"],
+        "doc" => "docs",
+        "size" => 2,
+        "extra" => "val"
+      }
+
+      assert schema = AvroEx.decode_schema!(all)
+
+      assert AvroEx.encode_schema(schema) ==
+               "{\"aliases\":[\"two\"],\"doc\":\"docs\",\"name\":\"double\",\"namespace\":\"beam.community\",\"size\":2,\"type\":\"fixed\",\"extra\":\"val\"}"
     end
 
     test "reference" do
@@ -132,5 +175,34 @@ defmodule AvroEx.Schema.EncoderTest do
   end
 
   describe "canonical encoding" do
+    test "it collapses primitives" do
+      input = %{"type" => "int", "logicalType" => "date"}
+
+      assert schema = AvroEx.decode_schema!(input)
+      assert AvroEx.encode_schema(schema, canonical: true) == ~S("int")
+    end
+
+    test "it replaces names with full names, drops namespace" do
+      input = %{
+        "type" => "record",
+        "name" => "MyRecord",
+        "namespace" => "beam.community",
+        "fields" => [
+          %{"name" => "a", "type" => %{"name" => "MyFixed", "type" => "fixed", "size" => 10}},
+          %{
+            "name" => "b",
+            "type" => %{"name" => "MyEnum", "type" => "enum", "namespace" => "java.community", "symbols" => ["one"]}
+          }
+        ]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      assert AvroEx.encode_schema(schema, canonical: true) ==
+               ~S({"name":"beam.community.MyRecord","type":"record","fields":[{"name":"a","type":{"name":"beam.community.MyFixed","type":"fixed","size":10}},{"name":"b","type":{"name":"java.community.MyEnum","type":"enum","symbols":["one"]}}]})
+    end
+
+    test "the order fields is name, type, fields, symbols, items, values, size" do
+    end
   end
 end

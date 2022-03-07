@@ -159,7 +159,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_name()
       |> validate_namespace()
       |> validate_aliases()
-      |> extract_data(config)
+      |> extract_metadata(config)
 
     struct!(Fixed, data)
   end
@@ -193,7 +193,7 @@ defmodule AvroEx.Schema.Parser do
       |> cast(Record.Field, [:aliases, :doc, :default, :name, :namespace, :order, :type])
       |> validate_required([:name, :type])
       |> validate_aliases()
-      |> extract_data(config)
+      |> extract_metadata(config)
       |> put_in([:type], do_parse_ref(type, config))
 
     struct!(Record.Field, data)
@@ -283,13 +283,15 @@ defmodule AvroEx.Schema.Parser do
     Map.put(data, :metadata, rest)
   end
 
-  defp extract_data({data, rest, {type, raw}}, config) do
-    if config.strict? and rest != %{} do
-      error({:unrecognized_fields, Map.keys(rest), type, raw})
-    end
+  # https://github.com/beam-community/avro_ex/issues/68
+  #
+  # defp extract_data({data, rest, {type, raw}}, config) do
+  #   if config.strict? and rest != %{} do
+  #     error({:unrecognized_fields, Map.keys(rest), type, raw})
+  #   end
 
-    data
-  end
+  #   data
+  # end
 
   defp drop({data, rest, info}, keys) do
     {data, Map.drop(rest, Enum.map(keys, &to_string/1)), info}
