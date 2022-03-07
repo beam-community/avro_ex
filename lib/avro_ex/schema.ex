@@ -198,8 +198,8 @@ defmodule AvroEx.Schema do
       iex> type_name(%AvroEnum{name: "switch", symbols: []})
       "Enum<name=switch>"
 
-      iex> type_name(%Array{items: %Primitive{type: "integer"}})
-      "Array<items=integer>"
+      iex> type_name(%Array{items: %Primitive{type: "int"}})
+      "Array<items=int>"
 
       iex> type_name(%Fixed{size: 2, name: "double"})
       "Fixed<name=double, size=2>"
