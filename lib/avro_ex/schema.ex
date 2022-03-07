@@ -117,7 +117,7 @@ defmodule AvroEx.Schema do
       iex> namespace(%Record{name: "qualified.MyRecord", namespace: "inner"}, "namespace")
       "qualified"
   """
-  @spec namespace(t(), namespace()) :: namespace()
+  @spec namespace(schema_types(), namespace()) :: namespace()
   def namespace(schema, parent_namespace \\ nil)
   def namespace(%Record.Field{}, parent_namespace), do: parent_namespace
 
