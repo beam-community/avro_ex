@@ -1,7 +1,7 @@
 defmodule AvroEx.Encode.Test do
   require __MODULE__.Macros
   alias __MODULE__.Macros
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   @test_module AvroEx.Encode
 

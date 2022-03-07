@@ -92,6 +92,28 @@ defmodule AvroEx do
   end
 
   @doc """
+  Encodes the given schema to JSON
+
+  ## Options
+  * `canonical` - Encodes the schema into its [Parsing Canonical Form](https://avro.apache.org/docs/current/spec.html#Parsing+Canonical+Form+for+Schemas), default `false`
+
+  ## Examples
+
+      iex> schema = AvroEx.decode_schema!(%{"type" => "int", "logicalType" => "date"})
+      iex> AvroEx.encode_schema(schema)
+      ~S({"type":"int","logicalType":"date"})
+
+      iex> schema = AvroEx.decode_schema!(%{"type" => "int", "logicalType" => "date"})
+      iex> AvroEx.encode_schema(schema, canonical: true)
+      ~S("int")
+
+  """
+  @spec encode_schema(Schema.t(), Keyword.t()) :: String.t()
+  def encode_schema(%Schema{} = schema, opts \\ []) do
+    AvroEx.Schema.Encoder.encode(schema, opts)
+  end
+
+  @doc """
   Given `t:AvroEx.Schema.t/0` and `term()`, takes the data and encodes it according to the schema.
 
   ## Examples
