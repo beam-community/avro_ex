@@ -1,5 +1,6 @@
 defmodule AvroEx.Schema.Parser do
-  @doc false
+  @moduledoc false
+
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
@@ -29,7 +30,7 @@ defmodule AvroEx.Schema.Parser do
 
   def primitive?(_), do: false
 
-  @spec parse!(term(), Keyword.t()) :: AvroEx.Schema.t()
+  @spec parse!(term(), Keyword.t()) :: Schema.t()
   def parse!(data, opts \\ []) do
     config = %{namespace: nil, strict?: Keyword.get(opts, :strict, false)}
 
@@ -39,7 +40,7 @@ defmodule AvroEx.Schema.Parser do
 
       %Schema{schema: type, context: context}
     catch
-      :throw, %AvroEx.Schema.DecodeError{} = err -> raise err
+      :throw, %Schema.DecodeError{} = err -> raise err
     end
   end
 
@@ -47,7 +48,7 @@ defmodule AvroEx.Schema.Parser do
   defp do_parse_ref(term, config) do
     if is_binary(term) and not primitive?(term) do
       term
-      |> full_name(config.namespace)
+      |> Schema.full_name(config.namespace)
       |> Reference.new()
     else
       do_parse(term, config)
@@ -175,7 +176,7 @@ defmodule AvroEx.Schema.Parser do
       |> validate_aliases()
       |> extract_metadata(config)
 
-    config = Map.update!(config, :namespace, &namespace(data, &1))
+    config = Map.update!(config, :namespace, &Schema.namespace(data, &1))
 
     struct!(
       Record,
@@ -300,7 +301,7 @@ defmodule AvroEx.Schema.Parser do
   defp build_context(type, context, namespace \\ nil)
 
   defp build_context(type, context, namespace) do
-    namespace = namespace(type, namespace)
+    namespace = Schema.namespace(type, namespace)
     context = capture_context(type, context, namespace)
 
     type
@@ -351,7 +352,7 @@ defmodule AvroEx.Schema.Parser do
   defp capture_context(%Record.Field{}, context, _namespace), do: context
 
   defp capture_context(%{name: _name} = schema, context, namespace) do
-    name = full_name(schema, namespace)
+    name = Schema.full_name(schema, namespace)
 
     if Map.has_key?(context.names, name) do
       error({:duplicate_name, name, schema})
@@ -387,7 +388,7 @@ defmodule AvroEx.Schema.Parser do
   defp aliases(%{aliases: aliases, namespace: namespace}, parent_namespace)
        when is_list(aliases) do
     Enum.map(aliases, fn name ->
-      full_name(name, namespace || parent_namespace)
+      Schema.full_name(name, namespace || parent_namespace)
     end)
   end
 
@@ -408,59 +409,4 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp valid_full_name?(_), do: false
-
-  # split a full name into its parts
-  defp split_name(string) do
-    pattern = :binary.compile_pattern(".")
-    String.split(string, pattern)
-  end
-
-  defp namespace(schema, parent_namespace)
-  defp namespace(%Record.Field{}, parent_namespace), do: parent_namespace
-
-  defp namespace(%{name: name, namespace: namespace}, parent_namespace) do
-    split_name = split_name(name)
-
-    cond do
-      # if it has at least two values, its a fullname
-      # e.g. "namespace.Name" would be `["namespace", "Name"]`
-      match?([_, _ | _], split_name) ->
-        split_name |> :lists.droplast() |> Enum.join(".")
-
-      is_nil(namespace) ->
-        parent_namespace
-
-      true ->
-        namespace
-    end
-  end
-
-  defp namespace(_schema, parent_namespace), do: parent_namespace
-
-  defp full_name(%{name: name, namespace: namespace}, parent_namespace) do
-    if is_nil(namespace) do
-      full_name(name, parent_namespace)
-    else
-      full_name(name, namespace)
-    end
-  end
-
-  defp full_name(%Record.Field{name: name}, _parent_namespace) do
-    name
-  end
-
-  defp full_name(name, namespace) when is_binary(name) do
-    cond do
-      is_nil(namespace) ->
-        name
-
-      String.contains?(name, ".") ->
-        name
-
-      true ->
-        "#{namespace}.#{name}"
-    end
-  end
-
-  defp full_name(_name, _namespace), do: nil
 end

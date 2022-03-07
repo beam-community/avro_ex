@@ -1,5 +1,7 @@
 defmodule AvroEx.Schema.Encoder do
-  @doc false
+  @moduledoc false
+
+  require Jason.Helpers
 
   alias AvroEx.Schema
   alias AvroEx.Schema.Enum, as: AvroEnum
@@ -8,7 +10,7 @@ defmodule AvroEx.Schema.Encoder do
 
   @spec encode(Schema.t(), Keyword.t()) :: String.t()
   def encode(%Schema{schema: schema}, opts) do
-    config = %{canonical?: Keyword.get(opts, :canonical, false)}
+    config = %{canonical?: Keyword.get(opts, :canonical, false), namespace: Schema.namespace(schema)}
 
     schema |> do_encode(config) |> Jason.encode!()
   end
@@ -35,7 +37,9 @@ defmodule AvroEx.Schema.Encoder do
     process(struct, config)
   end
 
-  defp process(struct, config) do
+  defp process(%struct_type{} = struct, config) do
+    config = update_in(config.namespace, &Schema.namespace(struct, &1))
+
     data =
       for {k, v} <- extract(struct), not empty?(v), keep?(k, config), into: %{} do
         case k do
@@ -46,7 +50,12 @@ defmodule AvroEx.Schema.Encoder do
       end
 
     if config.canonical? do
-      Map.delete(data, :metadata)
+      full_name = Schema.full_name(struct, config.namespace)
+
+      data
+      |> Map.put(:name, full_name)
+      |> Map.delete(:metadata)
+      |> order_json_keys(struct_type)
     else
       merge_metadata(data)
     end
@@ -83,5 +92,28 @@ defmodule AvroEx.Schema.Encoder do
       end
 
     data |> Map.from_struct() |> Map.put(:type, type)
+  end
+
+  # name, type, fields, symbols, items, values, size
+  defp order_json_keys(data, type) do
+    case type do
+      Array ->
+        Jason.Helpers.json_map_take(data, [:type, :items])
+
+      AvroEnum ->
+        Jason.Helpers.json_map_take(data, [:name, :type, :symbols])
+
+      AvroMap ->
+        Jason.Helpers.json_map_take(data, [:type, :values])
+
+      Fixed ->
+        Jason.Helpers.json_map_take(data, [:name, :type, :size])
+
+      Field ->
+        Jason.Helpers.json_map_take(data, [:name, :type])
+
+      Record ->
+        Jason.Helpers.json_map_take(data, [:name, :type, :fields])
+    end
   end
 end

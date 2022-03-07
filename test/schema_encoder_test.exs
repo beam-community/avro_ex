@@ -203,6 +203,26 @@ defmodule AvroEx.Schema.EncoderTest do
     end
 
     test "the order fields is name, type, fields, symbols, items, values, size" do
+      input = %{
+        "type" => "record",
+        "name" => "MyRecord",
+        "namespace" => "beam.community",
+        "fields" => [
+          %{"name" => "a", "type" => %{"name" => "MyFixed", "type" => "fixed", "size" => 10}},
+          %{
+            "name" => "b",
+            "type" => %{"name" => "MyEnum", "type" => "enum", "namespace" => "java.community", "symbols" => ["one"]}
+          },
+          %{"name" => "c", "type" => %{"type" => "map", "values" => "int"}},
+          %{"name" => "d", "type" => %{"type" => "array", "items" => "int"}},
+          %{"name" => "e", "type" => "int"}
+        ]
+      }
+
+      assert schema = AvroEx.decode_schema!(input, strict: true)
+
+      assert AvroEx.encode_schema(schema, canonical: true) ==
+               "{\"name\":\"beam.community.MyRecord\",\"type\":\"record\",\"fields\":[{\"name\":\"a\",\"type\":{\"name\":\"beam.community.MyFixed\",\"type\":\"fixed\",\"size\":10}},{\"name\":\"b\",\"type\":{\"name\":\"java.community.MyEnum\",\"type\":\"enum\",\"symbols\":[\"one\"]}},{\"name\":\"c\",\"type\":{\"type\":\"map\",\"values\":\"int\"}},{\"name\":\"d\",\"type\":{\"type\":\"array\",\"items\":\"int\"}},{\"name\":\"e\",\"type\":\"int\"}]}"
     end
   end
 end
