@@ -8,14 +8,15 @@
 * Primitive null types now represented as `%Primitive{type: :null}` instead of `%Primitive{type: nil}`
 * Schema decoding now supports directly passing Elixir terms, will strictly validate the schema, and produce helpful error messages
 * Removed `Ecto` as a dependency
-* `AvroEx.full_name/2` - reverses the order of the arguments, accepting a Schema type or name, followed by the namespace
+* `AvroEx.Schema.full_name/2` - reverses the order of the arguments, accepting a Schema type or name, followed by the namespace
 
 ### Added
-* `AvroEx.encode!/2` - identical to `encode/2`, but raises
+* `AvroEx.encode!/2` - identical to `encode/2`, but returns raw value. Raises on error
+* `AvroEx.decode!/2` - identical to `decode/2`, but returns raw value. Raises on error
 * `AvroEx.decode_schema/1` and `AvroEx.decode_schema!/` in place of `AvroEx.parse_schema/1`
 * Support for encoding and decoding `date` logical times to and from `Date.t()`
 * Schema decoding adds a `:strict` option that will strictly validate the schema for unrecognized fields
-* `AvroEx.encode_schema/2` - encode a `AvroEx.Schema.t()` back to JSON. Supports encoding the schema back to [Parsing Canonical Form](https://avro.apache.org/docs/current/spec.html#Parsing+Canonical+Form+for+Schemas)
+* `AvroEx.encode_schema/2` - encode a `AvroEx.Schema.t()` back to JSON. Supports encoding the schema to [Parsing Canonical Form](https://avro.apache.org/docs/current/spec.html#Parsing+Canonical+Form+for+Schemas)
 * `AvroEx.Schema.namespace/2` - Returns the namespace of the given Schema type
 
 ### Deprecated
