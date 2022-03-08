@@ -280,19 +280,23 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_default(schema), do: schema
 
-  defp extract_metadata({data, rest, _info}, _config) do
-    Map.put(data, :metadata, rest)
+  defp extract_metadata({data, rest, {type, raw}}, config) do
+    if config.strict? and drop_metadata(rest, type) != %{} do
+      error({:unrecognized_fields, Map.keys(rest), type, raw})
+    else
+      Map.put(data, :metadata, rest)
+    end
   end
 
-  # https://github.com/beam-community/avro_ex/issues/68
-  #
-  # defp extract_data({data, rest, {type, raw}}, config) do
-  #   if config.strict? and rest != %{} do
-  #     error({:unrecognized_fields, Map.keys(rest), type, raw})
-  #   end
+  # Drops known metadata fields
+  defp drop_metadata(%{"logicalType" => logical} = data, type) when type in [Primitive, Fixed] do
+    case logical do
+      "decimal" -> Map.drop(data, ["logicalType", "precision", "scale"])
+      _ -> Map.delete(data, "logicalType")
+    end
+  end
 
-  #   data
-  # end
+  defp drop_metadata(data, _type), do: data
 
   defp drop({data, rest, info}, keys) do
     {data, Map.drop(rest, Enum.map(keys, &to_string/1)), info}

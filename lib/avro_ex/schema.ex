@@ -158,11 +158,7 @@ defmodule AvroEx.Schema do
   def full_name(schema, parent_namespace \\ nil)
 
   def full_name(%{name: name, namespace: namespace}, parent_namespace) do
-    if is_nil(namespace) do
-      full_name(name, parent_namespace)
-    else
-      full_name(name, namespace)
-    end
+    full_name(name, namespace || parent_namespace)
   end
 
   def full_name(%Record.Field{name: name}, _parent_namespace) do

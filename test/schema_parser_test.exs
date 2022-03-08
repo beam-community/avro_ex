@@ -813,8 +813,6 @@ defmodule AvroEx.Schema.ParserTest do
   end
 
   describe "strict parsing" do
-    # Resolve in https://github.com/beam-community/avro_ex/issues/68
-    @tag skip: true
     test "logicalType on a field will raise" do
       message =
         "Unrecognized schema key `logicalType` for AvroEx.Schema.Record.Field in %{\"logicalType\" => \"timestamp-millis\", \"name\" => \"timestamp\", \"type\" => \"long\"}"
@@ -833,8 +831,6 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
-    # Resolve in https://github.com/beam-community/avro_ex/issues/68
-    @tag skip: true
     test "extra fields on enum will raise" do
       message =
         "Unrecognized schema key `extra` for AvroEx.Schema.Enum in %{\"extra\" => \"value\", \"name\" => \"extra_enum\", \"symbols\" => [\"one\", \"two\"], \"type\" => \"enum\"}"
@@ -852,7 +848,6 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
-    @tag skip: true
     test "extra fields on fixed will raise" do
       message =
         "Unrecognized schema key `extra` for AvroEx.Schema.Fixed in %{\"extra\" => \"value\", \"name\" => \"double\", \"size\" => 2, \"type\" => \"fixed\"}"
