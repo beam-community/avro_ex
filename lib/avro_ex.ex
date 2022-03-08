@@ -157,7 +157,7 @@ defmodule AvroEx do
   """
   @spec decode(Schema.t(), encoded_avro) ::
           {:ok, term}
-          | {:error, term()}
+          | {:error, AvroEx.DecodeError.t()}
   def decode(schema, message) do
     case AvroEx.Decode.decode(schema, message) do
       {:ok, value, _} -> {:ok, value}
@@ -177,6 +177,7 @@ defmodule AvroEx do
       iex> AvroEx.decode!(schema, encoded)
       "hello"
   """
+  @spec decode!(Schema.t(), encoded_avro()) :: term()
   def decode!(schema, message) do
     case AvroEx.Decode.decode(schema, message) do
       {:ok, value, _} -> value

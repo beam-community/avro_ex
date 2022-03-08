@@ -2,7 +2,7 @@ defmodule AvroEx.Decode do
   @moduledoc false
 
   require Bitwise
-  alias AvroEx.DecodeError
+  alias AvroEx.{DecodeError}
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Record.Field
