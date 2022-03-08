@@ -11,7 +11,8 @@
 * `AvroEx.full_name/2` - reverses the order of the arguments, accepting a Schema type or name, followed by the namespace
 
 ### Added
-* `AvroEx.encode!/2` - identical to `encode/2`, but raises
+* `AvroEx.encode!/2` - identical to `encode/2`, but returns raw value. Raises on error
+* `AvroEx.decode!/2` - identical to `decode/2`, but returns raw value. Raises on error
 * `AvroEx.decode_schema/1` and `AvroEx.decode_schema!/` in place of `AvroEx.parse_schema/1`
 * Support for encoding and decoding `date` logical times to and from `Date.t()`
 * Schema decoding adds a `:strict` option that will strictly validate the schema for unrecognized fields

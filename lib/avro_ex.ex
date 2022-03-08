@@ -129,7 +129,9 @@ defmodule AvroEx do
   end
 
   @doc """
-  Same as `encode/2`, but returns the encoded value directly and raises on errors
+  Same as `encode/2`, but returns the encoded value directly.
+
+  Raises `t:AvroEx.EncodeError.t/0` on error.
 
   ## Examples
 
@@ -157,7 +159,29 @@ defmodule AvroEx do
           {:ok, term}
           | {:error, term()}
   def decode(schema, message) do
-    AvroEx.Decode.decode(schema, message)
+    case AvroEx.Decode.decode(schema, message) do
+      {:ok, value, _} -> {:ok, value}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Same as decode/2, but returns raw decoded value.
+
+  Raises `t:AvroEx.DecodeError.t/0` on error.
+
+  ## Examples
+
+      iex> schema = AvroEx.decode_schema!("string")
+      iex> encoded = AvroEx.encode!(schema, "hello")
+      iex> AvroEx.decode!(schema, encoded)
+      "hello"
+  """
+  def decode!(schema, message) do
+    case AvroEx.Decode.decode(schema, message) do
+      {:ok, value, _} -> value
+      {:error, error} -> raise error
+    end
   end
 
   @deprecated "Use AvroEx.Schema.Context.lookup/2"

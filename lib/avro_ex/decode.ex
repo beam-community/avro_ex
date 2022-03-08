@@ -2,6 +2,7 @@ defmodule AvroEx.Decode do
   @moduledoc false
 
   require Bitwise
+  alias AvroEx.DecodeError
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Record.Field
@@ -11,11 +12,15 @@ defmodule AvroEx.Decode do
   @seconds_in_day 24 * 60 * 60
 
   @doc false
-  @spec decode(AvroEx.Schema.t(), binary()) :: {:ok, any()}
+  @spec decode(AvroEx.Schema.t(), binary()) :: {:ok, any(), binary()} | {:error, AvroEx.DecodeError.t()}
   def decode(%Schema{schema: schema, context: context}, avro_message)
       when is_binary(avro_message) do
-    {value, ""} = do_decode(schema, context, avro_message)
-    {:ok, value}
+    try do
+      {value, rest} = do_decode(schema, context, avro_message)
+      {:ok, value, rest}
+    catch
+      :throw, %DecodeError{} = e -> {:error, e}
+    end
   end
 
   defp do_decode(%Reference{type: name}, %Context{} = context, data) do
@@ -144,7 +149,7 @@ defmodule AvroEx.Decode do
     if String.valid?(str) do
       {str, rest}
     else
-      raise "Decoding string failed - not a valid UTF-8 string"
+      error({:invalid_string, str})
     end
   end
 
@@ -246,5 +251,10 @@ defmodule AvroEx.Decode do
       0 -> {new_acc, tail}
       1 -> variable_integer_decode(tail, new_acc, acc_bits + 7, max_bits)
     end
+  end
+
+  @compile {:inline, error: 1}
+  defp error(error) do
+    error |> AvroEx.DecodeError.new() |> throw()
   end
 end
