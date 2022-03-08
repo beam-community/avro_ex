@@ -111,7 +111,7 @@ iex> AvroEx.encode_schema(schema, canonical: true)
 
 ### Testing
 
-For testing convenience, `AvroEx.encodable?/2` is exporting for testing if data can be
+For testing convenience, `AvroEx.encodable?/2` is exported to check if data can be
 encoded against the given schema. Note that in production scenarios, it is not
 recommended to use this function.
 
