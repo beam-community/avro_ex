@@ -86,7 +86,7 @@ defmodule AvroEx.Decode.Test do
       {:ok, schema} = AvroEx.decode_schema(~S("string"))
       {:ok, bytes} = AvroEx.encode(schema, "Hello there 🕶")
 
-      assert {:ok, "Hello there 🕶"} =  AvroEx.decode(schema, bytes)
+      assert {:ok, "Hello there 🕶"} = AvroEx.decode(schema, bytes)
     end
   end
 
