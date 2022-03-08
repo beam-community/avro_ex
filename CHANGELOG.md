@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.0 (Unreleased)
+## v2.0.0 - March 8th, 2022
 
 ### Changed
 * `AvroEx.encode/2` now returns `{:error, AvroEx.EncodeError.t()}` in the case of an error
@@ -24,7 +24,7 @@
 * `AvroEx.parse_schema!/1`
 * `AvroEx.named_type!/2`
 
-## v1.2.0
+## v1.2.0 - Februrary 20th 2022
 
 ### Fixed
 * Fix exception when encoding bad Record data
