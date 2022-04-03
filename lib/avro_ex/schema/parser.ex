@@ -73,10 +73,10 @@ defmodule AvroEx.Schema.Parser do
         end
 
         set_key =
-          if struct in [AvroEnum, Fixed, Record] do
-            {struct, parsed.name}
-          else
-            parsed.type
+          case parsed do
+            %{type: type} -> type
+            %{name: name} -> {struct, name}
+            %struct{} -> struct
           end
 
         if MapSet.member?(seen, set_key) do
