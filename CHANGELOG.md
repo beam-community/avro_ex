@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.1 - April 3rd, 2022
+
+### Fixed
+* Fixed bug where Array and Map children of Unions would fail to parse
+
 ## v2.0.0 - March 8th, 2022
 
 ### Changed

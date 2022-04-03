@@ -251,6 +251,35 @@ defmodule AvroEx.Schema.ParserTest do
              }
     end
 
+    test "it can have children that are arrays" do
+      assert %Schema{schema: schema, context: context} =
+               Parser.parse!([
+                 "null",
+                 %{"type" => "array", "items" => "int"}
+               ])
+
+      assert schema == %Union{
+               possibilities: [
+                 %Primitive{type: :null},
+                 %Array{items: %Primitive{type: :int}}
+               ]
+             }
+
+      assert context == %Context{}
+    end
+
+    test "it cannot have multiple array children" do
+      message =
+        "Union contains duplicated Array<items=string> in [%{\"items\" => \"int\", \"type\" => \"array\"}, %{\"items\" => \"string\", \"type\" => \"array\"}]"
+
+      assert_raise AvroEx.Schema.DecodeError, message, fn ->
+        Parser.parse!([
+          %{"type" => "array", "items" => "int"},
+          %{"type" => "array", "items" => "string"}
+        ])
+      end
+    end
+
     test "cannot have duplicated named types" do
       message =
         "Union contains duplicated Enum<name=directions> in [%{\"name\" => \"directions\", \"symbols\" => [\"east\", \"north\", \"south\", \"west\"], \"type\" => \"enum\"}, %{\"name\" => \"directions\", \"symbols\" => [\"blue\", \"red\", \"yellow\"], \"type\" => \"enum\"}]"
