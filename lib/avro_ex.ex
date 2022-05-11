@@ -155,11 +155,11 @@ defmodule AvroEx do
       {:ok, true}
 
   """
-  @spec decode(Schema.t(), encoded_avro) ::
+  @spec decode(Schema.t(), encoded_avro, keyword()) ::
           {:ok, term}
           | {:error, AvroEx.DecodeError.t()}
-  def decode(schema, message) do
-    case AvroEx.Decode.decode(schema, message) do
+  def decode(schema, message, opts \\ []) do
+    case AvroEx.Decode.decode(schema, message, opts) do
       {:ok, value, _} -> {:ok, value}
       {:error, error} -> {:error, error}
     end

@@ -135,6 +135,31 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, ^time} = AvroEx.decode(schema, encoded_time)
     end
 
+    test "decode tagged named possibility" do
+      record_json_factory = fn name ->
+        ~s"""
+          {
+            "type": "record",
+            "name": "#{name}",
+            "fields": [
+              {"type": "string", "name": "value"}
+            ]
+          }
+        """
+      end
+
+      {:ok, schema} = AvroEx.decode_schema(~s([#{record_json_factory.("a")}, #{record_json_factory.("b")}]))
+
+      {:ok, encoded_a} = AvroEx.encode(schema, {"a", %{"value" => "hello"}})
+      {:ok, encoded_b} = AvroEx.encode(schema, {"b", %{"value" => "hello"}})
+
+      assert {:ok, %{"value" => "hello"}} = AvroEx.decode(schema, encoded_a)
+      assert {:ok, %{"value" => "hello"}} = AvroEx.decode(schema, encoded_b)
+
+      assert {:ok, {"a", %{"value" => "hello"}}} = AvroEx.decode(schema, encoded_a, tagged_unions: true)
+      assert {:ok, {"b", %{"value" => "hello"}}} = AvroEx.decode(schema, encoded_b, tagged_unions: true)
+    end
+
     test "array" do
       {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": ["null", "int"]}))
 
