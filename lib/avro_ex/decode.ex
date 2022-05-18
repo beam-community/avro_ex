@@ -188,7 +188,7 @@ defmodule AvroEx.Decode do
 
     {decoded_item, rest} = do_decode(schema, context, rest, opts)
 
-    if Keyword.get(opts, :tagged_unions, false) && Map.has_key?(schema, :name) do
+    if Keyword.get(opts, :tagged_unions, false) and Map.has_key?(schema, :name) do
       {{schema.name, decoded_item}, rest}
     else
       {decoded_item, rest}
