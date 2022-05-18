@@ -183,10 +183,10 @@ defmodule AvroEx.Decode do
 
   defp do_decode(%Union{possibilities: possibilities}, %Context{} = context, data, opts)
        when is_binary(data) do
-    {index, rest} = do_decode(%Primitive{type: :long}, context, data, opts)
+    {index, index_rest} = do_decode(%Primitive{type: :long}, context, data, opts)
     schema = :lists.nth(index + 1, possibilities)
 
-    {decoded_item, rest} = do_decode(schema, context, rest, opts)
+    {decoded_item, rest} = do_decode(schema, context, index_rest, opts)
 
     if Keyword.get(opts, :tagged_unions, false) and Map.has_key?(schema, :name) do
       {{schema.name, decoded_item}, rest}
