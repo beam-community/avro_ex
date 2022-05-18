@@ -2,6 +2,17 @@ defmodule AvroEx.PropertyTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
+  test "encoding of large integer as a union of int and long" do
+    schema = ["int", "long"]
+    data = -3_376_656_585_598_455_353
+
+    json = Jason.encode!(schema)
+    {:ok, schema} = AvroEx.decode_schema(json)
+    {:ok, encoded} = AvroEx.encode(schema, data)
+
+    assert {:ok, ^data} = AvroEx.decode(schema, encoded)
+  end
+
   property "encode -> decode always returns back the initial data for the same schema" do
     check all schema <- schema(),
               data <- valid_data(schema),
@@ -9,7 +20,7 @@ defmodule AvroEx.PropertyTest do
       json = Jason.encode!(schema)
       {:ok, schema} = AvroEx.decode_schema(json)
       {:ok, encoded} = AvroEx.encode(schema, data)
-      {:ok, ^data} = AvroEx.decode(schema, encoded)
+      assert {:ok, ^data} = AvroEx.decode(schema, encoded)
     end
   end
 
