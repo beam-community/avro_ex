@@ -158,14 +158,14 @@ defmodule AvroEx.Encode do
     do_encode(type, context, value)
   end
 
-  defp do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, {name, value}) do
+  defp do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, {name, value} = original) do
     index =
       Enum.find_index(possibilities, fn
         %{name: ^name} = possible_schema -> Schema.encodable?(possible_schema, context, value)
         _ -> false
       end)
 
-    do_encode_union(schema, context, value, index)
+    do_encode_union(schema, context, value, original, index)
   end
 
   defp do_encode(%Union{possibilities: possibilities} = schema, %Context{} = context, value) do
@@ -174,7 +174,7 @@ defmodule AvroEx.Encode do
         Schema.encodable?(possible_schema, context, value)
       end)
 
-    do_encode_union(schema, context, value, index)
+    do_encode_union(schema, context, value, value, index)
   end
 
   defp do_encode(%AvroEx.Schema.Map{values: values}, %Context{} = context, map) when is_map(map) do
@@ -233,13 +233,13 @@ defmodule AvroEx.Encode do
     error({:schema_mismatch, schema, data, context})
   end
 
-  defp do_encode_union(%Union{possibilities: possibilities} = schema, %Context{} = context, value, index) do
+  defp do_encode_union(%Union{possibilities: possibilities} = schema, %Context{} = context, value, original, index) do
     if index do
       schema = Enum.at(possibilities, index)
 
       do_encode(%Primitive{type: :int}, context, index) <> do_encode(schema, context, value)
     else
-      error({:schema_mismatch, schema, value, context})
+      error({:schema_mismatch, schema, original, context})
     end
   end
 

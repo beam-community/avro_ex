@@ -308,6 +308,12 @@ defmodule AvroEx.Encode.Test do
       {:ok, encoded_record} = @test_module.encode(record_schema, %{"value" => "hello"})
       {:ok, encoded_union} = @test_module.encode(schema, {"b", %{"value" => "hello"}})
 
+      {:error,
+       %AvroEx.EncodeError{
+         message:
+           "Schema Mismatch: Expected value of Union<possibilities=Record<name=a>|Record<name=b>>, got {\"c\", %{\"value\" => \"hello\"}}"
+       }} = @test_module.encode(schema, {"c", %{"value" => "hello"}})
+
       assert encoded_union == index <> encoded_record
     end
 
