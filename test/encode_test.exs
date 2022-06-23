@@ -285,6 +285,57 @@ defmodule AvroEx.Encode.Test do
       assert encoded_union == index <> encoded_record
     end
 
+    test "works as expected with union values tagged for a named possibility" do
+      record_json_factory = fn name ->
+        ~s"""
+          {
+            "type": "record",
+            "name": "#{name}",
+            "fields": [
+              {"type": "string", "name": "value"}
+            ]
+          }
+        """
+      end
+
+      json_schema = ~s([#{record_json_factory.("a")}, #{record_json_factory.("b")}])
+
+      {:ok, schema} = AvroEx.decode_schema(json_schema)
+      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
+      {:ok, record_schema} = AvroEx.decode_schema(record_json_factory.("b"))
+
+      {:ok, index} = @test_module.encode(int_schema, 1)
+      {:ok, encoded_record} = @test_module.encode(record_schema, %{"value" => "hello"})
+      {:ok, encoded_union} = @test_module.encode(schema, {"b", %{"value" => "hello"}})
+
+      assert encoded_union == index <> encoded_record
+    end
+
+    test "errors with a clear error for tagged unions" do
+      record_json_factory = fn name ->
+        ~s"""
+          {
+            "type": "record",
+            "name": "#{name}",
+            "fields": [
+              {"type": "string", "name": "value"}
+            ]
+          }
+        """
+      end
+
+      json_schema = ~s([#{record_json_factory.("a")}, #{record_json_factory.("b")}])
+
+      {:ok, schema} = AvroEx.decode_schema(json_schema)
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Schema Mismatch: Expected value of Union<possibilities=Record<name=a>|Record<name=b>>" <>
+                    ", got {\"c\", %{\"value\" => \"hello\"}}"
+              }} = @test_module.encode(schema, {"c", %{"value" => "hello"}})
+    end
+
     test "errors if the data doesn't match the schema" do
       {:ok, schema} = AvroEx.decode_schema(~S(["null", "int"]))
 

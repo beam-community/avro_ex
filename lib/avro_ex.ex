@@ -121,6 +121,14 @@ defmodule AvroEx do
       iex> schema = AvroEx.decode_schema!("int")
       iex> AvroEx.encode(schema, 1234)
       {:ok, <<164, 19>>}
+
+  ## Tagged unions
+
+  When supplying a union value one can optionally supply a tagged tuple of `{name, value}`
+  instead of just the plain `value` to force encoding the value as the named type
+  found using `name` instead of matching by the shape of `value`. This can improve
+  performance and allows forcing a selected named type even if the shape of the
+  data is the same. See also the "Tagged unions" section on `decode/3`.
   """
   @spec encode(Schema.t(), term) ::
           {:ok, encoded_avro} | {:error, AvroEx.EncodeError.t() | Exception.t()}
@@ -154,12 +162,18 @@ defmodule AvroEx do
       iex> AvroEx.decode(schema, <<1>>)
       {:ok, true}
 
+  ## Tagged unions
+
+  When decoding one can set the option `tagged_unions: true` to decode union
+  values as a tagged tuple of `{name, value}` instead of just the plain `value`.
+  This allows to retain the information about which union schema was used for
+  encoding when this cannot be infered from the `value` alone.
   """
-  @spec decode(Schema.t(), encoded_avro) ::
+  @spec decode(Schema.t(), encoded_avro, keyword()) ::
           {:ok, term}
           | {:error, AvroEx.DecodeError.t()}
-  def decode(schema, message) do
-    case AvroEx.Decode.decode(schema, message) do
+  def decode(schema, message, opts \\ []) do
+    case AvroEx.Decode.decode(schema, message, opts) do
       {:ok, value, _} -> {:ok, value}
       {:error, error} -> {:error, error}
     end
