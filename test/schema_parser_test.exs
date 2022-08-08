@@ -100,7 +100,7 @@ defmodule AvroEx.Schema.ParserTest do
              }
     end
 
-    test "records can have fields that are logicalTypes" do
+    test "can have fields that are logicalTypes" do
       assert %Schema{schema: schema, context: context} =
                Parser.parse!(%{
                  "type" => "record",
@@ -198,6 +198,15 @@ defmodule AvroEx.Schema.ParserTest do
           ]
         })
       end
+    end
+
+    test "namespace is valid if it's empty" do
+      assert {:ok, _schema} = AvroEx.decode_schema(~S({
+        "type": "record",
+        "name": "something",
+        "namespace": "",
+        "fields" : [{"name": "count", "type": {"type": "string"}}]
+      }))
     end
   end
 
