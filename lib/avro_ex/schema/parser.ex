@@ -263,7 +263,10 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_namespace({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :namespace, fn value ->
-      unless valid_full_name?(value) do
+      # From the specification: "A namespace is a dot-separated sequence of such
+      # names. The empty string may also be used as a namespace to indicate the
+      # null namespace.
+      unless valid_full_name?(value) or value == "" do
         error({:invalid_name, {:namespace, value}, raw})
       end
     end)
