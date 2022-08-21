@@ -13,16 +13,25 @@ defmodule AvroEx.ObjectContainer do
   end
 
   @magic <<"Obj", 1>>
-  @bh_schema AvroEx.decode_schema!("long")
-  @fh_schema AvroEx.decode_schema!(~S"""
-             {"type": "record", "name": "org.apache.avro.file.Header",
-               "fields" : [
-                 {"name": "magic", "type": {"type": "fixed", "name": "Magic", "size": 4}},
-                 {"name": "meta", "type": {"type": "map", "values": "bytes"}},
-                 {"name": "sync", "type": {"type": "fixed", "name": "Sync", "size": 16}}
-               ]
-             }
-             """)
+  @bh_schema AvroEx.decode_schema!(~S({
+    "type":"record","name":"block_header",
+    "fields":[
+      {"name":"num_objects","type":"long"},
+      {"name":"num_bytes","type":"long"}
+    ]
+  }))
+  @fh_schema AvroEx.decode_schema!(~S({
+    "type": "record", "name": "org.apache.avro.file.Header",
+    "fields" : [
+      {"name": "magic", "type": {"type": "fixed", "name": "Magic", "size": 4}},
+      {"name": "meta", "type": {"type": "map", "values": "bytes"}},
+      {"name": "sync", "type": {"type": "fixed", "name": "Sync", "size": 16}}
+    ]
+  }))
+
+  def magic(), do: @magic
+  def block_header_schema(), do: @bh_schema
+  def file_header_schema(), do: @fh_schema
 
   def new(schema, opts \\ []) do
     %__MODULE__{
@@ -50,7 +59,8 @@ defmodule AvroEx.ObjectContainer do
 
   @spec encode_block_header!(pos_integer(), pos_integer()) :: binary()
   def encode_block_header!(num_objects, encoded_data_size) do
-    AvroEx.encode!(@bh_schema, num_objects) <> AvroEx.encode!(@bh_schema, encoded_data_size)
+    header = %{"num_objects" => num_objects, "num_bytes" => encoded_data_size}
+    AvroEx.encode!(@bh_schema, header)
   end
 
   def encode_block_footer!(ocf = %__MODULE__{}), do: ocf.sync
