@@ -1,0 +1,75 @@
+defmodule AvroEx.ObjectContainer do
+  use TypedStruct
+
+  alias AvroEx.{Schema}
+
+  @type codec_types :: :null | :deflate | :bzip2 | :snappy | :xz | :zstandard
+
+  typedstruct do
+    field :schema, Schema.t()
+    field :codec, codec_types(), default: :null
+    field :meta, map(), default: %{}
+    field :sync, <<_::128>>
+  end
+
+  @magic <<"Obj", 1>>
+  @bh_schema AvroEx.decode_schema!("long")
+  @fh_schema AvroEx.decode_schema!(~S"""
+             {"type": "record", "name": "org.apache.avro.file.Header",
+               "fields" : [
+                 {"name": "magic", "type": {"type": "fixed", "name": "Magic", "size": 4}},
+                 {"name": "meta", "type": {"type": "map", "values": "bytes"}},
+                 {"name": "sync", "type": {"type": "fixed", "name": "Sync", "size": 16}}
+               ]
+             }
+             """)
+
+  def new(schema, opts \\ []) do
+    %__MODULE__{
+      schema: schema,
+      codec: Keyword.get(opts, :codec, :null),
+      meta: Keyword.get(opts, :meta, %{}),
+      sync: :rand.bytes(16)
+    }
+  end
+
+  def encode_file_header!(ocf = %__MODULE__{}) do
+    metadata =
+      %{
+        "avro.schema" => AvroEx.encode_schema(ocf.schema),
+        "avro.codec" => to_string(ocf.codec)
+      }
+      |> Map.merge(ocf.meta)
+
+    AvroEx.encode!(@fh_schema, %{
+      magic: @magic,
+      meta: metadata,
+      sync: ocf.sync
+    })
+  end
+
+  @spec encode_block_header!(pos_integer(), pos_integer()) :: binary()
+  def encode_block_header!(num_objects, encoded_data_size) do
+    AvroEx.encode!(@bh_schema, num_objects) <> AvroEx.encode!(@bh_schema, encoded_data_size)
+  end
+
+  def encode_block_footer!(ocf = %__MODULE__{}), do: ocf.sync
+
+  def encode_block_objects!(ocf = %__MODULE__{}, objects) do
+    codec = AvroEx.ObjectContainer.Codec.get_codec!(ocf.codec)
+
+    for obj <- objects, reduce: <<>> do
+      acc -> acc <> AvroEx.encode!(ocf.schema, obj)
+    end
+    |> codec.encode!()
+  end
+
+  def encode_block!(ocf = %__MODULE__{}, objects) do
+    data = encode_block_objects!(ocf, objects)
+    encode_block_header!(length(objects), byte_size(data)) <> data <> encode_block_footer!(ocf)
+  end
+
+  def encode_file!(ocf = %__MODULE__{}, objects) do
+    encode_file_header!(ocf) <> encode_block!(ocf, objects)
+  end
+end
