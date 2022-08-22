@@ -42,7 +42,7 @@ defmodule AvroEx.ObjectContainer do
     }
   end
 
-  def encode_file_header!(ocf = %__MODULE__{}) do
+  def encode_file_header!(%__MODULE__{} = ocf) do
     metadata =
       %{
         "avro.schema" => AvroEx.encode_schema(ocf.schema),
@@ -63,9 +63,9 @@ defmodule AvroEx.ObjectContainer do
     AvroEx.encode!(@bh_schema, header)
   end
 
-  def encode_block_footer!(ocf = %__MODULE__{}), do: ocf.sync
+  def encode_block_footer!(%__MODULE__{sync: sync}), do: sync
 
-  def encode_block_objects!(ocf = %__MODULE__{}, objects) do
+  def encode_block_objects!(%__MODULE__{} = ocf, objects) do
     codec = AvroEx.ObjectContainer.Codec.get_codec!(ocf.codec)
 
     for obj <- objects, reduce: <<>> do
@@ -74,12 +74,12 @@ defmodule AvroEx.ObjectContainer do
     |> codec.encode!()
   end
 
-  def encode_block!(ocf = %__MODULE__{}, objects) do
+  def encode_block!(%__MODULE__{} = ocf, objects) do
     data = encode_block_objects!(ocf, objects)
     encode_block_header!(length(objects), byte_size(data)) <> data <> encode_block_footer!(ocf)
   end
 
-  def encode_file!(ocf = %__MODULE__{}, objects) do
+  def encode_file!(%__MODULE__{} = ocf, objects) do
     encode_file_header!(ocf) <> encode_block!(ocf, objects)
   end
 end
