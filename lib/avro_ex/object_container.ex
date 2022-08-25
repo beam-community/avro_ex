@@ -7,7 +7,7 @@ defmodule AvroEx.ObjectContainer do
 
   typedstruct do
     field :schema, Schema.t()
-    field :codec, codec_types(), default: :null
+    field :codec, AvroEx.ObjectContainer.Codec, default: AvroEx.ObjectContainer.Codec.Null
     field :meta, map(), default: %{}
     field :sync, <<_::128>>
   end
@@ -38,7 +38,7 @@ defmodule AvroEx.ObjectContainer do
   def new(schema, opts \\ []) do
     %__MODULE__{
       schema: schema,
-      codec: Keyword.get(opts, :codec, :null),
+      codec: Keyword.get(opts, :codec, AvroEx.ObjectContainer.Codec.Null),
       meta: Keyword.get(opts, :meta, %{}),
       sync: :rand.bytes(16)
     }
@@ -48,7 +48,7 @@ defmodule AvroEx.ObjectContainer do
     metadata =
       %{
         "avro.schema" => AvroEx.encode_schema(ocf.schema),
-        "avro.codec" => to_string(ocf.codec)
+        "avro.codec" => to_string(ocf.codec.name())
       }
       |> Map.merge(ocf.meta)
 
@@ -68,12 +68,10 @@ defmodule AvroEx.ObjectContainer do
   def encode_block_footer!(%__MODULE__{sync: sync}), do: sync
 
   def encode_block_objects!(%__MODULE__{} = ocf, objects) do
-    codec = AvroEx.ObjectContainer.Codec.get_codec!(ocf.codec)
-
     for obj <- objects, reduce: <<>> do
       acc -> acc <> AvroEx.encode!(ocf.schema, obj)
     end
-    |> codec.encode!()
+    |> ocf.codec.encode!()
   end
 
   def encode_block!(%__MODULE__{} = ocf, objects) do

@@ -1,6 +1,8 @@
 defmodule AvroEx.ObjectContainer.Codec.Snappy do
   @behaviour AvroEx.ObjectContainer.Codec
   @impl AvroEx.ObjectContainer.Codec
+  def name(), do: :snappy
+  @impl AvroEx.ObjectContainer.Codec
   def encode!(data) do
     {:ok, compressed} = :snappyer.compress(data)
     <<compressed, :erlang.crc32(data)::32>>

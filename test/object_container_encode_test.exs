@@ -2,6 +2,7 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
   use ExUnit.Case, async: true
 
   alias AvroEx.ObjectContainer
+  alias AvroEx.ObjectContainer.Codec
 
   describe "encode file header" do
     test "new containers have different sync bytes" do
@@ -21,7 +22,7 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
 
     # TODO: use multiple schemas instead of just "null"
     test "codec embedded in header" do
-      codecs = [:null, :deflate, :bzip2, :snappy, :xz, :zstandard]
+      codecs = [Codec.Null, Codec.Deflate, Codec.Snappy]
 
       containers =
         for codec <- codecs do
@@ -35,7 +36,7 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
         end
 
       for {header, codec} <- Enum.zip(headers, codecs) do
-        assert header["meta"]["avro.codec"] == to_string(codec)
+        assert header["meta"]["avro.codec"] == to_string(codec.name())
       end
     end
 
