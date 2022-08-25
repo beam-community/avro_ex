@@ -13,23 +13,25 @@ defmodule AvroEx.ObjectContainer do
   end
 
   @magic <<"Obj", 1>>
-  @bh_schema AvroEx.decode_schema!(~S({
-    "type":"record","name":"block_header",
-    "fields":[
-      {"name":"num_objects","type":"long"},
-      {"name":"num_bytes","type":"long"}
-    ]
-  }))
-  @fh_schema AvroEx.decode_schema!(~S({
-    "type": "record", "name": "org.apache.avro.file.Header",
-    "fields" : [
-      {"name": "magic", "type": {"type": "fixed", "name": "Magic", "size": 4}},
-      {"name": "meta", "type": {"type": "map", "values": "bytes"}},
-      {"name": "sync", "type": {"type": "fixed", "name": "Sync", "size": 16}}
-    ]
-  }))
+  @bh_schema AvroEx.decode_schema!(%{
+               "type" => "record",
+               "name" => "block_header",
+               "fields" => [
+                 %{"name" => "num_objects", "type" => "long"},
+                 %{"name" => "num_bytes", "type" => "long"}
+               ]
+             })
 
-  def magic(), do: @magic
+  @fh_schema AvroEx.decode_schema!(%{
+               "type" => "record",
+               "name" => "org.apache.avro.file.Header",
+               "fields" => [
+                 %{"name" => "magic", "type" => %{"type" => "fixed", "name" => "Magic", "size" => 4}},
+                 %{"name" => "meta", "type" => %{"type" => "map", "values" => "bytes"}},
+                 %{"name" => "sync", "type" => %{"type" => "fixed", "name" => "Sync", "size" => 16}}
+               ]
+             })
+
   def block_header_schema(), do: @bh_schema
   def file_header_schema(), do: @fh_schema
 
