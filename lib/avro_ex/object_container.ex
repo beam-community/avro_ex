@@ -82,4 +82,24 @@ defmodule AvroEx.ObjectContainer do
   def encode_file!(%__MODULE__{} = ocf, objects) do
     encode_file_header!(ocf) <> encode_block!(ocf, objects)
   end
+
+  @spec decode_file_header(<<_::32, _::_*8>>, keyword()) :: {:ok, AvroEx.ObjectContainer.t(), binary()} | {:error, AvroEx.DecodeError.t()}
+  def decode_file_header(file_header, opts \\ [])
+  def decode_file_header(file_header, opts) do
+    user_codecs = Keyword.get(opts, :codecs, [])
+
+    with {:ok, decoded_header, rest} <- AvroEx.Decode.decode(@fh_schema, file_header),
+        %{"avro.schema" => schema, "avro.codec" => codec} <- decoded_header["meta"],
+        {:ok, decoded_schema} <- AvroEx.decode_schema(schema),
+        {:ok, codec_impl} <- __MODULE__.Codec.get_codec_implementation(codec, user_codecs)
+    do
+      meta = Map.drop(decoded_header["meta"], ["avro.schema", "avro.codec"])
+      {:ok, %__MODULE__{
+        schema: decoded_schema,
+        codec: codec_impl,
+        meta: meta,
+        sync: decoded_header["sync"],
+      }, rest}
+    end
+  end
 end

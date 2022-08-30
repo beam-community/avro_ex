@@ -90,4 +90,24 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
 
   describe "encode file" do
   end
+
+  describe "decode file header" do
+    @example_file_header AvroEx.encode!(ObjectContainer.file_header_schema, %{
+      "magic" => <<"Obj", 1>>,
+      "meta" => %{
+        "avro.schema" => "{\"type\":\"null\"}",
+        "avro.codec" => "null",
+        "custom_meta" => "custom_value"
+      },
+      "sync" => <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+    })
+
+    test "full valid file header with optional metas" do
+      {:ok, header, <<>>} = AvroEx.ObjectContainer.decode_file_header(@example_file_header)
+      assert header.schema == AvroEx.decode_schema!(nil)
+      assert header.codec == ObjectContainer.Codec.Null
+      assert header.meta == %{"custom_meta" => "custom_value"}
+      assert header.sync == <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+    end
+  end
 end
