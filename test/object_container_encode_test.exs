@@ -32,7 +32,7 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
       headers =
         for container <- containers do
           headerdata = ObjectContainer.encode_file_header!(container)
-          AvroEx.decode!(ObjectContainer.file_header_schema, headerdata)
+          AvroEx.decode!(ObjectContainer.file_header_schema(), headerdata)
         end
 
       for {header, codec} <- Enum.zip(headers, codecs) do
@@ -43,28 +43,28 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
     test "default codec is null" do
       container = ObjectContainer.new(AvroEx.decode_schema!(~S("null")))
       headerdata = ObjectContainer.encode_file_header!(container)
-      header = AvroEx.decode!(ObjectContainer.file_header_schema, headerdata)
+      header = AvroEx.decode!(ObjectContainer.file_header_schema(), headerdata)
       assert header["meta"]["avro.codec"] == "null"
     end
 
     test "schema is stored in the file header metadata" do
       container = ObjectContainer.new(AvroEx.decode_schema!(~S("null")))
       headerdata = ObjectContainer.encode_file_header!(container)
-      header = AvroEx.decode!(ObjectContainer.file_header_schema, headerdata)
+      header = AvroEx.decode!(ObjectContainer.file_header_schema(), headerdata)
       assert header["meta"]["avro.schema"] == "{\"type\":\"null\"}"
     end
 
     test "user metadata is stored in the file header metadata" do
       container = ObjectContainer.new(AvroEx.decode_schema!(~S("null")), meta: %{first_time: "12345678"})
       headerdata = ObjectContainer.encode_file_header!(container)
-      header = AvroEx.decode!(ObjectContainer.file_header_schema, headerdata)
+      header = AvroEx.decode!(ObjectContainer.file_header_schema(), headerdata)
       assert header["meta"]["first_time"] == "12345678"
     end
 
     test "user metadata does not prevent schema and codec from being written preoperly" do
       container = ObjectContainer.new(AvroEx.decode_schema!(~S("null")), meta: %{first_time: "12345678"})
       headerdata = ObjectContainer.encode_file_header!(container)
-      header = AvroEx.decode!(ObjectContainer.file_header_schema, headerdata)
+      header = AvroEx.decode!(ObjectContainer.file_header_schema(), headerdata)
       assert header["meta"]["avro.codec"] == "null"
       assert header["meta"]["avro.schema"] == "{\"type\":\"null\"}"
     end
@@ -72,7 +72,7 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
     test "magic matches standard" do
       container = ObjectContainer.new(AvroEx.decode_schema!(~S("null")))
       headerdata = ObjectContainer.encode_file_header!(container)
-      header = AvroEx.decode!(ObjectContainer.file_header_schema, headerdata)
+      header = AvroEx.decode!(ObjectContainer.file_header_schema(), headerdata)
       assert header["magic"] == <<"Obj", 1>>
     end
   end
@@ -80,7 +80,7 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
   test "encode block header" do
     # TODO: property based test makes more sense
     encoded_header = ObjectContainer.encode_block_header!(100, 5000)
-    header = AvroEx.decode!(ObjectContainer.block_header_schema, encoded_header)
+    header = AvroEx.decode!(ObjectContainer.block_header_schema(), encoded_header)
     assert header["num_objects"] == 100
     assert header["num_bytes"] == 5000
   end
@@ -92,22 +92,70 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
   end
 
   describe "decode file header" do
-    @example_file_header AvroEx.encode!(ObjectContainer.file_header_schema, %{
-      "magic" => <<"Obj", 1>>,
-      "meta" => %{
-        "avro.schema" => "{\"type\":\"null\"}",
-        "avro.codec" => "null",
-        "custom_meta" => "custom_value"
-      },
-      "sync" => <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
-    })
-
     test "full valid file header with optional metas" do
-      {:ok, header, <<>>} = AvroEx.ObjectContainer.decode_file_header(@example_file_header)
+      {:ok, header, <<>>} =
+        ObjectContainer.decode_file_header(
+          AvroEx.encode!(ObjectContainer.file_header_schema(), %{
+            "magic" => <<"Obj", 1>>,
+            "meta" => %{
+              "avro.schema" => "{\"type\":\"null\"}",
+              "avro.codec" => "null",
+              "custom_meta" => "custom_value"
+            },
+            "sync" => <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+          })
+        )
+
       assert header.schema == AvroEx.decode_schema!(nil)
       assert header.codec == ObjectContainer.Codec.Null
       assert header.meta == %{"custom_meta" => "custom_value"}
       assert header.sync == <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+    end
+
+    test "invalid magic is detected" do
+      assert {:error, %AvroEx.DecodeError{}} =
+               ObjectContainer.decode_file_header("some random data stream that doesn't start with right magic")
+    end
+
+    test "missing schema detected" do
+      assert {:error, %AvroEx.DecodeError{}} =
+               ObjectContainer.decode_file_header(
+                 AvroEx.encode!(ObjectContainer.file_header_schema(), %{
+                   "magic" => <<"Obj", 1>>,
+                   "meta" => %{"avro.codec" => "null"},
+                   "sync" => <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+                 })
+               )
+    end
+
+    test "missing codec defaults to null" do
+      assert {:ok, header, <<>>} =
+               ObjectContainer.decode_file_header(
+                 AvroEx.encode!(ObjectContainer.file_header_schema(), %{
+                   "magic" => <<"Obj", 1>>,
+                   "meta" => %{"avro.schema" => "{\"type\":\"null\"}"},
+                   "sync" => <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+                 })
+               )
+
+      assert header.codec == ObjectContainer.Codec.Null
+    end
+
+    test "missing sync detected" do
+      data =
+        AvroEx.encode!(ObjectContainer.file_header_schema(), %{
+          "magic" => <<"Obj", 1>>,
+          "meta" => %{
+            "avro.schema" => "{\"type\":\"null\"}",
+            "avro.codec" => "null",
+            "custom_meta" => "custom_value"
+          },
+          "sync" => <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16>>
+        })
+
+      slice = byte_size(data) - Enum.random(1..16)
+      <<corrupt_data::binary-size(slice), _::binary>> = data
+      assert {:error, _} = ObjectContainer.decode_file_header(corrupt_data)
     end
   end
 end

@@ -83,23 +83,43 @@ defmodule AvroEx.ObjectContainer do
     encode_file_header!(ocf) <> encode_block!(ocf, objects)
   end
 
-  @spec decode_file_header(<<_::32, _::_*8>>, keyword()) :: {:ok, AvroEx.ObjectContainer.t(), binary()} | {:error, AvroEx.DecodeError.t()}
-  def decode_file_header(file_header, opts \\ [])
-  def decode_file_header(file_header, opts) do
+  defp check_magic(<<"Obj", 1, _::binary>>), do: :ok
+  defp check_magic(_), do: {:error, %AvroEx.DecodeError{message: "Invalid file header"}}
+
+  defp decode_with_rest(schema, message, opts \\ []) do
+    try do
+      AvroEx.Decode.decode(schema, message, opts)
+    rescue
+      e in MatchError -> {:error, e}
+    end
+  end
+
+
+  defp get_schema(%{"avro.schema" => schema}), do: {:ok, schema}
+  defp get_schema(_), do: {:error, %AvroEx.DecodeError{message: "Invalid or missing schema in file header"}}
+  defp get_codec(%{"avro.codec" => codec}), do: {:ok, codec}
+  defp get_codec(_), do: {:ok, :null}
+
+  @spec decode_file_header(binary(), keyword()) ::
+          {:ok, AvroEx.ObjectContainer.t(), binary()} | {:error, AvroEx.DecodeError.t()}
+  def decode_file_header(file_header, opts \\ []) do
     user_codecs = Keyword.get(opts, :codecs, [])
 
-    with {:ok, decoded_header, rest} <- AvroEx.Decode.decode(@fh_schema, file_header),
-        %{"avro.schema" => schema, "avro.codec" => codec} <- decoded_header["meta"],
-        {:ok, decoded_schema} <- AvroEx.decode_schema(schema),
-        {:ok, codec_impl} <- __MODULE__.Codec.get_codec_implementation(codec, user_codecs)
-    do
+    with :ok <- check_magic(file_header),
+         {:ok, decoded_header, rest} <- decode_with_rest(@fh_schema, file_header),
+         {:ok, schema} <- get_schema(decoded_header["meta"]),
+         {:ok, codec} <- get_codec(decoded_header["meta"]),
+         {:ok, decoded_schema} <- AvroEx.decode_schema(schema),
+         {:ok, codec_impl} <- __MODULE__.Codec.get_codec_implementation(codec, user_codecs) do
       meta = Map.drop(decoded_header["meta"], ["avro.schema", "avro.codec"])
-      {:ok, %__MODULE__{
-        schema: decoded_schema,
-        codec: codec_impl,
-        meta: meta,
-        sync: decoded_header["sync"],
-      }, rest}
+
+      {:ok,
+       %__MODULE__{
+         schema: decoded_schema,
+         codec: codec_impl,
+         meta: meta,
+         sync: decoded_header["sync"]
+       }, rest}
     end
   end
 end
