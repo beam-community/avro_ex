@@ -5,12 +5,25 @@ defmodule AvroEx.PropertyTest do
   property "encode -> decode always returns back the initial data for the same schema" do
     check all schema <- schema(),
               data <- valid_data(schema),
+              opts <- opts(),
               initial_size: 10 do
-      json = Jason.encode!(schema)
+      json = Jason.encode!(schema, opts)
       {:ok, schema} = AvroEx.decode_schema(json)
       {:ok, encoded} = AvroEx.encode(schema, data)
       assert {:ok, ^data} = AvroEx.decode(schema, encoded)
     end
+  end
+
+  @spec opts() :: StreamData.t()
+  def opts do
+    frequency([
+      {4, constant([])},
+      {1, encoding_options()}
+    ])
+  end
+
+  defp encoding_options do
+    uniq_list_of(member_of(include_block_byte_size: true), max_length: 1)
   end
 
   @spec schema() :: StreamData.t()

@@ -129,11 +129,18 @@ defmodule AvroEx do
   found using `name` instead of matching by the shape of `value`. This can improve
   performance and allows forcing a selected named type even if the shape of the
   data is the same. See also the "Tagged unions" section on `decode/3`.
+
+  ## Array encoding
+
+  Array encoding may add an additional `long` encoded integer to put the byte size
+  of blocks with their counts. This allows consumers of the encoded data to skip
+  over those blocks in an efficient manner. Using the option `include_block_byte_size: true`
+  enables adding those additional values.
   """
-  @spec encode(Schema.t(), term) ::
+  @spec encode(Schema.t(), term, keyword()) ::
           {:ok, encoded_avro} | {:error, AvroEx.EncodeError.t() | Exception.t()}
-  def encode(schema, data) do
-    AvroEx.Encode.encode(schema, data)
+  def encode(schema, data, opts \\ []) do
+    AvroEx.Encode.encode(schema, data, opts)
   end
 
   @doc """
@@ -141,15 +148,17 @@ defmodule AvroEx do
 
   Raises `t:AvroEx.EncodeError.t/0` on error.
 
+  For documentation of `opts` see `encode/3`.
+
   ## Examples
 
       iex> schema = AvroEx.decode_schema!("boolean")
       iex> AvroEx.encode!(schema, true)
       <<1>>
   """
-  @spec encode!(Schema.t(), term()) :: encoded_avro()
-  def encode!(schema, data) do
-    case AvroEx.Encode.encode(schema, data) do
+  @spec encode!(Schema.t(), term(), keyword()) :: encoded_avro()
+  def encode!(schema, data, opts \\ []) do
+    case AvroEx.Encode.encode(schema, data, opts) do
       {:ok, data} -> data
       {:error, error} -> raise error
     end
@@ -184,6 +193,8 @@ defmodule AvroEx do
 
   Raises `t:AvroEx.DecodeError.t/0` on error.
 
+  For documentation of `opts` see `decode/3`.
+
   ## Examples
 
       iex> schema = AvroEx.decode_schema!("string")
@@ -191,9 +202,9 @@ defmodule AvroEx do
       iex> AvroEx.decode!(schema, encoded)
       "hello"
   """
-  @spec decode!(Schema.t(), encoded_avro()) :: term()
-  def decode!(schema, message) do
-    case AvroEx.Decode.decode(schema, message) do
+  @spec decode!(Schema.t(), encoded_avro(), keyword()) :: term()
+  def decode!(schema, message, opts \\ []) do
+    case AvroEx.Decode.decode(schema, message, opts) do
       {:ok, value, _} -> value
       {:error, error} -> raise error
     end

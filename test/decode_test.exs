@@ -160,6 +160,15 @@ defmodule AvroEx.Decode.Test do
       assert {:ok, {"b", %{"value" => "hello"}}} = AvroEx.decode(schema, encoded_b, tagged_unions: true)
     end
 
+    test "array with negative count" do
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": ["null", "int"]}))
+      {:ok, long_schema} = AvroEx.decode_schema("long")
+
+      {:ok, encoded_array} = AvroEx.encode(schema, [1, 2, 3, nil, 4, 5, nil], include_block_byte_size: true)
+
+      assert {:ok, [1, 2, 3, nil, 4, 5, nil]} = AvroEx.decode(schema, encoded_array)
+    end
+
     test "array" do
       {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": ["null", "int"]}))
 

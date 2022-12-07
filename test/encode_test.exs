@@ -393,6 +393,11 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<6, 2, 4, 6, 0>>} = @test_module.encode(schema, [1, 2, 3])
     end
 
+    test "properly encodes an array with length, byte_size, items, and terminal byte" do
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": "int"}))
+      assert {:ok, <<5, 6, 2, 4, 6, 0>>} = @test_module.encode(schema, [1, 2, 3], include_block_byte_size: true)
+    end
+
     test "encodes an empty array" do
       {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": "int"}))
       assert {:ok, <<0>>} = @test_module.encode(schema, [])
