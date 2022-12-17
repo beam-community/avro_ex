@@ -58,7 +58,7 @@ defmodule AvroEx.Decode do
     {val, rest} = variable_integer_decode(data, 0, 0, 32)
     milliseconds = zigzag_decode(val)
 
-    {:ok, midnight} = Time.new(0, 0, 0)
+    {:ok, midnight} = Time.new(0, 0, 0, {0, 3})
     time = Time.add(midnight, milliseconds, :millisecond)
 
     {time, rest}
@@ -79,7 +79,7 @@ defmodule AvroEx.Decode do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     microseconds = zigzag_decode(val)
 
-    {:ok, midnight} = Time.new(0, 0, 0)
+    {:ok, midnight} = Time.new(0, 0, 0, {0, 6})
     time = Time.add(midnight, microseconds, :microsecond)
 
     {time, rest}
