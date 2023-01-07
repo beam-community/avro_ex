@@ -2,17 +2,6 @@ defmodule AvroEx.PropertyTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
-  test "encoding of large integer as a union of int and long" do
-    schema = ["int", "long"]
-    data = -3_376_656_585_598_455_353
-
-    json = Jason.encode!(schema)
-    {:ok, schema} = AvroEx.decode_schema(json)
-    {:ok, encoded} = AvroEx.encode(schema, data)
-
-    assert {:ok, ^data} = AvroEx.decode(schema, encoded)
-  end
-
   property "encode -> decode always returns back the initial data for the same schema" do
     check all schema <- schema(),
               data <- valid_data(schema),
@@ -24,6 +13,7 @@ defmodule AvroEx.PropertyTest do
     end
   end
 
+  @spec schema() :: StreamData.t()
   def schema do
     sized(fn size -> schema_gen(size) end)
   end
@@ -77,18 +67,17 @@ defmodule AvroEx.PropertyTest do
   end
 
   defp union(size) do
-    schema()
-    |> resize(div(size, 4))
-    |> filter(fn schema -> not is_list(schema) end)
-    |> uniq_list_of(
-      min_length: 1,
-      max_length: 8,
-      uniq_fun: fn
+    gen all list <-
+              schema()
+              |> resize(div(size, 4))
+              |> filter(fn schema -> not is_list(schema) end)
+              |> list_of(min_length: 1, max_length: 8) do
+      Enum.uniq_by(list, fn
         %{type: _type, name: name} -> name
         %{type: type} -> type
         value -> value
-      end
-    )
+      end)
+    end
   end
 
   defp valid_data("null"), do: constant(nil)
@@ -97,9 +86,9 @@ defmodule AvroEx.PropertyTest do
   defp valid_data("long"), do: integer(-9_223_372_036_854_775_808..9_223_372_036_854_775_807)
 
   defp valid_data("float") do
-    gen all num <- float() do
-      bin = <<num::float-size(32)>>
-      <<float::float-size(32)>> = bin
+    gen all float <- float(),
+            match?(<<_float::big-float-size(32)>>, <<float::big-float-size(32)>>) do
+      <<float::big-float-size(32)>> = <<float::big-float-size(32)>>
       float
     end
   end

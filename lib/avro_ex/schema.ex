@@ -41,12 +41,19 @@ defmodule AvroEx.Schema do
     encodable?(schema, context, data)
   end
 
+  @int32_range -2_147_483_648..2_147_483_647
+  @int64_range -9_223_372_036_854_775_808..9_223_372_036_854_775_807
+
   @spec encodable?(any(), any(), any()) :: boolean()
   def encodable?(%Primitive{type: :null}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
-  def encodable?(%Primitive{type: :int}, _, n) when is_integer(n), do: true
-  def encodable?(%Primitive{type: :long}, _, n) when is_integer(n), do: true
-  def encodable?(%Primitive{type: :float}, _, n) when is_float(n), do: true
+  def encodable?(%Primitive{type: :int}, _, n) when is_integer(n) and n in @int32_range, do: true
+  def encodable?(%Primitive{type: :long}, _, n) when is_integer(n) and n in @int64_range, do: true
+
+  def encodable?(%Primitive{type: :float}, _, n) when is_float(n) do
+    match?(<<^n::little-float-size(32)>>, <<n::little-float-size(32)>>)
+  end
+
   def encodable?(%Primitive{type: :double}, _, n) when is_float(n), do: true
   def encodable?(%Primitive{type: :bytes}, _, bytes) when is_binary(bytes), do: true
   def encodable?(%Primitive{type: :string}, _, str) when is_binary(str), do: String.valid?(str)

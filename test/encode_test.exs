@@ -246,6 +246,30 @@ defmodule AvroEx.Encode.Test do
       assert encoded_union == index <> encoded_int
     end
 
+    test "works as expected with int and long" do
+      {:ok, schema} = AvroEx.decode_schema(~S(["int", "long"]))
+      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
+      {:ok, long_schema} = AvroEx.decode_schema(~S("long"))
+
+      {:ok, index} = @test_module.encode(int_schema, 1)
+      {:ok, encoded_long} = @test_module.encode(long_schema, -3_376_656_585_598_455_353)
+      {:ok, encoded_union} = @test_module.encode(schema, -3_376_656_585_598_455_353)
+
+      assert encoded_union == index <> encoded_long
+    end
+
+    test "works as expected with float and double" do
+      {:ok, schema} = AvroEx.decode_schema(~S(["float", "double"]))
+      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
+      {:ok, double_schema} = AvroEx.decode_schema(~S("double"))
+
+      {:ok, index} = @test_module.encode(int_schema, 1)
+      {:ok, encoded_long} = @test_module.encode(double_schema, 0.0000000001)
+      {:ok, encoded_union} = @test_module.encode(schema, 0.0000000001)
+
+      assert encoded_union == index <> encoded_long
+    end
+
     test "works as expected with logical types" do
       datetime_json = ~S({"type": "long", "logicalType":"timestamp-millis"})
       datetime_value = ~U[2020-09-17 12:56:50.438Z]
