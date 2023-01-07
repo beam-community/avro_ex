@@ -13,6 +13,7 @@ defmodule AvroEx.PropertyTest do
     end
   end
 
+  @spec schema() :: StreamData.t()
   def schema do
     sized(fn size -> schema_gen(size) end)
   end
