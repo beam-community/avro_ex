@@ -172,10 +172,6 @@ defmodule AvroEx.Schema do
     name
   end
 
-  def full_name(%Reference{type: name}, _parent_namespace) do
-    name
-  end
-
   def full_name(name, namespace) when is_binary(name) do
     cond do
       is_nil(namespace) ->
@@ -228,7 +224,7 @@ defmodule AvroEx.Schema do
   def type_name(%Array{items: type}), do: "Array<items=#{type_name(type)}>"
   def type_name(%Union{possibilities: types}), do: "Union<possibilities=#{Enum.map_join(types, "|", &type_name/1)}>"
   def type_name(%Record{} = record), do: "Record<name=#{full_name(record)}>"
-  def type_name(%Reference{} = record), do: "Reference<name=#{full_name(record)}>"
+  def type_name(%Reference{type: type}), do: "Reference<name=#{type}>"
   def type_name(%Record.Field{} = field), do: "Field<name=#{full_name(field)}>"
   def type_name(%Fixed{size: size} = fixed), do: "Fixed<name=#{full_name(fixed)}, size=#{size}>"
   def type_name(%AvroEnum{} = enum), do: "Enum<name=#{full_name(enum)}>"
