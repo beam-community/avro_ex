@@ -77,18 +77,14 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
     end
   end
 
-  test "encode block header" do
-    # TODO: property based test makes more sense
-    encoded_header = ObjectContainer.encode_block_header!(100, 5000)
-    header = AvroEx.decode!(ObjectContainer.block_header_schema(), encoded_header)
-    assert header["num_objects"] == 100
-    assert header["num_bytes"] == 5000
-  end
-
-  describe "encode block objects" do
-  end
-
-  describe "encode file" do
+  describe "block header" do
+    test "encode and then decode block header" do
+      # TODO: property based test makes more sense
+      encoded_header = ObjectContainer.encode_block_header!(100, 5000)
+      header = AvroEx.decode!(ObjectContainer.block_header_schema(), encoded_header)
+      assert header["num_objects"] == 100
+      assert header["num_bytes"] == 5000
+    end
   end
 
   describe "decode file header" do
@@ -156,6 +152,60 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
       slice = byte_size(data) - Enum.random(1..16)
       <<corrupt_data::binary-size(slice), _::binary>> = data
       assert {:error, _} = ObjectContainer.decode_file_header(corrupt_data)
+    end
+  end
+
+  describe "encode and decode block objects" do
+    setup testinfo do
+      data_scema =
+        AvroEx.decode_schema!(%{
+          "type" => "record",
+          "name" => "block_test_data",
+          "fields" => [%{"name" => "testdata1", "type" => "bytes"}, %{"name" => "testdata2", "type" => "int"}]
+        })
+      ocf = ObjectContainer.new(data_scema)
+      testinfo |> Map.merge(%{data_scema: data_scema, ocf: ocf})
+    end
+
+    test "encode and then decode objects", %{ocf: ocf} do
+      data_input = for v <- 1..10, do: %{"testdata1" => "test#{v}", "testdata2" => v}
+      encoded = ObjectContainer.encode_block_objects!(ocf, data_input)
+      block_header = %{num_objects: 10, num_bytes: byte_size(encoded)}
+      {:ok, data_output, _rest} = ObjectContainer.decode_block_objects(ocf, block_header, encoded)
+      assert data_output == data_input
+    end
+  end
+
+  describe "full object container" do
+    setup testinfo do
+      data_scema =
+        AvroEx.decode_schema!(%{
+          "type" => "record",
+          "name" => "block_test_data",
+          "fields" => [%{"name" => "testdata1", "type" => "bytes"}, %{"name" => "testdata2", "type" => "int"}]
+        })
+      ocf = ObjectContainer.new(data_scema)
+      testinfo |> Map.merge(%{data_scema: data_scema, ocf: ocf})
+    end
+
+    test "encode and then decode a file with a single block", %{data_scema: data_scema, ocf: ocf} do
+      data_input = for v <- 1..10, do: %{"testdata1" => "test#{v}", "testdata2" => v}
+      file_data = ObjectContainer.encode_file!(ocf, data_input)
+      {:ok, ocf_output, data_output} = ObjectContainer.decode_file(file_data)
+      assert AvroEx.encode_schema(ocf_output.schema) == AvroEx.encode_schema(data_scema)
+      assert data_output == data_input
+    end
+
+    test "encode and then decode a file with a multiple blocks", %{data_scema: data_scema, ocf: ocf} do
+      data_input = for v <- 1..30, do: %{"testdata1" => "test#{v}", "testdata2" => v}
+      data_chunks = Enum.chunk_every(data_input, 10)
+      file_data = ObjectContainer.encode_file!(ocf, hd(data_chunks))
+      file_data = for block <- tl(data_chunks), reduce: file_data do
+        acc -> acc <> ObjectContainer.encode_block!(ocf, block)
+      end
+      {:ok, ocf_output, data_output} = ObjectContainer.decode_file(file_data)
+      assert AvroEx.encode_schema(ocf_output.schema) == AvroEx.encode_schema(data_scema)
+      assert data_output == data_input
     end
   end
 end
