@@ -139,10 +139,11 @@ defmodule AvroEx.ObjectContainer do
     end
   end
 
-  def check_block_footer(%__MODULE__{sync: sync}, <<read_sync::128, rest::binary>>) when sync == read_sync,
+  def check_block_footer(%__MODULE__{sync: sync}, <<read_sync::128, rest::binary>>) when sync == <<read_sync::128>>,
     do: {:ok, rest}
 
-  def check_block_footer(_, <<_::128, _::binary>>), do: {:error, %AvroEx.DecodeError{message: "Invalid sync bytes"}}
+  def check_block_footer(%__MODULE__{sync: sync}, <<read_sync::128, _::binary>>),
+    do: {:error, %AvroEx.DecodeError{message: "Invalid sync bytes: #{inspect(sync)} != #{inspect(read_sync)}"}}
 
   defp do_decode_block_objects(file_header, data, objects \\ [])
   defp do_decode_block_objects(_file_header, <<>>, objects), do: {:ok, Enum.reverse(objects)}
@@ -194,6 +195,10 @@ defmodule AvroEx.ObjectContainer do
     do_decode_blocks(file_header, data)
   end
 
-  def decode_file(data) do
+  def decode_file(data, opts \\ []) do
+    with {:ok, %__MODULE__{} = fileheader, rest} <- decode_file_header(data, opts),
+         {:ok, objects} <- decode_blocks(fileheader, rest) do
+      {:ok, fileheader, objects}
+    end
   end
 end
