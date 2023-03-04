@@ -41,12 +41,19 @@ defmodule AvroEx.Schema do
     encodable?(schema, context, data)
   end
 
+  @int32_range -2_147_483_648..2_147_483_647
+  @int64_range -9_223_372_036_854_775_808..9_223_372_036_854_775_807
+
   @spec encodable?(any(), any(), any()) :: boolean()
   def encodable?(%Primitive{type: :null}, _, nil), do: true
   def encodable?(%Primitive{type: :boolean}, _, bool) when is_boolean(bool), do: true
-  def encodable?(%Primitive{type: :int}, _, n) when is_integer(n), do: true
-  def encodable?(%Primitive{type: :long}, _, n) when is_integer(n), do: true
-  def encodable?(%Primitive{type: :float}, _, n) when is_float(n), do: true
+  def encodable?(%Primitive{type: :int}, _, n) when is_integer(n) and n in @int32_range, do: true
+  def encodable?(%Primitive{type: :long}, _, n) when is_integer(n) and n in @int64_range, do: true
+
+  def encodable?(%Primitive{type: :float}, _, n) when is_float(n) do
+    match?(<<^n::little-float-size(32)>>, <<n::little-float-size(32)>>)
+  end
+
   def encodable?(%Primitive{type: :double}, _, n) when is_float(n), do: true
   def encodable?(%Primitive{type: :bytes}, _, bytes) when is_binary(bytes), do: true
   def encodable?(%Primitive{type: :string}, _, str) when is_binary(str), do: String.valid?(str)
@@ -205,6 +212,9 @@ defmodule AvroEx.Schema do
 
       iex> type_name(%Record{name: "foo"})
       "Record<name=foo>"
+
+      iex> type_name(%Reference{type: "foo"})
+      "Reference<name=foo>"
   """
   @spec type_name(schema_types()) :: String.t()
   def type_name(%Primitive{type: :null}), do: "null"
@@ -214,6 +224,7 @@ defmodule AvroEx.Schema do
   def type_name(%Array{items: type}), do: "Array<items=#{type_name(type)}>"
   def type_name(%Union{possibilities: types}), do: "Union<possibilities=#{Enum.map_join(types, "|", &type_name/1)}>"
   def type_name(%Record{} = record), do: "Record<name=#{full_name(record)}>"
+  def type_name(%Reference{type: type}), do: "Reference<name=#{type}>"
   def type_name(%Record.Field{} = field), do: "Field<name=#{full_name(field)}>"
   def type_name(%Fixed{size: size} = fixed), do: "Fixed<name=#{full_name(fixed)}, size=#{size}>"
   def type_name(%AvroEnum{} = enum), do: "Enum<name=#{full_name(enum)}>"

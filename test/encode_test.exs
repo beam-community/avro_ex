@@ -246,6 +246,30 @@ defmodule AvroEx.Encode.Test do
       assert encoded_union == index <> encoded_int
     end
 
+    test "works as expected with int and long" do
+      {:ok, schema} = AvroEx.decode_schema(~S(["int", "long"]))
+      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
+      {:ok, long_schema} = AvroEx.decode_schema(~S("long"))
+
+      {:ok, index} = @test_module.encode(int_schema, 1)
+      {:ok, encoded_long} = @test_module.encode(long_schema, -3_376_656_585_598_455_353)
+      {:ok, encoded_union} = @test_module.encode(schema, -3_376_656_585_598_455_353)
+
+      assert encoded_union == index <> encoded_long
+    end
+
+    test "works as expected with float and double" do
+      {:ok, schema} = AvroEx.decode_schema(~S(["float", "double"]))
+      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
+      {:ok, double_schema} = AvroEx.decode_schema(~S("double"))
+
+      {:ok, index} = @test_module.encode(int_schema, 1)
+      {:ok, encoded_long} = @test_module.encode(double_schema, 0.0000000001)
+      {:ok, encoded_union} = @test_module.encode(schema, 0.0000000001)
+
+      assert encoded_union == index <> encoded_long
+    end
+
     test "works as expected with logical types" do
       datetime_json = ~S({"type": "long", "logicalType":"timestamp-millis"})
       datetime_value = ~U[2020-09-17 12:56:50.438Z]
@@ -367,6 +391,11 @@ defmodule AvroEx.Encode.Test do
     test "properly encodes an array with length, items, and terminal byte" do
       {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": "int"}))
       assert {:ok, <<6, 2, 4, 6, 0>>} = @test_module.encode(schema, [1, 2, 3])
+    end
+
+    test "properly encodes an array with length, byte_size, items, and terminal byte" do
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "array", "items": "int"}))
+      assert {:ok, <<5, 6, 2, 4, 6, 0>>} = @test_module.encode(schema, [1, 2, 3], include_block_byte_size: true)
     end
 
     test "encodes an empty array" do
@@ -493,6 +522,78 @@ defmodule AvroEx.Encode.Test do
               %AvroEx.EncodeError{
                 message: "Schema Mismatch: Expected value of string, got nil"
               }} = @test_module.encode(schema, %{})
+    end
+
+    test "(reference)" do
+      assert schema =
+               AvroEx.decode_schema!(%{
+                 "type" => "record",
+                 "namespace" => "beam.community",
+                 "name" => "Name",
+                 "fields" => [
+                   %{
+                     "name" => "first_name",
+                     "type" => %{
+                       "type" => "record",
+                       "name" => "DefinedRecord",
+                       "fields" => [
+                         %{
+                           "type" => "string",
+                           "name" => "full"
+                         }
+                       ]
+                     }
+                   },
+                   %{
+                     "type" => "beam.community.DefinedRecord",
+                     "name" => "last_name"
+                   }
+                 ]
+               })
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Record<name=DefinedRecord>, got :wat"
+              }} = @test_module.encode(schema, %{first_name: %{full: "foo"}, last_name: :wat})
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message: "Schema Mismatch: Expected value of Record<name=DefinedRecord>, got nil"
+              }} = @test_module.encode(schema, %{})
+    end
+
+    test "(reference with union)" do
+      assert schema =
+               AvroEx.decode_schema!(%{
+                 "type" => "record",
+                 "namespace" => "beam.community",
+                 "name" => "Name",
+                 "fields" => [
+                   %{
+                     "name" => "first_name",
+                     "type" => %{
+                       "type" => "record",
+                       "name" => "DefinedRecord",
+                       "fields" => [
+                         %{
+                           "type" => "string",
+                           "name" => "full"
+                         }
+                       ]
+                     }
+                   },
+                   %{
+                     "type" => ["null", "beam.community.DefinedRecord"],
+                     "name" => "last_name"
+                   }
+                 ]
+               })
+
+      assert {:error,
+              %AvroEx.EncodeError{
+                message:
+                  "Schema Mismatch: Expected value of Union<possibilities=null|Reference<name=beam.community.DefinedRecord>>, got :wat"
+              }} = @test_module.encode(schema, %{first_name: %{full: "foo"}, last_name: :wat})
     end
 
     test "(union)" do

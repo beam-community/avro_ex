@@ -58,7 +58,10 @@ defmodule AvroEx.Decode do
     {val, rest} = variable_integer_decode(data, 0, 0, 32)
     milliseconds = zigzag_decode(val)
 
-    {:ok, midnight} = Time.new(0, 0, 0)
+    # Create new time with :millisecond precision
+    # In 1.14.0 – 1.14.2 `Time.add` wouldn't increase the precision as needed
+    # https://github.com/elixir-lang/elixir/issues/12303
+    {:ok, midnight} = Time.new(0, 0, 0, {0, 3})
     time = Time.add(midnight, milliseconds, :millisecond)
 
     {time, rest}
@@ -79,7 +82,10 @@ defmodule AvroEx.Decode do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     microseconds = zigzag_decode(val)
 
-    {:ok, midnight} = Time.new(0, 0, 0)
+    # Create new time with :microsecond precision
+    # In 1.14.0 – 1.14.2 `Time.add` wouldn't increase the precision as needed
+    # https://github.com/elixir-lang/elixir/issues/12303
+    {:ok, midnight} = Time.new(0, 0, 0, {0, 6})
     time = Time.add(midnight, microseconds, :microsecond)
 
     {time, rest}
@@ -196,7 +202,12 @@ defmodule AvroEx.Decode do
   end
 
   defp do_decode(%Array{items: item_schema}, %Context{} = context, data, opts) when is_binary(data) do
-    {count, buffer} = do_decode(%Primitive{type: :long}, context, data, opts)
+    {count, buffer} =
+      with {count, rest} when count < 0 <-
+             do_decode(%Primitive{type: :long}, context, data, opts) do
+        {_byte_size, buffer} = do_decode(%Primitive{type: :long}, context, rest, opts)
+        {abs(count), buffer}
+      end
 
     if count > 0 do
       {decoded_items, rest} =
