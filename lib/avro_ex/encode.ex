@@ -118,9 +118,9 @@ defmodule AvroEx.Encode do
     scale = Map.get(metadata, "scale", 0)
 
     unscaled =
-          value / :math.pow(10, -scale)
       case value do
         value when is_number(value) ->
+          trunc(value / :math.pow(10, -scale))
 
         %struct{} when struct == Decimal ->
           if value.exp != -scale do
