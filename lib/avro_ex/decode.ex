@@ -130,6 +130,29 @@ defmodule AvroEx.Decode do
     {date_time, rest}
   end
 
+  defp do_decode(
+         %Primitive{type: :bytes, metadata: %{"logicalType" => "decimal"} = metadata},
+         %Context{} = context,
+         data,
+         opts
+       )
+       when is_binary(data) do
+    scale = Map.get(metadata, "scale", 0)
+    {bytes, rest} = do_decode(%Primitive{type: :bytes}, context, data, opts)
+
+    size = bit_size(bytes)
+    <<unscaled::big-signed-integer-size(size)>> = bytes
+
+    number =
+      if :exact == Keyword.get(opts, :decimals, false) do
+        Decimal.new(if(unscaled >= 0, do: 1, else: -1), abs(unscaled), -scale)
+      else
+        unscaled * :math.pow(10, -scale)
+      end
+
+    {number, rest}
+  end
+
   defp do_decode(%Primitive{type: :long}, %Context{}, data, _) when is_binary(data) do
     {val, rest} = variable_integer_decode(data, 0, 0, 64)
     {zigzag_decode(val), rest}

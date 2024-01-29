@@ -316,6 +316,34 @@ defmodule AvroEx.Decode.Test do
 
       assert Time.truncate(time, :millisecond) == now
     end
+
+    test "decimal" do
+      schema = "test/fixtures/decimal.avsc" |> File.read!() |> AvroEx.decode_schema!()
+      # This reference file was encoded using avro's reference implementation:
+      #
+      # ```java
+      # Conversions.DecimalConversion conversion = new Conversions.DecimalConversion();
+      # BigDecimal bigDecimal = new BigDecimal(valueInString);
+      # return conversion.toBytes(bigDecimal, schema, logicalType);
+      # ```
+      result = AvroEx.decode!(schema, File.read!("test/fixtures/decimal.avro"), decimals: :exact)
+
+      assert result == %{
+               "decimalField1" => Decimal.new("1.23456789E-7"),
+               "decimalField2" => Decimal.new("4.54545454545E-35"),
+               "decimalField3" => Decimal.new("-111111111.1"),
+               "decimalField4" => Decimal.new("5.3E-11")
+             }
+
+      result_approximate_values = AvroEx.decode!(schema, File.read!("test/fixtures/decimal.avro"))
+
+      assert result_approximate_values == %{
+               "decimalField1" => 1.2345678900000002e-7,
+               "decimalField2" => 4.54545454545e-35,
+               "decimalField3" => -111_111_111.10000001,
+               "decimalField4" => 5.3e-11
+             }
+    end
   end
 
   describe "DecodingError" do

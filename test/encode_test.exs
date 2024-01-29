@@ -75,6 +75,34 @@ defmodule AvroEx.Encode.Test do
       date2 = ~D[1970-03-01]
       assert {:ok, "v"} = AvroEx.encode(schema, date2)
     end
+
+    test "decimal" do
+      schema = "test/fixtures/decimal.avsc" |> File.read!() |> AvroEx.decode_schema!()
+
+      encoded =
+        AvroEx.encode!(schema, %{
+          "decimalField1" => Decimal.new("1.23456789E-7"),
+          "decimalField2" => Decimal.new("4.54545454545E-35"),
+          "decimalField3" => Decimal.new("-111111111.1"),
+          "decimalField4" => Decimal.new("5.3E-11")
+        })
+
+      assert AvroEx.decode!(schema, encoded, decimals: :exact) == %{
+               "decimalField1" => Decimal.new("1.23456789E-7"),
+               "decimalField2" => Decimal.new("4.54545454545E-35"),
+               "decimalField3" => Decimal.new("-111111111.1"),
+               "decimalField4" => Decimal.new("5.3E-11")
+             }
+
+      # This reference file was encoded using avro's reference implementation:
+      #
+      # ```java
+      # Conversions.DecimalConversion conversion = new Conversions.DecimalConversion();
+      # BigDecimal bigDecimal = new BigDecimal(valueInString);
+      # return conversion.toBytes(bigDecimal, schema, logicalType);
+      # ```
+      assert encoded == File.read!("test/fixtures/decimal.avro")
+    end
   end
 
   describe "variable_integer_encode" do

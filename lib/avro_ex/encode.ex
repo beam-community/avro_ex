@@ -109,6 +109,31 @@ defmodule AvroEx.Encode do
     |> encode_integer(schema)
   end
 
+  defp do_encode(
+         %Primitive{type: :bytes, metadata: %{"logicalType" => "decimal"} = metadata},
+         %Context{} = context,
+         value,
+         opts
+       ) do
+    scale = Map.get(metadata, "scale", 0)
+
+    unscaled =
+      cond do
+        is_number(value) ->
+          value / :math.pow(10, -scale)
+
+        match?(%Decimal{}, value) ->
+          if value.exp != -scale do
+            error("Incompatible decimal: expected scale #{-scale}, got #{value.exp}")
+          end
+
+          value.coef * value.sign
+      end
+
+    bin = <<unscaled::big-signed-integer-size(value_size(unscaled))>>
+    do_encode(%Primitive{type: :bytes}, context, bin, opts)
+  end
+
   defp do_encode(%Primitive{type: :long} = schema, %Context{}, long, _) when is_integer(long) do
     encode_integer(long, schema)
   end
@@ -289,6 +314,14 @@ defmodule AvroEx.Encode do
     schema
     |> zigzag_encode(int)
     |> variable_integer_encode
+  end
+
+  defp value_size(value, bits \\ 8) do
+    if :math.pow(2, bits) > abs(value) do
+      bits
+    else
+      value_size(value, bits + 8)
+    end
   end
 
   @compile {:inline, error: 1}

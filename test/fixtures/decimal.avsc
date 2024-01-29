@@ -1,0 +1,43 @@
+{
+  "namespace": "example.avro",
+  "type": "record",
+  "name": "decimalContainer",
+  "fields": [
+    {
+      "name": "decimalField1",
+      "type": {
+        "type": "bytes",
+        "scale": 15,
+        "precision": 11,
+        "logicalType": "decimal"
+      }
+    },
+    {
+      "name": "decimalField2",
+      "type": {
+        "type": "bytes",
+        "scale": 46,
+        "precision": 46,
+        "logicalType": "decimal"
+      }
+    },
+    {
+      "name": "decimalField3",
+      "type": {
+        "type": "bytes",
+        "scale": 1,
+        "precision": 46,
+        "logicalType": "decimal"
+      }
+    },
+    {
+      "name": "decimalField4",
+      "type": {
+        "type": "bytes",
+        "scale": 12,
+        "precision": 46,
+        "logicalType": "decimal"
+      }
+    }
+  ]
+}
