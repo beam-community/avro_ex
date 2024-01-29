@@ -144,8 +144,10 @@ defmodule AvroEx.Decode do
     <<unscaled::big-signed-integer-size(size)>> = bytes
 
     number =
-      if :exact == Keyword.get(opts, :decimals, false) do
-        Decimal.new(if(unscaled >= 0, do: 1, else: -1), abs(unscaled), -scale)
+      if :exact == Keyword.get(opts, :decimals) do
+        # avoid undefined cross reference for optional dependency
+        decimal = Decimal
+        decimal.new(if(unscaled >= 0, do: 1, else: -1), abs(unscaled), -scale)
       else
         unscaled * :math.pow(10, -scale)
       end

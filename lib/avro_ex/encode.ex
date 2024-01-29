@@ -118,11 +118,11 @@ defmodule AvroEx.Encode do
     scale = Map.get(metadata, "scale", 0)
 
     unscaled =
-      cond do
-        is_number(value) ->
           value / :math.pow(10, -scale)
+      case value do
+        value when is_number(value) ->
 
-        match?(%Decimal{}, value) ->
+        %struct{} when struct == Decimal ->
           if value.exp != -scale do
             error("Incompatible decimal: expected scale #{-scale}, got #{value.exp}")
           end
