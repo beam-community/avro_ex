@@ -130,7 +130,9 @@ defmodule AvroEx.Encode do
           value.coef * value.sign
       end
 
-    bin = <<unscaled::big-signed-integer-size(value_size(unscaled))>>
+    number_of_bits = value_size(unscaled)
+
+    bin = <<unscaled::big-signed-integer-size(number_of_bits)>>
     do_encode(%Primitive{type: :bytes}, context, bin, opts)
   end
 
@@ -316,7 +318,7 @@ defmodule AvroEx.Encode do
     |> variable_integer_encode
   end
 
-  defp value_size(value, bits \\ 8) do
+  defp value_size(value, bits \\ 8) when is_number(value) do
     if :math.pow(2, bits) > abs(value) do
       bits
     else
