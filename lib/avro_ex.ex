@@ -177,6 +177,14 @@ defmodule AvroEx do
   values as a tagged tuple of `{name, value}` instead of just the plain `value`.
   This allows to retain the information about which union schema was used for
   encoding when this cannot be infered from the `value` alone.
+
+  ## Decimals
+
+  Specify the option `decimals: :exact` to use `Decimal.new/3` to parse decimals
+  into a Decimal struct with arbitrary precision.
+
+  Otherwise, an approximate number is calculated.
+
   """
   @spec decode(Schema.t(), encoded_avro, keyword()) ::
           {:ok, term}

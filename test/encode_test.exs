@@ -75,6 +75,50 @@ defmodule AvroEx.Encode.Test do
       date2 = ~D[1970-03-01]
       assert {:ok, "v"} = AvroEx.encode(schema, date2)
     end
+
+    test "decimal" do
+      schema = "test/fixtures/decimal.avsc" |> File.read!() |> AvroEx.decode_schema!()
+
+      payload = %{
+        "decimalField1" => Decimal.new("1.23456789E-7"),
+        "decimalField2" => Decimal.new("4.54545454545E-35"),
+        "decimalField3" => Decimal.new("-111111111.1"),
+        "decimalField4" => Decimal.new("5.3E-11")
+      }
+
+      # Round-trip the encoder/decoder
+      encoded = AvroEx.encode!(schema, payload)
+      assert AvroEx.decode!(schema, encoded, decimals: :exact) == payload
+
+      # This reference file was encoded using avro's reference implementation:
+      #
+      # ```java
+      # Conversions.DecimalConversion conversion = new Conversions.DecimalConversion();
+      # BigDecimal bigDecimal = new BigDecimal(valueInString);
+      # return conversion.toBytes(bigDecimal, schema, logicalType);
+      # ```
+      assert encoded == File.read!("test/fixtures/decimal.avro")
+    end
+
+    test "decimal without using the Decimal library" do
+      schema = "test/fixtures/decimal.avsc" |> File.read!() |> AvroEx.decode_schema!()
+
+      encoded =
+        AvroEx.encode!(schema, %{
+          "decimalField1" => 1.23456789e-7,
+          "decimalField2" => 4.54545454545e-35,
+          "decimalField3" => -111_111_111.1,
+          "decimalField4" => 5.3e-11
+        })
+
+      # Without using decimals, the results are inevitably approximate
+      assert AvroEx.decode!(schema, encoded) == %{
+               "decimalField1" => 1.2345678800000002e-7,
+               "decimalField2" => 4.54545454545e-35,
+               "decimalField3" => -111_111_111.0,
+               "decimalField4" => 5.3e-11
+             }
+    end
   end
 
   describe "variable_integer_encode" do
