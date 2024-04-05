@@ -173,6 +173,10 @@ defmodule AvroEx.Encode do
     error({:incorrect_fixed_size, fixed, bin, context})
   end
 
+  defp do_encode(%Record{} = r, %Context{} = context, record, opts) when is_struct(record) do
+    do_encode(r, context, Map.from_struct(record), opts)
+  end
+
   defp do_encode(%Record{fields: fields}, %Context{} = context, record, opts) when is_map(record) do
     record =
       Map.new(record, fn
