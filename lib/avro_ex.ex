@@ -137,8 +137,8 @@ defmodule AvroEx do
   over those blocks in an efficient manner. Using the option `include_block_byte_size: true`
   enables adding those additional values.
   """
-  @spec encode(Schema.t(), term, keyword()) ::
-          {:ok, encoded_avro} | {:error, AvroEx.EncodeError.t() | Exception.t()}
+  @spec encode(Schema.t(), term(), keyword()) ::
+          {:ok, encoded_avro()} | {:error, AvroEx.EncodeError.t() | Exception.t()}
   def encode(schema, data, opts \\ []) do
     AvroEx.Encode.encode(schema, data, opts)
   end
@@ -184,15 +184,51 @@ defmodule AvroEx do
   into a Decimal struct with arbitrary precision.
 
   Otherwise, an approximate number is calculated.
-
   """
-  @spec decode(Schema.t(), encoded_avro, keyword()) ::
+  @spec decode(Schema.t(), encoded_avro(), keyword()) ::
           {:ok, term}
           | {:error, AvroEx.DecodeError.t()}
   def decode(schema, message, opts \\ []) do
     case AvroEx.Decode.decode(schema, message, opts) do
       {:ok, value, _} -> {:ok, value}
       {:error, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Given an encoded message, its accompanying schema and the a struct, decodes the message as a struct.
+
+  ## Example
+  Suppose to have a struct defined in this way:
+
+    defmodule TestType do
+      @enforce_keys [:status, :details]
+      defstruct [status: 0, details: ""]
+      @type t :: %__MODULE__{status: Integer.t(), details: String.t()}
+    end
+
+  Now you want to encode and decode it using the user defined struct calle TestType:
+
+      iex> val = %TestType{status: 1, details: "hello!"}
+      iex> schema = AvroEx.decode_schema!(~S({"type": "record", "name": "simple", "fields": [{"name": "status", "type": "long"}, {"name": "details", "type": "string"}]}))
+      iex> {:ok, msg_enc} = AvroEx.encode(schema, val)
+      iex> AvroEx.decode_as(schema, TestType, msg_enc)
+      {:ok, %TestType{status: 1, details: "hello!"}}
+  """
+  @spec decode_as(Schema.t(), atom(), encoded_avro(), keyword()) :: {:ok, struct()} | {:error, AvroEx.DecodeError.t()}
+  def decode_as(schema, user_struct, message, opts \\ []) do
+    case decode(schema, message, opts) do
+      {:ok, value} ->
+        conv_value =
+          Map.new(value, fn
+            {k, v} when is_binary(k) -> {String.to_atom(k), v}
+            {k, v} when is_atom(k) -> {k, v}
+          end)
+
+        {:ok, struct!(user_struct, conv_value)}
+
+      {:error, _reason} = e ->
+        e
     end
   end
 
@@ -214,6 +250,22 @@ defmodule AvroEx do
   def decode!(schema, message, opts \\ []) do
     case AvroEx.Decode.decode(schema, message, opts) do
       {:ok, value, _} -> value
+      {:error, error} -> raise error
+    end
+  end
+
+  @doc """
+  Same as decode_as/3, but returns raw decoded value.
+
+  Raises `t:AvroEx.DecodeError.t/0` on error.
+
+  For documentation of `opts` see `decode/3`.
+  """
+
+  @spec decode_as!(Schema.t(), atom(), encoded_avro(), keyword()) :: term()
+  def decode_as!(schema, user_struct, message, opts \\ []) do
+    case decode_as(schema, user_struct, message, opts) do
+      {:ok, value} -> value
       {:error, error} -> raise error
     end
   end
