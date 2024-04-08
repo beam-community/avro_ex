@@ -32,4 +32,10 @@ defmodule AvroEx.EncodeError do
       message: "Invalid size for #{type}. Size of #{byte_size(binary)} for #{inspect(binary)}"
     }
   end
+
+  def new({:incompatible_decimal, expected_scale, actual_scale}) do
+    %__MODULE__{
+      message: "Incompatible decimal: expected scale #{expected_scale}, got #{actual_scale}"
+    }
+  end
 end

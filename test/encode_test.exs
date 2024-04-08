@@ -100,6 +100,21 @@ defmodule AvroEx.Encode.Test do
       assert encoded == File.read!("test/fixtures/decimal.avro")
     end
 
+    test "decimal encoding error" do
+      schema = "test/fixtures/decimal.avsc" |> File.read!() |> AvroEx.decode_schema!()
+
+      payload = %{
+        "decimalField1" => Decimal.new("1E-10"),
+        "decimalField2" => Decimal.new("0"),
+        "decimalField3" => Decimal.new("0"),
+        "decimalField4" => Decimal.new("0")
+      }
+
+      assert_raise(AvroEx.EncodeError, "Incompatible decimal: expected scale -15, got -10", fn ->
+        AvroEx.encode!(schema, payload)
+      end)
+    end
+
     test "decimal without using the Decimal library" do
       schema = "test/fixtures/decimal.avsc" |> File.read!() |> AvroEx.decode_schema!()
 
