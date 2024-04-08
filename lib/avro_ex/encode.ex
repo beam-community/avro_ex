@@ -124,7 +124,7 @@ defmodule AvroEx.Encode do
 
         %struct{} when struct == Decimal ->
           if value.exp != -scale do
-            error("Incompatible decimal: expected scale #{-scale}, got #{value.exp}")
+            error({:incompatible_decimal, -scale, value.exp})
           end
 
           value.coef * value.sign
