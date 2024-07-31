@@ -2,7 +2,7 @@ defmodule AvroEx.Mixfile do
   use Mix.Project
 
   @url "http://github.com/beam-community/avro_ex"
-  @version "2.1.0"
+  @version "2.2.0"
 
   def project do
     [

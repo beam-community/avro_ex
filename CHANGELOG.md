@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.2.0 - July 31st, 2024
+
+### Added
+
+- Support for encoding and decoding Decimals
+
+### Fixed
+
+- Incorrect error for decimal encoding
+- String.slice deprecation warning
+
 ## v2.1.0 - March 28th, 2023
 
 ### Added

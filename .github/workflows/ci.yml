@@ -5,33 +5,33 @@ on:
     types: [opened, reopened, synchronize]
   push:
     branches:
-      - "master"
+      - "main"
 jobs:
   test:
     name: Build and test
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Elixir
-      uses: erlef/setup-beam@v1.15
-      with:
-        elixir-version: '1.13.3' # Define the elixir version [required]
-        otp-version: '24.2.1' # Define the OTP version [required]
-    - name: Restore dependencies cache
-      uses: actions/cache@v2
-      with:
-        path: deps
-        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-        restore-keys: ${{ runner.os }}-mix-
-    - name: Install dependencies
-      run: mix deps.get
-    - name: Run tests
-      run: mix test
-    - name: Check formatting
-      run: mix format --check-formatted
-    - name: Credo
-      run: mix credo
+      - uses: actions/checkout@v2
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1.15
+        with:
+          elixir-version: "1.13.3" # Define the elixir version [required]
+          otp-version: "24.2.1" # Define the OTP version [required]
+      - name: Restore dependencies cache
+        uses: actions/cache@v2
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+      - name: Install dependencies
+        run: mix deps.get
+      - name: Run tests
+        run: mix test
+      - name: Check formatting
+        run: mix format --check-formatted
+      - name: Credo
+        run: mix credo
 
   dialyzer:
     name: Run Dialyzer for type checking
@@ -56,7 +56,7 @@ jobs:
       - name: Run Dialyzer
         uses: erlef/setup-beam@v1.15
         with:
-          elixir-version: '1.13.3' # Define the elixir version [required]
-          otp-version: '24.2.1' # Define the OTP version [required]
+          elixir-version: "1.13.3" # Define the elixir version [required]
+          otp-version: "24.2.1" # Define the OTP version [required]
       - run: mix deps.get
       - run: mix dialyzer
