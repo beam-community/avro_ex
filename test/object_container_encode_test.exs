@@ -4,6 +4,8 @@ defmodule AvroEx.ObjectContainer.Encode.Test do
   alias AvroEx.ObjectContainer
   alias AvroEx.ObjectContainer.Codec
 
+  doctest AvroEx.ObjectContainer
+
   describe "encode file header" do
     test "new containers have different sync bytes" do
       containers =
