@@ -10,7 +10,7 @@ jobs:
     env:
       HEX_API_KEY: ${{ secrets.HEXPM_SECRET }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1.15
         with:
           elixir-version: '1.13.3'
