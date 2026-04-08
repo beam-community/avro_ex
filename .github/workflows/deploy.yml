@@ -11,10 +11,10 @@ jobs:
       HEX_API_KEY: ${{ secrets.HEXPM_SECRET }}
     steps:
       - uses: actions/checkout@v4
-      - uses: erlef/setup-beam@v1.15
+      - uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.13.3'
-          otp-version: '24.2.1'
+          otp-version: '24.3'
       - run: mix deps.get
       - run: mix compile --docs
       - run: mix hex.publish --yes

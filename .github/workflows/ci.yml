@@ -14,10 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Elixir
-        uses: erlef/setup-beam@v1.15
+        uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.13.3" # Define the elixir version [required]
-          otp-version: "24.2.1" # Define the OTP version [required]
+          otp-version: "24.3" # Define the OTP version [required]
       - name: Restore dependencies cache
         uses: actions/cache@v4
         with:
@@ -54,9 +54,9 @@ jobs:
           restore-keys: |
             plt-cache-
       - name: Run Dialyzer
-        uses: erlef/setup-beam@v1.15
+        uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.13.3" # Define the elixir version [required]
-          otp-version: "24.2.1" # Define the OTP version [required]
+          otp-version: "24.3" # Define the OTP version [required]
       - run: mix deps.get
       - run: mix dialyzer
