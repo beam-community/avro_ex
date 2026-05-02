@@ -12,4 +12,9 @@ defmodule AvroEx.DecodeError do
     message = "Invalid UTF-8 string found #{inspect(str)}."
     %__MODULE__{message: message}
   end
+
+  def new({:invalid_binary_uuid, binary_uuid}) do
+    message = "Invalid binary UUID found #{inspect(binary_uuid)}."
+    %__MODULE__{message: message}
+  end
 end

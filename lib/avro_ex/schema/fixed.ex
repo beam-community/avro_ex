@@ -19,5 +19,10 @@ defmodule AvroEx.Schema.Fixed do
     true
   end
 
+  def match?(%__MODULE__{size: 16, metadata: %{"logicalType" => "uuid"}}, %Context{}, data)
+      when is_binary(data) do
+    Uniq.UUID.valid?(data)
+  end
+
   def match?(_fixed, _context, _data), do: false
 end

@@ -344,6 +344,20 @@ defmodule AvroEx.Decode.Test do
                "decimalField4" => 5.3e-11
              }
     end
+
+    test "16 byte fixed uuid" do
+      {:ok, fixed_uuid_schema} =
+        AvroEx.decode_schema(~S({"type": "fixed", "size": 16, "name": "fixed_uuid", "logicalType":"uuid"}))
+
+      # Example from https://en.wikipedia.org/wiki/Universally_unique_identifier#Textual_representation
+      canonical_string = "550e8400-e29b-41d4-a716-446655440000"
+      binary = :binary.encode_unsigned(113_059_749_145_936_325_402_354_257_176_981_405_696)
+
+      assert {:ok, ^binary} = AvroEx.decode(fixed_uuid_schema, binary, uuid_format: :binary)
+      assert {:ok, ^binary} = AvroEx.decode(fixed_uuid_schema, binary)
+
+      assert {:ok, ^canonical_string} = AvroEx.decode(fixed_uuid_schema, binary, uuid_format: :canonical_string)
+    end
   end
 
   describe "DecodingError" do
@@ -353,6 +367,19 @@ defmodule AvroEx.Decode.Test do
       assert_raise DecodeError, "Invalid UTF-8 string found <<104, 101, 108, 108, 255>>.", fn ->
         AvroEx.decode!(schema, <<"\nhell", 0xFFFF::16>>)
       end
+    end
+
+    test "invalid fixed uuid" do
+      {:ok, fixed_uuid_schema} =
+        AvroEx.decode_schema(~S({"type": "fixed", "size": 16, "name": "fixed_uuid", "logicalType":"uuid"}))
+
+      non_uuid_binary = :binary.list_to_bin(List.duplicate(1, 16))
+
+      assert_raise DecodeError,
+                   "Invalid binary UUID found <<1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>>.",
+                   fn ->
+                     AvroEx.decode!(fixed_uuid_schema, non_uuid_binary, uuid_format: :canonical_string)
+                   end
     end
   end
 end

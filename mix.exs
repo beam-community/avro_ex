@@ -37,7 +37,8 @@ defmodule AvroEx.Mixfile do
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:ex_doc, "~> 0.20", only: :dev, runtime: false},
       {:stream_data, "~> 0.5", only: [:dev, :test]},
-      {:decimal, "~> 2.0", optional: true}
+      {:decimal, "~> 2.0", optional: true},
+      {:uniq, "~> 0.6"}
     ]
   end
 

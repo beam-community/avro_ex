@@ -270,6 +270,25 @@ defmodule AvroEx.Decode do
     {:lists.nth(index + 1, symbols), rest}
   end
 
+  defp do_decode(%Fixed{size: size = 16, metadata: %{"logicalType" => "uuid"}}, %Context{}, data, opts)
+       when is_binary(data) do
+    <<fixed::binary-size(size), rest::binary>> = data
+
+    case Keyword.get(opts, :uuid_format, :binary) do
+      :binary ->
+        {fixed, rest}
+
+      :canonical_string ->
+        case Uniq.UUID.parse(fixed) do
+          {:ok, uuid} ->
+            {Uniq.UUID.to_string(uuid, :default), rest}
+
+          _ ->
+            error({:invalid_binary_uuid, fixed})
+        end
+    end
+  end
+
   defp do_decode(%Fixed{size: size}, %Context{}, data, _) when is_binary(data) do
     <<fixed::binary-size(size), rest::binary>> = data
     {fixed, rest}

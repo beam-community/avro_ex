@@ -136,6 +136,14 @@ defmodule AvroEx do
   of blocks with their counts. This allows consumers of the encoded data to skip
   over those blocks in an efficient manner. Using the option `include_block_byte_size: true`
   enables adding those additional values.
+
+  ## UUID encoding
+
+  UUIDs can be decoded as strings using the canonical hex representation with 37 bytes.
+  Alternatively, encoding UUIDs in their 16 byte binary representation is much
+  more compact, saving 21 bytes per encoding.
+  See "UUIDs" on `decode/3` for how to convert binary representations back to
+  canonical strings during decoding.
   """
   @spec encode(Schema.t(), term, keyword()) ::
           {:ok, encoded_avro} | {:error, AvroEx.EncodeError.t() | Exception.t()}
@@ -184,6 +192,19 @@ defmodule AvroEx do
   into a Decimal struct with arbitrary precision.
 
   Otherwise, an approximate number is calculated.
+
+  ## UUIDs
+
+  When decoding a 16 byte fixed quantity with logical type "uuid", specify
+  `uuid_format: :binary` to retain the binary representation or
+  `uuid_format: :canonical_string` to convert to the canonical, hex as string representation.
+
+      iex> schema = AvroEx.decode_schema!(~S({"type": "fixed", "size": 16, "name": "fixed_uuid", "logicalType":"uuid"}))
+      iex> binary_uuid = <<85, 14, 132, 0, 226, 155, 65, 212, 167, 22, 68, 102, 85, 68, 0, 0>>
+      iex> AvroEx.decode(schema, binary_uuid, uuid_format: :binary)
+      {:ok, binary_uuid}
+      iex> AvroEx.decode(schema, binary_uuid, uuid_format: :canonical_string)
+      {:ok, "550e8400-e29b-41d4-a716-446655440000"}
 
   """
   @spec decode(Schema.t(), encoded_avro, keyword()) ::

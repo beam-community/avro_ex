@@ -134,6 +134,19 @@ defmodule AvroEx.Encode.Test do
                "decimalField4" => 5.3e-11
              }
     end
+
+    test "16 byte fixed uuid" do
+      assert %AvroEx.Schema{} =
+               schema =
+               AvroEx.decode_schema!(%{"type" => "fixed", "size" => 16, "name" => "fixed_uuid", "logicalType" => "uuid"})
+
+      # Example from https://en.wikipedia.org/wiki/Universally_unique_identifier#Textual_representation
+      canonical_string = "550e8400-e29b-41d4-a716-446655440000"
+      binary = :binary.encode_unsigned(113_059_749_145_936_325_402_354_257_176_981_405_696)
+
+      assert {:ok, ^binary} = AvroEx.encode(schema, canonical_string)
+      assert {:ok, ^binary} = AvroEx.encode(schema, binary)
+    end
   end
 
   describe "variable_integer_encode" do
@@ -282,51 +295,50 @@ defmodule AvroEx.Encode.Test do
   end
 
   describe "encode (union)" do
+    defp union_index(index) do
+      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
+      {:ok, index} = @test_module.encode(int_schema, index)
+      index
+    end
+
     test "works as expected with nulls" do
       {:ok, schema} = AvroEx.decode_schema(~S(["null", "int"]))
       {:ok, null_schema} = AvroEx.decode_schema(~S("null"))
-      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
 
-      {:ok, index} = @test_module.encode(int_schema, 0)
       {:ok, encoded_null} = @test_module.encode(null_schema, nil)
       {:ok, encoded_union} = @test_module.encode(schema, nil)
 
-      assert encoded_union == index <> encoded_null
+      assert encoded_union == union_index(0) <> encoded_null
     end
 
     test "works as expected with ints" do
       {:ok, schema} = AvroEx.decode_schema(~S(["null", "int"]))
       {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
 
-      {:ok, index} = @test_module.encode(int_schema, 1)
       {:ok, encoded_int} = @test_module.encode(int_schema, 2086)
       {:ok, encoded_union} = @test_module.encode(schema, 2086)
 
-      assert encoded_union == index <> encoded_int
+      assert encoded_union == union_index(1) <> encoded_int
     end
 
     test "works as expected with int and long" do
       {:ok, schema} = AvroEx.decode_schema(~S(["int", "long"]))
-      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
       {:ok, long_schema} = AvroEx.decode_schema(~S("long"))
 
-      {:ok, index} = @test_module.encode(int_schema, 1)
       {:ok, encoded_long} = @test_module.encode(long_schema, -3_376_656_585_598_455_353)
       {:ok, encoded_union} = @test_module.encode(schema, -3_376_656_585_598_455_353)
 
-      assert encoded_union == index <> encoded_long
+      assert encoded_union == union_index(1) <> encoded_long
     end
 
     test "works as expected with float and double" do
       {:ok, schema} = AvroEx.decode_schema(~S(["float", "double"]))
-      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
       {:ok, double_schema} = AvroEx.decode_schema(~S("double"))
 
-      {:ok, index} = @test_module.encode(int_schema, 1)
       {:ok, encoded_long} = @test_module.encode(double_schema, 0.0000000001)
       {:ok, encoded_union} = @test_module.encode(schema, 0.0000000001)
 
-      assert encoded_union == index <> encoded_long
+      assert encoded_union == union_index(1) <> encoded_long
     end
 
     test "works as expected with logical types" do
@@ -336,11 +348,23 @@ defmodule AvroEx.Encode.Test do
       {:ok, schema} = AvroEx.decode_schema(~s(["null", #{datetime_json}]))
       {:ok, datetime_schema} = AvroEx.decode_schema(datetime_json)
 
-      {:ok, index} = @test_module.encode(datetime_schema, 1)
       {:ok, encoded_datetime} = @test_module.encode(datetime_schema, datetime_value)
       {:ok, encoded_union} = @test_module.encode(schema, datetime_value)
 
-      assert encoded_union == index <> encoded_datetime
+      assert encoded_union == union_index(1) <> encoded_datetime
+    end
+
+    test "works as expected with 16 byte fixed UUID logical types" do
+      fixed_uuid_json = ~S({"type": "fixed", "size": 16, "name": "fixed_uuid", "logicalType": "uuid"})
+      uuid_value = "550e8400-e29b-41d4-a716-446655440000"
+
+      {:ok, schema} = AvroEx.decode_schema(~s(["null", #{fixed_uuid_json}]))
+      {:ok, fixed_uuid_schema} = AvroEx.decode_schema(fixed_uuid_json)
+
+      {:ok, encoded_uuid} = @test_module.encode(fixed_uuid_schema, uuid_value)
+      {:ok, encoded_union} = @test_module.encode(schema, uuid_value)
+
+      assert encoded_union == union_index(1) <> encoded_uuid
     end
 
     test "works as expected with records" do
@@ -358,14 +382,12 @@ defmodule AvroEx.Encode.Test do
       json_schema = ~s(["null", #{record_json}])
 
       {:ok, schema} = AvroEx.decode_schema(json_schema)
-      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
       {:ok, record_schema} = AvroEx.decode_schema(record_json)
 
-      {:ok, index} = @test_module.encode(int_schema, 1)
       {:ok, encoded_record} = @test_module.encode(record_schema, %{"a" => 25, "b" => "hello"})
       {:ok, encoded_union} = @test_module.encode(schema, %{"a" => 25, "b" => "hello"})
 
-      assert encoded_union == index <> encoded_record
+      assert encoded_union == union_index(1) <> encoded_record
     end
 
     test "works as expected with union values tagged for a named possibility" do
@@ -384,14 +406,12 @@ defmodule AvroEx.Encode.Test do
       json_schema = ~s([#{record_json_factory.("a")}, #{record_json_factory.("b")}])
 
       {:ok, schema} = AvroEx.decode_schema(json_schema)
-      {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
       {:ok, record_schema} = AvroEx.decode_schema(record_json_factory.("b"))
 
-      {:ok, index} = @test_module.encode(int_schema, 1)
       {:ok, encoded_record} = @test_module.encode(record_schema, %{"value" => "hello"})
       {:ok, encoded_union} = @test_module.encode(schema, {"b", %{"value" => "hello"}})
 
-      assert encoded_union == index <> encoded_record
+      assert encoded_union == union_index(1) <> encoded_record
     end
 
     test "errors with a clear error for tagged unions" do

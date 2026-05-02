@@ -169,6 +169,11 @@ defmodule AvroEx.Encode do
     bin
   end
 
+  defp do_encode(%Fixed{size: 16, metadata: %{"logicalType" => "uuid"}} = f, %Context{} = context, bin, opts)
+       when is_binary(bin) do
+    do_encode(f, context, Uniq.UUID.string_to_binary!(bin), opts)
+  end
+
   defp do_encode(%Fixed{} = fixed, %Context{} = context, bin, _) when is_binary(bin) do
     error({:incorrect_fixed_size, fixed, bin, context})
   end
