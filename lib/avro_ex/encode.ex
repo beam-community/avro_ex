@@ -216,17 +216,24 @@ defmodule AvroEx.Encode do
         <<0>>
 
       size ->
-        acc = do_encode(%Primitive{type: :long}, context, size, opts)
-
-        encoded_map =
-          Enum.reduce(map, acc, fn {k, v}, acc ->
+        map_payload =
+          Enum.reduce(map, <<>>, fn {k, v}, acc ->
             key = do_encode(%Primitive{type: :string}, context, k, opts)
             value = do_encode(values, context, v, opts)
 
             acc <> key <> value
           end)
 
-        encoded_map <> <<0>>
+        header =
+          if Keyword.get(opts, :include_block_byte_size, false) do
+            negated_count = do_encode(%Primitive{type: :long}, context, -1 * size, opts)
+            byte_size = do_encode(%Primitive{type: :long}, context, byte_size(map_payload), opts)
+            negated_count <> byte_size
+          else
+            do_encode(%Primitive{type: :long}, context, size, opts)
+          end
+
+        header <> map_payload <> <<0>>
     end
   end
 
