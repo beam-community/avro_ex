@@ -14,12 +14,10 @@ defmodule AvroEx.Decode do
   @spec decode(AvroEx.Schema.t(), binary(), keyword()) :: {:ok, any(), binary()} | {:error, AvroEx.DecodeError.t()}
   def decode(%Schema{schema: schema, context: context}, avro_message, opts \\ [])
       when is_binary(avro_message) do
-    try do
-      {value, rest} = do_decode(schema, context, avro_message, opts)
-      {:ok, value, rest}
-    catch
-      :throw, %DecodeError{} = e -> {:error, e}
-    end
+    {value, rest} = do_decode(schema, context, avro_message, opts)
+    {:ok, value, rest}
+  catch
+    :throw, %DecodeError{} = e -> {:error, e}
   end
 
   defp do_decode(%Reference{type: name}, %Context{} = context, data, opts) do

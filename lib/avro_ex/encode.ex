@@ -15,11 +15,9 @@ defmodule AvroEx.Encode do
   @doc false
   @spec encode(Schema.t(), term, keyword()) :: {:ok, AvroEx.encoded_avro()} | {:error, EncodeError.t() | Exception.t()}
   def encode(%Schema{context: %Context{} = context, schema: schema}, data, opts \\ []) do
-    try do
-      {:ok, do_encode(schema, context, data, opts)}
-    catch
-      :throw, %EncodeError{} = e -> {:error, e}
-    end
+    {:ok, do_encode(schema, context, data, opts)}
+  catch
+    :throw, %EncodeError{} = e -> {:error, e}
   end
 
   defp do_encode(%Reference{type: type}, %Context{} = context, data, opts) do

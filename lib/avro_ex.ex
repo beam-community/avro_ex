@@ -63,11 +63,9 @@ defmodule AvroEx do
   """
   @spec decode_schema(term(), Keyword.t()) :: {:ok, Schema.t()} | {:error, AvroEx.Schema.DecodeError.t()}
   def decode_schema(schema, opts \\ []) do
-    try do
-      {:ok, decode_schema!(schema, opts)}
-    rescue
-      error -> {:error, error}
-    end
+    {:ok, decode_schema!(schema, opts)}
+  rescue
+    error -> {:error, error}
   end
 
   @doc """
