@@ -10,7 +10,7 @@ The docs can be found on [hex.pm](https://hexdocs.pm/avro_ex/AvroEx.html)
 
 ```elixir
 def deps do
-  [{:avro_ex, "~> 2.0"}]
+  [{:avro_ex, "~> 2.2"}]
 end
 ```
 
