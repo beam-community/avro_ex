@@ -260,15 +260,17 @@ defmodule AvroEx.Schema.Test do
       "string" => "12345"
     }
 
-    for a <- @values,
-        b <- @values do
+    for {ka, va} = a <- @values,
+        {_kb, vb} = b <- @values do
+      expected = va === vb
+
       test "#{inspect(a)} vs #{inspect(b)}" do
         {ka, va} = unquote(a)
         {_kb, vb} = unquote(b)
         {:ok, schema} = AvroEx.decode_schema(~s(#{inspect(ka)}))
 
         assert @test_module.encodable?(schema, va)
-        assert @test_module.encodable?(schema, vb) == (va === vb)
+        assert @test_module.encodable?(schema, vb) == unquote(expected)
       end
     end
 
