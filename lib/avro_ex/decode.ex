@@ -144,7 +144,9 @@ defmodule AvroEx.Decode do
       if :exact == Keyword.get(opts, :decimals) do
         # avoid undefined cross reference for optional dependency
         decimal = Decimal
-        decimal.new(if(unscaled >= 0, do: 1, else: -1), abs(unscaled), -scale)
+        sign = if unscaled >= 0, do: 1, else: -1
+        coef = abs(unscaled)
+        decimal.new(sign, coef, -scale)
       else
         unscaled * :math.pow(10, -scale)
       end

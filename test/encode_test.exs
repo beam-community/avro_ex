@@ -386,7 +386,7 @@ defmodule AvroEx.Encode.Test do
 
       {:ok, schema} = AvroEx.decode_schema(json_schema)
       {:ok, int_schema} = AvroEx.decode_schema(~S("int"))
-      {:ok, record_schema} = AvroEx.decode_schema(record_json_factory.("b"))
+      {:ok, record_schema} = "b" |> record_json_factory.() |> AvroEx.decode_schema()
 
       {:ok, index} = @test_module.encode(int_schema, 1)
       {:ok, encoded_record} = @test_module.encode(record_schema, %{"value" => "hello"})
