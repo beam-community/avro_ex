@@ -266,7 +266,7 @@ defmodule AvroEx.Schema.Parser do
     end)
   end
 
-  defp validate_default(%{default: default} = schema) when not is_nil(default) do
+  defp validate_default(%{default: default} = schema) when default != nil do
     case AvroEx.encode(%Schema{schema: schema, context: %Context{}}, schema.default) do
       {:ok, _data} -> :ok
       {:error, reason} -> error({:invalid_default, schema, reason})
