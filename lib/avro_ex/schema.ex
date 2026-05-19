@@ -23,8 +23,8 @@ defmodule AvroEx.Schema do
           | Record.t()
 
   typedstruct do
-    field :context, Context.t(), default: %Context{}
-    field :schema, schema_types()
+    field(:context, Context.t(), default: %Context{})
+    field(:schema, schema_types())
   end
 
   @type name :: String.t()
