@@ -1,7 +1,7 @@
 defmodule AvroEx.Schema.Map do
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
   alias AvroEx.Schema.{Context, Primitive}
 
   typedstruct do

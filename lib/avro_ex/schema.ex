@@ -1,7 +1,7 @@
 defmodule AvroEx.Schema do
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field

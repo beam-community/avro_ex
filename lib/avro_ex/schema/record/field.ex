@@ -1,7 +1,7 @@
 defmodule AvroEx.Schema.Record.Field do
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
   alias AvroEx.Schema.Context
 
   typedstruct do

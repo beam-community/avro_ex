@@ -1,7 +1,7 @@
 defmodule AvroEx.Schema.ParserTest do
   use ExUnit.Case, async: true
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Parser, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap

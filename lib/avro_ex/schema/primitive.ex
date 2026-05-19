@@ -5,7 +5,7 @@ defmodule AvroEx.Schema.Primitive do
 
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
 
   @type primitive ::
           :null
