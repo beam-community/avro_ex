@@ -4,9 +4,9 @@ defmodule AvroEx.Schema.Array do
   alias AvroEx.{Schema, Schema.Context}
 
   typedstruct do
-    field :items, Schema.schema_types(), enforce: true
-    field :default, [Schema.schema_types()], default: []
-    field :metadata, Schema.metadata(), default: %{}
+    field(:items, Schema.schema_types(), enforce: true)
+    field(:default, [Schema.schema_types()], default: [])
+    field(:metadata, Schema.metadata(), default: %{})
   end
 
   @spec match?(any(), any(), any()) :: boolean()

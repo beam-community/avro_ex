@@ -1,11 +1,11 @@
 defmodule AvroEx.Schema do
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
 
   @type schema_types ::
           Array.t()
@@ -23,8 +23,8 @@ defmodule AvroEx.Schema do
           | Record.t()
 
   typedstruct do
-    field :context, Context.t(), default: %Context{}
-    field :schema, schema_types()
+    field(:context, Context.t(), default: %Context{})
+    field(:schema, schema_types())
   end
 
   @type name :: String.t()
@@ -36,13 +36,13 @@ defmodule AvroEx.Schema do
 
   @type json_schema :: String.t()
 
+  @int32_range -2_147_483_648..2_147_483_647
+  @int64_range -9_223_372_036_854_775_808..9_223_372_036_854_775_807
+
   @spec encodable?(AvroEx.Schema.t(), any()) :: boolean()
   def encodable?(%Schema{schema: schema, context: context}, data) do
     encodable?(schema, context, data)
   end
-
-  @int32_range -2_147_483_648..2_147_483_647
-  @int64_range -9_223_372_036_854_775_808..9_223_372_036_854_775_807
 
   @spec encodable?(any(), any(), any()) :: boolean()
   def encodable?(%Primitive{type: :null}, _, nil), do: true

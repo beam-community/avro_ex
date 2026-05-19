@@ -5,12 +5,12 @@ defmodule AvroEx.Schema.Fixed do
   alias AvroEx.Schema.Context
 
   typedstruct do
-    field :aliases, [Schema.alias()], default: []
-    field :metadata, Schema.metadata(), default: %{}
-    field :name, String.t(), enforce: true
-    field :doc, String.t()
-    field :namespace, String.t()
-    field :size, integer(), enforce: true
+    field(:aliases, [Schema.alias()], default: [])
+    field(:metadata, Schema.metadata(), default: %{})
+    field(:name, String.t(), enforce: true)
+    field(:doc, String.t())
+    field(:namespace, String.t())
+    field(:size, integer(), enforce: true)
   end
 
   @spec match?(t, Context.t(), term) :: boolean

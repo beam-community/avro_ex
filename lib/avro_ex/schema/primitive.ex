@@ -5,7 +5,7 @@ defmodule AvroEx.Schema.Primitive do
 
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
 
   @type primitive ::
           :null
@@ -18,7 +18,7 @@ defmodule AvroEx.Schema.Primitive do
           | :string
 
   typedstruct do
-    field :metadata, Schema.metadata(), default: %{}
-    field :type, primitive(), enforce: true
+    field(:metadata, Schema.metadata(), default: %{})
+    field(:type, primitive(), enforce: true)
   end
 end

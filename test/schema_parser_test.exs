@@ -1,7 +1,7 @@
 defmodule AvroEx.Schema.ParserTest do
   use ExUnit.Case, async: true
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Parser, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
@@ -505,7 +505,7 @@ defmodule AvroEx.Schema.ParserTest do
       end
 
       message_2 =
-        "Expected `size` to be integer got \"40\" in %{\"name\" => \"string_size\", \"size\" => \"40\", \"type\" => \"fixed\"}"
+        "Expected `size` to be int got \"40\" in %{\"name\" => \"string_size\", \"size\" => \"40\", \"type\" => \"fixed\"}"
 
       assert_raise AvroEx.Schema.DecodeError, message_2, fn ->
         Parser.parse!(%{

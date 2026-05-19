@@ -4,12 +4,12 @@ defmodule AvroEx.Schema.Record do
   alias AvroEx.{Schema, Schema.Context, Schema.Record}
 
   typedstruct do
-    field :aliases, [Schema.alias()], default: []
-    field :doc, String.t()
-    field :name, String.t(), enforce: true
-    field :namespace, String.t()
-    field :metadata, Schema.metadata(), default: %{}
-    field :fields, [Record.Field.t()], default: []
+    field(:aliases, [Schema.alias()], default: [])
+    field(:doc, String.t())
+    field(:name, String.t(), enforce: true)
+    field(:namespace, String.t())
+    field(:metadata, Schema.metadata(), default: %{})
+    field(:fields, [Record.Field.t()], default: [])
   end
 
   @spec match?(t, Context.t(), term) :: boolean

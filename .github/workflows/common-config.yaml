@@ -12,7 +12,7 @@ on:
     types:
       - common-config
   schedule:
-    - cron: "8 12 8 * *"
+    - cron: "0 0 1 * *"
   workflow_dispatch: {}
 
 concurrency:
@@ -24,13 +24,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           persist-credentials: true
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -38,8 +38,8 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          elixir-version: "1.15"
-          otp-version: "26.0"
+          elixir-version: "1.19"
+          otp-version: "27.0"
 
       - name: Sync
         uses: beam-community/actions-sync@v1
