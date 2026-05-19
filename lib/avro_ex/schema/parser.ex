@@ -360,14 +360,7 @@ defmodule AvroEx.Schema.Parser do
     end
 
     if match?(%Record{}, schema) do
-      # credo:disable-for-lines:8 Credo.Check.Warning.UnusedEnumOperation
-      Enum.reduce(schema.fields, MapSet.new(), fn field, set ->
-        if MapSet.member?(set, field.name) do
-          error({:duplicate_name, field.name, schema})
-        end
-
-        MapSet.put(set, field.name)
-      end)
+      check_duplicate_field_names(schema)
     end
 
     context =
@@ -381,6 +374,17 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp capture_context(_type, context, _namespace), do: context
+
+  defp check_duplicate_field_names(%Record{fields: fields} = schema) do
+    # credo:disable-for-lines:7 Credo.Check.Warning.UnusedEnumOperation
+    Enum.reduce(fields, MapSet.new(), fn field, set ->
+      if MapSet.member?(set, field.name) do
+        error({:duplicate_name, field.name, schema})
+      end
+
+      MapSet.put(set, field.name)
+    end)
+  end
 
   defp put_context(context, name, schema) do
     put_in(context.names[name], schema)
