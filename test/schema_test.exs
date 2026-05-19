@@ -5,10 +5,10 @@ defmodule AvroEx.Schema.Test do
   import __MODULE__.Macros
 
   alias AvroEx.Schema
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
 
   doctest AvroEx.Schema, import: true
 

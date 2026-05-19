@@ -2,10 +2,10 @@ defmodule AvroEx.Schema do
   use TypedStruct
 
   alias AvroEx.Schema
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
 
   @type schema_types ::
           Array.t()

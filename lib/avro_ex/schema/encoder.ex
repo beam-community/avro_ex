@@ -4,9 +4,9 @@ defmodule AvroEx.Schema.Encoder do
   require Jason.Helpers
 
   alias AvroEx.Schema
+  alias AvroEx.Schema.{Array, Fixed, Primitive, Record, Record.Field, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
-  alias AvroEx.Schema.{Array, Fixed, Primitive, Record, Record.Field, Reference, Union}
 
   @spec encode(Schema.t(), Keyword.t()) :: String.t()
   def encode(%Schema{schema: schema}, opts) do
