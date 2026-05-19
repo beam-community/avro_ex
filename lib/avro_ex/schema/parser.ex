@@ -226,7 +226,7 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_integer({_data, _rest, {_type, raw}} = input, field) do
     validate_field(input, field, fn value ->
-      is_integer(value) or error({:invalid_type, {field, value}, %Primitive{type: :integer}, raw})
+      is_integer(value) or error({:invalid_type, {field, value}, %Primitive{type: :int}, raw})
     end)
   end
 
