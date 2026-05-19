@@ -5,12 +5,12 @@ defmodule AvroEx.Schema.Enum do
   alias AvroEx.Schema.Context
 
   typedstruct do
-    field :aliases, [Schema.alias()], default: []
-    field :doc, Schema.doc()
-    field :metadata, Schema.metadata(), default: %{}
-    field :name, Schema.name(), enforce: true
-    field :namespace, Schema.namespace()
-    field :symbols, [String.t()], enforce: true
+    field(:aliases, [Schema.alias()], default: [])
+    field(:doc, Schema.doc())
+    field(:metadata, Schema.metadata(), default: %{})
+    field(:name, Schema.name(), enforce: true)
+    field(:namespace, Schema.namespace())
+    field(:symbols, [String.t()], enforce: true)
   end
 
   @spec match?(any(), any(), any()) :: boolean()

@@ -22,7 +22,8 @@ defmodule AvroEx.Mixfile do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    extra = if Mix.env() == :dev, do: [:syntax_tools], else: []
+    [extra_applications: [:logger | extra]]
   end
 
   defp aliases do

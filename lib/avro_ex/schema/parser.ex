@@ -23,11 +23,7 @@ defmodule AvroEx.Schema.Parser do
   def primitives, do: @primitives
 
   @spec primitive?(String.t() | atom()) :: boolean()
-  for p <- @primitives do
-    def primitive?(unquote(p)), do: true
-    def primitive?(unquote(to_string(p))), do: true
-  end
-
+  def primitive?(value) when value in @primitives or value in @str_primitives, do: true
   def primitive?(_), do: false
 
   @spec parse!(term(), Keyword.t()) :: Schema.t()
@@ -57,10 +53,8 @@ defmodule AvroEx.Schema.Parser do
 
   defp do_parse(nil, _config), do: %Primitive{type: :null}
 
-  for p <- @primitives do
-    defp do_parse(unquote(to_string(p)), _config) do
-      %Primitive{type: unquote(p)}
-    end
+  defp do_parse(value, _config) when value in @str_primitives do
+    %Primitive{type: String.to_existing_atom(value)}
   end
 
   defp do_parse(list, config) when is_list(list) do
@@ -68,9 +62,7 @@ defmodule AvroEx.Schema.Parser do
       Enum.map_reduce(list, MapSet.new(), fn type, seen ->
         %struct{} = parsed = do_parse_ref(type, config)
 
-        if match?(%Union{}, parsed) do
-          error({:nested_union, parsed, list})
-        end
+        match?(%Union{}, parsed) and error({:nested_union, parsed, list})
 
         set_key =
           case parsed do
@@ -79,9 +71,7 @@ defmodule AvroEx.Schema.Parser do
             %struct{} -> struct
           end
 
-        if MapSet.member?(seen, set_key) do
-          error({:duplicate_union_type, parsed, list})
-        end
+        MapSet.member?(seen, set_key) and error({:duplicate_union_type, parsed, list})
 
         {parsed, MapSet.put(seen, set_key)}
       end)
@@ -122,15 +112,10 @@ defmodule AvroEx.Schema.Parser do
       |> validate_aliases()
       |> extract_metadata(config)
 
-    # credo:disable-for-lines:11 Credo.Check.Warning.UnusedEnumOperation
+    # credo:disable-for-lines:9 Credo.Check.Warning.UnusedEnumOperation
     Enum.reduce(symbols, MapSet.new(), fn symbol, set ->
-      if MapSet.member?(set, symbol) do
-        error({:duplicate_symbol, symbol, enum})
-      end
-
-      unless valid_name?(symbol) do
-        error({:invalid_name, {:symbols, symbol}, enum})
-      end
+      MapSet.member?(set, symbol) and error({:duplicate_symbol, symbol, enum})
+      valid_name?(symbol) or error({:invalid_name, {:symbols, symbol}, enum})
 
       MapSet.put(set, symbol)
     end)
@@ -216,8 +201,10 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_required({data, rest, {type, raw} = info}, keys) do
     Enum.each(keys, fn k ->
-      unless data[k] do
-        error({:missing_required, k, type, raw})
+      case data[k] do
+        nil -> error({:missing_required, k, type, raw})
+        false -> error({:missing_required, k, type, raw})
+        _ -> :ok
       end
     end)
 
@@ -239,25 +226,20 @@ defmodule AvroEx.Schema.Parser do
 
   defp validate_integer({_data, _rest, {_type, raw}} = input, field) do
     validate_field(input, field, fn value ->
-      unless is_integer(value) do
-        error({:invalid_type, {field, value}, %Primitive{type: :integer}, raw})
-      end
+      is_integer(value) or error({:invalid_type, {field, value}, %Primitive{type: :int}, raw})
     end)
   end
 
   defp validate_name({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :name, fn value ->
-      unless valid_full_name?(value) do
-        error({:invalid_name, {:name, value}, raw})
-      end
+      valid_full_name?(value) or error({:invalid_name, {:name, value}, raw})
     end)
   end
 
   defp validate_aliases({_data, _rest, {_type, raw}} = input) do
     validate_field(input, :aliases, fn aliases ->
-      unless is_list(aliases) and Enum.all?(aliases, &valid_full_name?/1) do
+      (is_list(aliases) and Enum.all?(aliases, &valid_full_name?/1)) or
         error({:invalid_name, {:aliases, aliases}, raw})
-      end
     end)
   end
 
@@ -266,13 +248,13 @@ defmodule AvroEx.Schema.Parser do
       # From the specification: "A namespace is a dot-separated sequence of such
       # names. The empty string may also be used as a namespace to indicate the
       # null namespace.
-      unless valid_full_name?(value) or value == "" do
-        error({:invalid_name, {:namespace, value}, raw})
-      end
+      valid_full_name?(value) or value == "" or error({:invalid_name, {:namespace, value}, raw})
     end)
   end
 
-  defp validate_default(%{default: default} = schema) when not is_nil(default) do
+  defp validate_default(%{default: nil} = schema), do: schema
+
+  defp validate_default(%{default: _} = schema) do
     case AvroEx.encode(%Schema{schema: schema, context: %Context{}}, schema.default) do
       {:ok, _data} -> :ok
       {:error, reason} -> error({:invalid_default, schema, reason})
@@ -284,10 +266,9 @@ defmodule AvroEx.Schema.Parser do
   defp validate_default(schema), do: schema
 
   defp extract_metadata({data, rest, {type, raw}}, config) do
-    if config.strict? and drop_metadata(rest, type) != %{} do
-      error({:unrecognized_fields, Map.keys(rest), type, raw})
-    else
-      Map.put(data, :metadata, rest)
+    case config.strict? and drop_metadata(rest, type) != %{} do
+      true -> error({:unrecognized_fields, Map.keys(rest), type, raw})
+      false -> Map.put(data, :metadata, rest)
     end
   end
 
@@ -337,10 +318,7 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp do_build_context(%Reference{} = ref, context, _namespace) do
-    unless Map.has_key?(context.names, ref.type) do
-      error({:missing_ref, ref, context})
-    end
-
+    Map.has_key?(context.names, ref.type) or error({:missing_ref, ref, context})
     context
   end
 
@@ -349,10 +327,9 @@ defmodule AvroEx.Schema.Parser do
   defp build_inner_context(type, field, context, namespace) do
     %{^field => inner} = type
 
-    if is_list(inner) do
-      Enum.reduce(inner, context, &build_context(&1, &2, namespace))
-    else
-      build_context(inner, context, namespace)
+    case is_list(inner) do
+      true -> Enum.reduce(inner, context, &build_context(&1, &2, namespace))
+      false -> build_context(inner, context, namespace)
     end
   end
 
@@ -361,20 +338,8 @@ defmodule AvroEx.Schema.Parser do
   defp capture_context(%{name: _name} = schema, context, namespace) do
     name = Schema.full_name(schema, namespace)
 
-    if Map.has_key?(context.names, name) do
-      error({:duplicate_name, name, schema})
-    end
-
-    if match?(%Record{}, schema) do
-      # credo:disable-for-lines:8 Credo.Check.Warning.UnusedEnumOperation
-      Enum.reduce(schema.fields, MapSet.new(), fn field, set ->
-        if MapSet.member?(set, field.name) do
-          error({:duplicate_name, field.name, schema})
-        end
-
-        MapSet.put(set, field.name)
-      end)
-    end
+    Map.has_key?(context.names, name) and error({:duplicate_name, name, schema})
+    match?(%Record{}, schema) and check_duplicate_field_names(schema)
 
     context =
       schema
@@ -387,6 +352,14 @@ defmodule AvroEx.Schema.Parser do
   end
 
   defp capture_context(_type, context, _namespace), do: context
+
+  defp check_duplicate_field_names(%Record{fields: fields} = schema) do
+    # credo:disable-for-lines:6 Credo.Check.Warning.UnusedEnumOperation
+    Enum.reduce(fields, MapSet.new(), fn field, set ->
+      MapSet.member?(set, field.name) and error({:duplicate_name, field.name, schema})
+      MapSet.put(set, field.name)
+    end)
+  end
 
   defp put_context(context, name, schema) do
     put_in(context.names[name], schema)

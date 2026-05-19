@@ -3,7 +3,7 @@ defmodule AvroEx.Schema.Context do
   alias AvroEx.Schema
 
   typedstruct do
-    field :names, %{String.t() => Schema.schema_types()}, default: %{}
+    field(:names, %{String.t() => Schema.schema_types()}, default: %{})
   end
 
   @spec lookup(t(), String.t()) :: Schema.schema_types() | nil

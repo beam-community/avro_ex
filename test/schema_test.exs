@@ -1,34 +1,18 @@
 defmodule AvroEx.Schema.Test do
   use ExUnit.Case, async: true
 
-  require __MODULE__.Macros
   import __MODULE__.Macros
+  require __MODULE__.Macros
 
   alias AvroEx.Schema
+  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
   alias AvroEx.Schema.Record.Field
-  alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
 
   doctest AvroEx.Schema, import: true
 
   @test_module AvroEx.Schema
-
-  @spec json_add_property(binary | map, atom | binary, any) :: map | binary
-  def json_add_property(str, property, value) when is_binary(str) do
-    str
-    |> Jason.decode!()
-    |> json_add_property(property, value)
-    |> Jason.encode!()
-  end
-
-  def json_add_property(json, property, value) when is_map(json) and is_atom(property) do
-    json_add_property(json, Atom.to_string(property), value)
-  end
-
-  def json_add_property(json, property, value) when is_map(json) and is_binary(property) do
-    Map.update(json, property, value, fn _ -> value end)
-  end
 
   @json ~S"""
     {
@@ -58,6 +42,22 @@ defmodule AvroEx.Schema.Test do
       ]
     }
   """
+
+  @spec json_add_property(binary | map, atom | binary, any) :: map | binary
+  def json_add_property(str, property, value) when is_binary(str) do
+    str
+    |> Jason.decode!()
+    |> json_add_property(property, value)
+    |> Jason.encode!()
+  end
+
+  def json_add_property(json, property, value) when is_map(json) and is_atom(property) do
+    json_add_property(json, Atom.to_string(property), value)
+  end
+
+  def json_add_property(json, property, value) when is_map(json) and is_binary(property) do
+    Map.update(json, property, value, fn _ -> value end)
+  end
 
   describe "parse record" do
     @schema AvroEx.Schema.Record
@@ -260,15 +260,17 @@ defmodule AvroEx.Schema.Test do
       "string" => "12345"
     }
 
-    for a <- @values,
-        b <- @values do
+    for {ka, va} = a <- @values,
+        {_kb, vb} = b <- @values do
+      expected = va === vb
+
       test "#{inspect(a)} vs #{inspect(b)}" do
         {ka, va} = unquote(a)
         {_kb, vb} = unquote(b)
         {:ok, schema} = AvroEx.decode_schema(~s(#{inspect(ka)}))
 
         assert @test_module.encodable?(schema, va)
-        assert @test_module.encodable?(schema, vb) == (va === vb)
+        assert @test_module.encodable?(schema, vb) == unquote(expected)
       end
     end
 

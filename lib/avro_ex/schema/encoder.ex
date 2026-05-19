@@ -4,9 +4,9 @@ defmodule AvroEx.Schema.Encoder do
   require Jason.Helpers
 
   alias AvroEx.Schema
+  alias AvroEx.Schema.{Array, Fixed, Primitive, Record, Record.Field, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Map, as: AvroMap
-  alias AvroEx.Schema.{Array, Fixed, Primitive, Record, Record.Field, Reference, Union}
 
   @spec encode(Schema.t(), Keyword.t()) :: String.t()
   def encode(%Schema{schema: schema}, opts) do
@@ -40,8 +40,8 @@ defmodule AvroEx.Schema.Encoder do
   defp process(%struct_type{} = struct, config) do
     config = update_in(config.namespace, &Schema.namespace(struct, &1))
 
-    data =
-      for {k, v} <- extract(struct), not empty?(v), keep?(k, config), into: %{} do
+    pairs =
+      for {k, v} <- extract(struct), not empty?(v), keep?(k, config) do
         case k do
           k when k in [:values, :items, :type] -> {k, do_encode(v, config)}
           :fields -> {k, Enum.map(v, &do_encode(&1, config))}
@@ -50,6 +50,7 @@ defmodule AvroEx.Schema.Encoder do
       end
 
     if config.canonical? do
+      data = Map.new(pairs)
       full_name = Schema.full_name(struct, config.namespace)
 
       data
@@ -57,8 +58,28 @@ defmodule AvroEx.Schema.Encoder do
       |> Map.delete(:metadata)
       |> order_json_keys(struct_type)
     else
-      merge_metadata(data)
+      {meta_list, schema_pairs} = Enum.split_with(pairs, fn {k, _} -> k == :metadata end)
+
+      metadata =
+        case meta_list do
+          [{:metadata, m}] -> m
+          [] -> %{}
+        end
+
+      sorted_schema = Enum.sort_by(schema_pairs, fn {k, _} -> Atom.to_string(k) end)
+      sorted_metadata = metadata |> Map.to_list() |> Enum.sort()
+
+      build_json_object(sorted_schema ++ sorted_metadata)
     end
+  end
+
+  defp build_json_object(pairs) do
+    inner =
+      Enum.map_join(pairs, ",", fn {k, v} ->
+        "#{Jason.encode!(to_string(k))}:#{Jason.encode!(v)}"
+      end)
+
+    %Jason.Fragment{encode: fn _opts -> "{#{inner}}" end}
   end
 
   defp empty?([]), do: true
@@ -72,13 +93,6 @@ defmodule AvroEx.Schema.Encoder do
   end
 
   defp keep?(_k, _config), do: true
-
-  defp merge_metadata(%{metadata: _} = data) do
-    {metadata, data} = Map.pop(data, :metadata)
-    Map.merge(metadata, data)
-  end
-
-  defp merge_metadata(data), do: data
 
   defp extract(%struct{} = data) do
     type =

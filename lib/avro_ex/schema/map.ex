@@ -1,13 +1,13 @@
 defmodule AvroEx.Schema.Map do
   use TypedStruct
 
-  alias AvroEx.{Schema}
+  alias AvroEx.Schema
   alias AvroEx.Schema.{Context, Primitive}
 
   typedstruct do
-    field :metadata, Schema.metadata(), default: %{}
-    field :values, Schema.schema_types(), enforce: true
-    field :default, map(), default: %{}
+    field(:metadata, Schema.metadata(), default: %{})
+    field(:values, Schema.schema_types(), enforce: true)
+    field(:default, map(), default: %{})
   end
 
   @spec match?(any(), any(), any()) :: boolean()

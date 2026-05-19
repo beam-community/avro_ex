@@ -2,8 +2,7 @@ defmodule AvroEx.Decode do
   @moduledoc false
 
   require Bitwise
-  alias AvroEx.{DecodeError}
-  alias AvroEx.Schema
+  alias AvroEx.{DecodeError, Schema}
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Record.Field
 
@@ -15,12 +14,10 @@ defmodule AvroEx.Decode do
   @spec decode(AvroEx.Schema.t(), binary(), keyword()) :: {:ok, any(), binary()} | {:error, AvroEx.DecodeError.t()}
   def decode(%Schema{schema: schema, context: context}, avro_message, opts \\ [])
       when is_binary(avro_message) do
-    try do
-      {value, rest} = do_decode(schema, context, avro_message, opts)
-      {:ok, value, rest}
-    catch
-      :throw, %DecodeError{} = e -> {:error, e}
-    end
+    {value, rest} = do_decode(schema, context, avro_message, opts)
+    {:ok, value, rest}
+  catch
+    :throw, %DecodeError{} = e -> {:error, e}
   end
 
   defp do_decode(%Reference{type: name}, %Context{} = context, data, opts) do
@@ -147,7 +144,9 @@ defmodule AvroEx.Decode do
       if :exact == Keyword.get(opts, :decimals) do
         # avoid undefined cross reference for optional dependency
         decimal = Decimal
-        decimal.new(if(unscaled >= 0, do: 1, else: -1), abs(unscaled), -scale)
+        sign = if unscaled >= 0, do: 1, else: -1
+        coef = abs(unscaled)
+        decimal.new(sign, coef, -scale)
       else
         unscaled * :math.pow(10, -scale)
       end
