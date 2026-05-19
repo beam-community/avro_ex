@@ -1,8 +1,8 @@
 defmodule AvroEx.Schema.Test do
   use ExUnit.Case, async: true
 
-  require __MODULE__.Macros
   import __MODULE__.Macros
+  require __MODULE__.Macros
 
   alias AvroEx.Schema
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
@@ -13,22 +13,6 @@ defmodule AvroEx.Schema.Test do
   doctest AvroEx.Schema, import: true
 
   @test_module AvroEx.Schema
-
-  @spec json_add_property(binary | map, atom | binary, any) :: map | binary
-  def json_add_property(str, property, value) when is_binary(str) do
-    str
-    |> Jason.decode!()
-    |> json_add_property(property, value)
-    |> Jason.encode!()
-  end
-
-  def json_add_property(json, property, value) when is_map(json) and is_atom(property) do
-    json_add_property(json, Atom.to_string(property), value)
-  end
-
-  def json_add_property(json, property, value) when is_map(json) and is_binary(property) do
-    Map.update(json, property, value, fn _ -> value end)
-  end
 
   @json ~S"""
     {
@@ -58,6 +42,22 @@ defmodule AvroEx.Schema.Test do
       ]
     }
   """
+
+  @spec json_add_property(binary | map, atom | binary, any) :: map | binary
+  def json_add_property(str, property, value) when is_binary(str) do
+    str
+    |> Jason.decode!()
+    |> json_add_property(property, value)
+    |> Jason.encode!()
+  end
+
+  def json_add_property(json, property, value) when is_map(json) and is_atom(property) do
+    json_add_property(json, Atom.to_string(property), value)
+  end
+
+  def json_add_property(json, property, value) when is_map(json) and is_binary(property) do
+    Map.update(json, property, value, fn _ -> value end)
+  end
 
   describe "parse record" do
     @schema AvroEx.Schema.Record

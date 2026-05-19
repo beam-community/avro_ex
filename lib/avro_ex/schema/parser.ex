@@ -23,11 +23,7 @@ defmodule AvroEx.Schema.Parser do
   def primitives, do: @primitives
 
   @spec primitive?(String.t() | atom()) :: boolean()
-  for p <- @primitives do
-    def primitive?(unquote(p)), do: true
-    def primitive?(unquote(to_string(p))), do: true
-  end
-
+  def primitive?(value) when value in @primitives or value in @str_primitives, do: true
   def primitive?(_), do: false
 
   @spec parse!(term(), Keyword.t()) :: Schema.t()
@@ -57,10 +53,8 @@ defmodule AvroEx.Schema.Parser do
 
   defp do_parse(nil, _config), do: %Primitive{type: :null}
 
-  for p <- @primitives do
-    defp do_parse(unquote(to_string(p)), _config) do
-      %Primitive{type: unquote(p)}
-    end
+  defp do_parse(value, _config) when value in @str_primitives do
+    %Primitive{type: String.to_existing_atom(value)}
   end
 
   defp do_parse(list, config) when is_list(list) do

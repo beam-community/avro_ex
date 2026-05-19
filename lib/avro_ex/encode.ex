@@ -3,8 +3,7 @@ defmodule AvroEx.Encode do
 
   require Bitwise
 
-  alias AvroEx.EncodeError
-  alias AvroEx.Schema
+  alias AvroEx.{EncodeError, Schema}
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Enum, as: AvroEnum
   alias AvroEx.Schema.Record.Field
