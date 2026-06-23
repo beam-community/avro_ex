@@ -184,7 +184,7 @@ defmodule AvroEx.Decode do
     if String.valid?(str) do
       {str, rest}
     else
-      error({:invalid_string, str})
+      error({:invalid_utf8, str})
     end
   end
 
@@ -214,7 +214,10 @@ defmodule AvroEx.Decode do
   defp do_decode(%Union{possibilities: possibilities}, %Context{} = context, data, opts)
        when is_binary(data) do
     {index, index_rest} = do_decode(%Primitive{type: :long}, context, data, opts)
-    schema = :lists.nth(index + 1, possibilities)
+    schema = case :lists.nth(index + 1, possibilities ++ [nil]) do
+              nil -> throw(AvroEx.DecodeError.new({:union_index_out_of_range, index, length(possibilities)}))
+              s -> s
+            end
 
     {decoded_item, rest} = do_decode(schema, context, index_rest, opts)
 
@@ -266,7 +269,10 @@ defmodule AvroEx.Decode do
 
   defp do_decode(%AvroEx.Schema.Enum{symbols: symbols}, %Context{} = context, data, opts) when is_binary(data) do
     {index, rest} = do_decode(%Primitive{type: :long}, context, data, opts)
-    {:lists.nth(index + 1, symbols), rest}
+    case :lists.nth(index + 1, symbols ++ [nil]) do
+      nil -> throw(AvroEx.DecodeError.new({:symbol_index_out_of_range, index, symbols}))
+      sym -> {sym, rest}
+    end
   end
 
   defp do_decode(%Fixed{size: size}, %Context{}, data, _) when is_binary(data) do
