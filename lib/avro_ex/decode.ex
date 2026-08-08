@@ -247,7 +247,13 @@ defmodule AvroEx.Decode do
   end
 
   defp do_decode(%AvroEx.Schema.Map{values: value_schema}, %Context{} = context, data, opts) when is_binary(data) do
-    {count, buffer} = do_decode(%Primitive{type: :long}, context, data, opts)
+    {count, buffer} =
+      with {count, rest} when count < 0 <-
+             do_decode(%Primitive{type: :long}, context, data, opts) do
+        {_byte_size, buffer} = do_decode(%Primitive{type: :long}, context, rest, opts)
+        {abs(count), buffer}
+      end
+
     string_schema = %Primitive{type: :string}
 
     if count > 0 do
