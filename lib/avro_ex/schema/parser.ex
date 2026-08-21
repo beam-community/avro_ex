@@ -189,8 +189,17 @@ defmodule AvroEx.Schema.Parser do
     info = {type, data}
 
     Enum.reduce(keys, {%{}, data, info}, fn key, {data, rest, info} ->
-      case Map.pop(rest, to_string(key)) do
-        {nil, rest} ->
+      case Map.pop(rest, to_string(key), :__avro_ex_key_missing__) do
+        {:__avro_ex_key_missing__, rest} ->
+          {data, rest, info}
+
+        # Every key except `:default` keeps treating an explicit JSON `null`
+        # the same as the key being absent -- unchanged from before. `:default`
+        # must not: the Avro null literal decodes to `nil`, and collapsing
+        # "no default" with "default is null" here is exactly what made the
+        # encoder unable to round-trip an explicit `"default": null` (see
+        # Record.Field.no_default/0).
+        {nil, rest} when key != :default ->
           {data, rest, info}
 
         {value, rest} ->
@@ -250,6 +259,26 @@ defmodule AvroEx.Schema.Parser do
       # null namespace.
       valid_full_name?(value) or value == "" or error({:invalid_name, {:namespace, value}, raw})
     end)
+  end
+
+  # Record.Field distinguishes "no default" (the Record.Field.no_default/0
+  # sentinel) from "default is the Avro null literal" (`nil`), but validation
+  # leniency here is unchanged from before this fix: an explicit `nil`
+  # default is left unvalidated against the field's type, same as "no
+  # default" always was. (Actually validating an explicit `nil` default is a
+  # separate, breaking change -- this repo's own fixtures rely on the old
+  # leniency for `"default": null` on non-nullable fields.)
+  defp validate_default(%Record.Field{default: default} = schema)
+       when default == :__avro_ex_no_default__ or is_nil(default),
+       do: schema
+
+  defp validate_default(%Record.Field{default: default} = schema) do
+    case AvroEx.encode(%Schema{schema: schema, context: %Context{}}, default) do
+      {:ok, _data} -> :ok
+      {:error, reason} -> error({:invalid_default, schema, reason})
+    end
+
+    schema
   end
 
   defp validate_default(%{default: nil} = schema), do: schema
