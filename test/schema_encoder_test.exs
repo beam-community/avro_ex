@@ -99,6 +99,31 @@ defmodule AvroEx.Schema.EncoderTest do
                "{\"aliases\":[\"a_map\"],\"doc\":\"docs!\",\"fields\":[{\"aliases\":[\"first\"],\"default\":1,\"doc\":\"field\",\"name\":\"one\",\"type\":{\"type\":\"int\"},\"meta\":\"meta\"}],\"name\":\"all\",\"namespace\":\"beam.community\",\"type\":\"record\",\"extra\":\"val\"}"
     end
 
+    test "preserves an explicit null default on a nullable field" do
+      input = %{
+        "type" => "record",
+        "name" => "test",
+        "fields" => [%{"name" => "a", "type" => ["null", "string"], "default" => nil}]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      assert AvroEx.encode_schema(schema) ==
+               ~S({"fields":[{"default":null,"name":"a","type":[{"type":"null"},{"type":"string"}]}],"name":"test","type":"record"})
+    end
+
+    test "omits default entirely when the field declares none" do
+      input = %{
+        "type" => "record",
+        "name" => "test",
+        "fields" => [%{"name" => "a", "type" => "string"}]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      refute AvroEx.encode_schema(schema) =~ "default"
+    end
+
     test "array" do
       # primitive array
       input = %{"type" => "array", "items" => "int"}

@@ -41,7 +41,7 @@ defmodule AvroEx.Schema.Encoder do
     config = update_in(config.namespace, &Schema.namespace(struct, &1))
 
     pairs =
-      for {k, v} <- extract(struct), not empty?(v), keep?(k, config) do
+      for {k, v} <- extract(struct), keep_value?(struct_type, k, v), keep?(k, config) do
         case k do
           k when k in [:values, :items, :type] -> {k, do_encode(v, config)}
           :fields -> {k, Enum.map(v, &do_encode(&1, config))}
@@ -87,6 +87,14 @@ defmodule AvroEx.Schema.Encoder do
   defp empty?(""), do: true
   defp empty?(map) when map == %{}, do: true
   defp empty?(_), do: false
+
+  # Record.Field's `:default` must survive re-encoding even when its value is
+  # `nil` -- that's the Avro null literal, a real declared default, distinct
+  # from "no default" (Record.Field.no_default/0). Every other key on every
+  # struct type, including Array/AvroMap's own unrelated `:default` field,
+  # keeps the original emptiness-based filtering unchanged.
+  defp keep_value?(Field, :default, v), do: v != Field.no_default()
+  defp keep_value?(_struct_type, _k, v), do: not empty?(v)
 
   defp keep?(k, %{canonical?: true}) do
     k in ~w(type name fields symbols items values size)a
