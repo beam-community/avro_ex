@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1](https://github.com/beam-community/avro_ex/compare/v2.2.0...v2.2.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* Replace stordco/actions-sync with beam-community/actions-sync ([#108](https://github.com/beam-community/avro_ex/issues/108)) ([23d1ec0](https://github.com/beam-community/avro_ex/commit/23d1ec03173fa186d418b16be307c9233c81243c))
+* Upgrade deprecated GitHub Actions to v4 ([#105](https://github.com/beam-community/avro_ex/issues/105)) ([67c3909](https://github.com/beam-community/avro_ex/commit/67c39093bf5cffaf09fdea617496cce3cbadf969))
+
 ## v2.2.0 - July 31st, 2024
 
 ### Added
