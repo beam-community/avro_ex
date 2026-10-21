@@ -140,6 +140,42 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
+    test "a field's explicit null default is preserved and distinct from having no default" do
+      %Schema{schema: schema} =
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "kyc",
+          "fields" => [
+            %{"name" => "nickname", "type" => ["null", "string"], "default" => nil},
+            %{"name" => "surname", "type" => "string"}
+          ]
+        })
+
+      assert %Record{fields: [with_null_default, without_default]} = schema
+
+      assert with_null_default.default == nil
+      assert Record.Field.has_default?(with_null_default)
+
+      assert without_default.default == Record.Field.no_default()
+      refute Record.Field.has_default?(without_default)
+    end
+
+    test "an explicit null default is not validated against the field's type, same as before" do
+      # Matches the pre-existing leniency for "no default": neither is checked
+      # against the field's type. Tightening this is a separate, breaking
+      # change this fix intentionally does not make.
+      assert %Schema{schema: %Record{fields: [field]}} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "lenient_null_default",
+                 "fields" => [
+                   %{"name" => "key", "type" => "long", "default" => nil}
+                 ]
+               })
+
+      assert field.default == nil
+    end
+
     test "creating a record without a name will raise" do
       message =
         "Schema missing required key `name` for AvroEx.Schema.Record in %{\"fields\" => [%{\"name\" => \"key\", \"type\" => \"long\"}], \"type\" => \"record\"}"
