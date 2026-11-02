@@ -232,7 +232,6 @@ defmodule AvroEx.Schema do
 
   # split a full name into its parts
   defp split_name(string) do
-    pattern = :binary.compile_pattern(".")
-    String.split(string, pattern)
+    String.split(string, ".")
   end
 end
