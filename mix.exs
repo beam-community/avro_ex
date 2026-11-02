@@ -34,10 +34,10 @@ defmodule AvroEx.Mixfile do
     [
       {:typed_struct, "~> 0.3.0", runtime: false},
       {:jason, "~> 1.1"},
-      {:credo, "~> 1.0", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.20", only: :dev, runtime: false},
-      {:stream_data, "~> 0.5", only: [:dev, :test]},
+      {:credo, "~> 1.7", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false},
+      {:stream_data, "~> 1.4", only: [:dev, :test]},
       {:decimal, "~> 3.1", optional: true}
     ]
   end
