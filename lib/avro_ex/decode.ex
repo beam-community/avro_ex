@@ -1,7 +1,6 @@
 defmodule AvroEx.Decode do
   @moduledoc false
 
-  require Bitwise
   alias AvroEx.{DecodeError, Schema}
   alias AvroEx.Schema.{Array, Context, Fixed, Primitive, Record, Reference, Union}
   alias AvroEx.Schema.Record.Field
@@ -138,7 +137,7 @@ defmodule AvroEx.Decode do
     {bytes, rest} = do_decode(%Primitive{type: :bytes}, context, data, opts)
 
     size = bit_size(bytes)
-    <<unscaled::big-signed-integer-size(size)>> = bytes
+    <<unscaled::big-signed-integer-size(^size)>> = bytes
 
     number =
       if :exact == Keyword.get(opts, :decimals) do
@@ -173,7 +172,7 @@ defmodule AvroEx.Decode do
     {byte_count, buffer} = do_decode(%Primitive{type: :long}, context, data, opts)
     bit_count = byte_count * 8
 
-    <<bytes::bitstring-size(bit_count), rest::binary>> = buffer
+    <<bytes::bitstring-size(^bit_count), rest::binary>> = buffer
 
     {bytes, rest}
   end
@@ -270,7 +269,7 @@ defmodule AvroEx.Decode do
   end
 
   defp do_decode(%Fixed{size: size}, %Context{}, data, _) when is_binary(data) do
-    <<fixed::binary-size(size), rest::binary>> = data
+    <<fixed::binary-size(^size), rest::binary>> = data
     {fixed, rest}
   end
 
