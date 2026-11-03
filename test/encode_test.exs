@@ -266,6 +266,22 @@ defmodule AvroEx.Encode.Test do
       assert {:ok, <<2, 2, 49>>} = @test_module.encode(schema, %{"maybe_null" => "1"})
     end
 
+    test "encodes a nullable field with no default as null when the value is missing" do
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "record", "name": "Record", "fields": [
+        {"type": ["null", "string"], "name": "maybe_null"}
+        ]}))
+
+      assert {:ok, <<0>>} = @test_module.encode(schema, %{})
+    end
+
+    test "uses a non-null default when the value is missing" do
+      {:ok, schema} = AvroEx.decode_schema(~S({"type": "record", "name": "Record", "fields": [
+        {"type": ["string", "null"], "name": "name", "default": "a"}
+        ]}))
+
+      assert {:ok, <<0, 2, 97>>} = @test_module.encode(schema, %{})
+    end
+
     test "works with logicalType field values" do
       schema =
         AvroEx.decode_schema!(%{
