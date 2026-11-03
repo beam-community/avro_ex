@@ -4,12 +4,7 @@ defmodule AvroEx.Schema.Record.Field do
   alias AvroEx.Schema
   alias AvroEx.Schema.Context
 
-  # A field's `default` is a legitimate Avro value, and Avro's null literal
-  # decodes to Elixir's `nil` -- so a field with no default at all is
-  # indistinguishable from one whose default is explicitly `null` if `nil`
-  # is also used as the "absent" marker. This sentinel breaks that tie: it
-  # is the struct's actual default value for `:default`, so `nil` stays free
-  # to mean "the default is the Avro null literal".
+  # `nil` is the Avro null default, so "no default declared" needs its own marker.
   @typedoc false
   @type no_default :: :__avro_ex_no_default__
 

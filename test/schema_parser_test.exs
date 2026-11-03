@@ -161,9 +161,6 @@ defmodule AvroEx.Schema.ParserTest do
     end
 
     test "an explicit null default is not validated against the field's type, same as before" do
-      # Matches the pre-existing leniency for "no default": neither is checked
-      # against the field's type. Tightening this is a separate, breaking
-      # change this fix intentionally does not make.
       assert %Schema{schema: %Record{fields: [field]}} =
                Parser.parse!(%{
                  "type" => "record",
@@ -174,6 +171,46 @@ defmodule AvroEx.Schema.ParserTest do
                })
 
       assert field.default == nil
+    end
+
+    test "an explicit null on keys other than default is treated as absent" do
+      assert %Schema{schema: %Record{fields: [field]}} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "null_doc",
+                 "fields" => [%{"name" => "a", "type" => "string", "doc" => nil}]
+               })
+
+      assert field.doc == nil
+      refute Record.Field.has_default?(field)
+    end
+
+    test "an explicit null default on an array or map keeps the struct default" do
+      assert %Schema{schema: %Array{default: []}} =
+               Parser.parse!(%{"type" => "array", "items" => "int", "default" => nil})
+
+      assert %Schema{schema: %AvroMap{default: %{}}} =
+               Parser.parse!(%{"type" => "map", "values" => "int", "default" => nil})
+    end
+
+    test "a non-null default is preserved and still validated" do
+      assert %Schema{schema: %Record{fields: [field]}} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "valid_default",
+                 "fields" => [%{"name" => "a", "type" => "string", "default" => "x"}]
+               })
+
+      assert field.default == "x"
+      assert Record.Field.has_default?(field)
+
+      assert_raise AvroEx.Schema.DecodeError, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "invalid_default",
+          "fields" => [%{"name" => "a", "type" => "string", "default" => 1}]
+        })
+      end
     end
 
     test "creating a record without a name will raise" do

@@ -179,9 +179,7 @@ defmodule AvroEx.Encode do
   end
 
   defp do_encode(%Field{type: type, default: default}, %Context{} = context, nil, opts) do
-    # A field with no default at all carries the Field.no_default/0 sentinel,
-    # not `nil` -- fall back to encoding `nil` itself (the pre-existing
-    # behavior) rather than encoding the sentinel as if it were real data.
+    # The no_default sentinel is not data; encode nil instead.
     value = if default == Field.no_default(), do: nil, else: default
     do_encode(type, context, value, opts)
   end

@@ -88,11 +88,7 @@ defmodule AvroEx.Schema.Encoder do
   defp empty?(map) when map == %{}, do: true
   defp empty?(_), do: false
 
-  # Record.Field's `:default` must survive re-encoding even when its value is
-  # `nil` -- that's the Avro null literal, a real declared default, distinct
-  # from "no default" (Record.Field.no_default/0). Every other key on every
-  # struct type, including Array/AvroMap's own unrelated `:default` field,
-  # keeps the original emptiness-based filtering unchanged.
+  # A Field's `nil` default is the Avro null literal, so only the sentinel is dropped.
   defp keep_value?(Field, :default, v), do: v != Field.no_default()
   defp keep_value?(_struct_type, _k, v), do: not empty?(v)
 
