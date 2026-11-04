@@ -140,6 +140,79 @@ defmodule AvroEx.Schema.ParserTest do
       end
     end
 
+    test "a field's explicit null default is preserved and distinct from having no default" do
+      %Schema{schema: schema} =
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "kyc",
+          "fields" => [
+            %{"name" => "nickname", "type" => ["null", "string"], "default" => nil},
+            %{"name" => "surname", "type" => "string"}
+          ]
+        })
+
+      assert %Record{fields: [with_null_default, without_default]} = schema
+
+      assert with_null_default.default == nil
+      assert Record.Field.has_default?(with_null_default)
+
+      assert without_default.default == Record.Field.no_default()
+      refute Record.Field.has_default?(without_default)
+    end
+
+    test "an explicit null default is not validated against the field's type, same as before" do
+      assert %Schema{schema: %Record{fields: [field]}} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "lenient_null_default",
+                 "fields" => [
+                   %{"name" => "key", "type" => "long", "default" => nil}
+                 ]
+               })
+
+      assert field.default == nil
+    end
+
+    test "an explicit null on keys other than default is treated as absent" do
+      assert %Schema{schema: %Record{fields: [field]}} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "null_doc",
+                 "fields" => [%{"name" => "a", "type" => "string", "doc" => nil}]
+               })
+
+      assert field.doc == nil
+      refute Record.Field.has_default?(field)
+    end
+
+    test "an explicit null default on an array or map keeps the struct default" do
+      assert %Schema{schema: %Array{default: []}} =
+               Parser.parse!(%{"type" => "array", "items" => "int", "default" => nil})
+
+      assert %Schema{schema: %AvroMap{default: %{}}} =
+               Parser.parse!(%{"type" => "map", "values" => "int", "default" => nil})
+    end
+
+    test "a non-null default is preserved and still validated" do
+      assert %Schema{schema: %Record{fields: [field]}} =
+               Parser.parse!(%{
+                 "type" => "record",
+                 "name" => "valid_default",
+                 "fields" => [%{"name" => "a", "type" => "string", "default" => "x"}]
+               })
+
+      assert field.default == "x"
+      assert Record.Field.has_default?(field)
+
+      assert_raise AvroEx.Schema.DecodeError, fn ->
+        Parser.parse!(%{
+          "type" => "record",
+          "name" => "invalid_default",
+          "fields" => [%{"name" => "a", "type" => "string", "default" => 1}]
+        })
+      end
+    end
+
     test "creating a record without a name will raise" do
       message =
         "Schema missing required key `name` for AvroEx.Schema.Record in %{\"fields\" => [%{\"name\" => \"key\", \"type\" => \"long\"}], \"type\" => \"record\"}"

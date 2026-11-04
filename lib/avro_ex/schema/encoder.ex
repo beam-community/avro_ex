@@ -41,7 +41,7 @@ defmodule AvroEx.Schema.Encoder do
     config = update_in(config.namespace, &Schema.namespace(struct, &1))
 
     pairs =
-      for {k, v} <- extract(struct), not empty?(v), keep?(k, config) do
+      for {k, v} <- extract(struct), keep_value?(struct_type, k, v), keep?(k, config) do
         case k do
           k when k in [:values, :items, :type] -> {k, do_encode(v, config)}
           :fields -> {k, Enum.map(v, &do_encode(&1, config))}
@@ -87,6 +87,10 @@ defmodule AvroEx.Schema.Encoder do
   defp empty?(""), do: true
   defp empty?(map) when map == %{}, do: true
   defp empty?(_), do: false
+
+  # A Field's `nil` default is the Avro null literal, so only the sentinel is dropped.
+  defp keep_value?(Field, :default, v), do: v != Field.no_default()
+  defp keep_value?(_struct_type, _k, v), do: not empty?(v)
 
   defp keep?(k, %{canonical?: true}) do
     k in ~w(type name fields symbols items values size)a
