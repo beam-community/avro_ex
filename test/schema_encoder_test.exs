@@ -99,6 +99,70 @@ defmodule AvroEx.Schema.EncoderTest do
                "{\"aliases\":[\"a_map\"],\"doc\":\"docs!\",\"fields\":[{\"aliases\":[\"first\"],\"default\":1,\"doc\":\"field\",\"name\":\"one\",\"type\":{\"type\":\"int\"},\"meta\":\"meta\"}],\"name\":\"all\",\"namespace\":\"beam.community\",\"type\":\"record\",\"extra\":\"val\"}"
     end
 
+    test "preserves an explicit null default on a nullable field" do
+      input = %{
+        "type" => "record",
+        "name" => "test",
+        "fields" => [%{"name" => "a", "type" => ["null", "string"], "default" => nil}]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      assert AvroEx.encode_schema(schema) ==
+               ~S({"fields":[{"default":null,"name":"a","type":[{"type":"null"},{"type":"string"}]}],"name":"test","type":"record"})
+    end
+
+    test "preserves empty-string and empty-map field defaults" do
+      input = %{
+        "type" => "record",
+        "name" => "test",
+        "fields" => [
+          %{"name" => "a", "type" => "string", "default" => ""},
+          %{"name" => "b", "type" => %{"type" => "map", "values" => "int"}, "default" => %{}}
+        ]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+      encoded = AvroEx.encode_schema(schema)
+
+      assert encoded =~ ~S("default":"")
+      assert encoded =~ ~S("default":{})
+    end
+
+    test "a null default survives a nested record and a full encode/decode round-trip" do
+      input = %{
+        "type" => "record",
+        "name" => "outer",
+        "fields" => [
+          %{
+            "name" => "inner",
+            "type" => %{
+              "type" => "record",
+              "name" => "inner",
+              "fields" => [%{"name" => "a", "type" => ["null", "string"], "default" => nil}]
+            }
+          }
+        ]
+      }
+
+      encoded = input |> AvroEx.decode_schema!() |> AvroEx.encode_schema()
+
+      assert encoded =~ ~S("default":null)
+      assert encoded |> AvroEx.decode_schema!() |> AvroEx.encode_schema() == encoded
+    end
+
+    test "omits default entirely when the field declares none" do
+      input = %{
+        "type" => "record",
+        "name" => "test",
+        "fields" => [%{"name" => "a", "type" => "string"}]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+
+      refute AvroEx.encode_schema(schema) =~ "default"
+    end
+
     test "array" do
       # primitive array
       input = %{"type" => "array", "items" => "int"}
@@ -175,6 +239,17 @@ defmodule AvroEx.Schema.EncoderTest do
   end
 
   describe "canonical encoding" do
+    test "it omits field defaults, including null" do
+      input = %{
+        "type" => "record",
+        "name" => "test",
+        "fields" => [%{"name" => "a", "type" => ["null", "string"], "default" => nil}]
+      }
+
+      assert schema = AvroEx.decode_schema!(input)
+      refute AvroEx.encode_schema(schema, canonical: true) =~ "default"
+    end
+
     test "it collapses primitives" do
       input = %{"type" => "int", "logicalType" => "date"}
 

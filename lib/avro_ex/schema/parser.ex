@@ -189,8 +189,12 @@ defmodule AvroEx.Schema.Parser do
     info = {type, data}
 
     Enum.reduce(keys, {%{}, data, info}, fn key, {data, rest, info} ->
-      case Map.pop(rest, to_string(key)) do
-        {nil, rest} ->
+      case Map.pop(rest, to_string(key), :__avro_ex_key_missing__) do
+        {:__avro_ex_key_missing__, rest} ->
+          {data, rest, info}
+
+        # An explicit `null` counts as absent, except for a Field's `:default`.
+        {nil, rest} when key != :default or type != Record.Field ->
           {data, rest, info}
 
         {value, rest} ->
@@ -251,6 +255,8 @@ defmodule AvroEx.Schema.Parser do
       valid_full_name?(value) or value == "" or error({:invalid_name, {:namespace, value}, raw})
     end)
   end
+
+  defp validate_default(%Record.Field{default: :__avro_ex_no_default__} = schema), do: schema
 
   defp validate_default(%{default: nil} = schema), do: schema
 
